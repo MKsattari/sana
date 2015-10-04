@@ -1,0 +1,17 @@
+<!--##session register_content_html##-->
+
+<!--##
+	TABLE = DB.Tables(PROJ.SecTbl);
+	for (var i = 1, cnt = TABLE.Fields.Count(); i <= cnt; i++) {
+		FIELD = TABLE.Fields.Seq(i);
+		if (FIELD.FldGenerate) {
+			if (FIELD.FldRegister && FIELD.FldName != DB.SecUserLevelFld) {
+##-->
+<p><!--FieldCaption_<!--##=FIELD.FldName##-->-->: <!--<!--##=FIELD.FldName##-->--></p>
+<!--##
+			}
+		}
+	} // Field
+##-->
+
+<!--##/session##-->

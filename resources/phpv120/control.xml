@@ -1,0 +1,1034 @@
+<?xml version="1.0" standalone="yes"?>
+<phpmaker date="2015/09/21" version="12.0.3" desc="default template" author="e.World Technology Ltd.">
+
+	<!--
+		Common variables and functions used by template
+	-->
+	<control id="phpcommon" type="function" ifiles="php-common.js" />
+
+	<!--
+		Define output folders
+	-->
+	<control id="_jquery" type="folder" ofolder="jquery" />
+	<control id="_css" type="folder" ofolder="phpcss" />
+	<control id="_cssfonts" type="folder" ofolder="phpcss/fonts" />
+	<control id="_js" type="folder" ofolder="phpjs" />
+	<control id="_html" type="folder" ofolder="phphtml" />
+	<control id="_images" type="folder" ofolder="phpimages" />
+	<control id="_language" type="folder" ofolder="phplang" />
+	<control id="_font" type="folder" ofolder="phpfont" />
+
+	<!--
+		Images
+	-->
+<!-- Uncomment to use image folder
+	<control id="images" type="copy" remark="Copy images" ofolderid="_images" ifolder="images" />
+-->
+
+	<!--
+		Copy font file
+	-->
+	<control id="dejavusans.ttf" type="copy" overwrite="False" ofolderid="_font" ifiles="DejaVuSans.ttf" />
+
+	<!--
+		PHPMailer
+	-->
+	<control id="phpmailer" type="copy" remark="Copy PHPMailer" ofolder="phpmailer529" ifolder="phpmailer529" />
+
+	<!--
+		Bootstrap files
+	-->
+	<control id="_bootstrapcss" type="folder" ofolder="bootstrap3/css" />
+	<control id="bootstrap" type="copy" remark="Copy Bootstrap files" ofolder="bootstrap3" ifolder="bootstrap" />
+
+	<!--
+		Colorbox files
+	-->
+	<control id="colorbox" type="copy" remark="Copy Colorbox files" ofolder="colorbox" ifolder="colorbox" />
+
+	<!--
+		project/bootstrap css (IMPORTANT NOTE: DO NOT CHANGE id)
+	-->
+	<control id="@css" type="system" remark="Create CSS file" ofolderid="_css" ofile="{PROJ.ProjVar}" oext="css" />
+	<control id="@bootstrapcss" type="system" remark="Create Bootstrap CSS file" ofolderid="_bootstrapcss" ofile="bootstrap" oext="css" />
+	<control id="@bootstrapthemecss" type="system" remark="Create Bootstrap Theme CSS file" ofolderid="_bootstrapcss" ofile="bootstrap-theme" oext="css" />
+
+	<!--
+		bootstrap font files
+	-->
+	<control id="bootstrapfonts" type="copy" remark="Copy font files" ofolderid="_cssfonts" ifolder="fonts" />
+
+	<!--
+		Js
+	 -->
+	<control id="ew.js" type="copy" ofolderid="_js" ifiles="ewp.js" ofile="ewp12" oext="js" />
+	<control id="jsrender.min.js" type="copy" ofolderid="_js" ifiles="jsrender.min.js" />
+	<control id="jquery" type="copy" ofolder="jquery" ifolder="jquery" />
+	<!-- copy typeahead.bundle.min.js -->
+	<control id="typeahead.js" type="copy" ofolderid="_js" ofile="typeahead.bundle.min" oext="js" ifiles="typeahead.bundle.min.js" />
+	<!-- copy jquery files -->
+	<control id="jquery.ui.widget.js" type="copy" ofolder="jqueryfileupload" ofile="jquery.ui.widget" oext="js" ifiles="jqueryfileupload/jquery.ui.widget.js" />
+	<control id="load-image.all.min.js" type="copy" ofolder="jqueryfileupload" ofile="load-image.all.min" oext="js" ifiles="jqueryfileupload/load-image.all.min.js" />
+	<control id="jqueryfileupload.min.js" type="copy" ofolder="jqueryfileupload" ofile="jqueryfileupload.min" oext="js" ifiles="jqueryfileupload/jqueryfileupload.min.js" />
+	<control id="jquery.fileupload.css" type="copy" ofolderid="_css" ifiles="jquery.fileupload.css" />
+	<control id="jquery.fileupload-ui.css" type="copy" ofolderid="_css" ifiles="jquery.fileupload-ui.css" />
+	<!-- copy mobile-detect.js -->
+	<control id="mobile-detect.js" type="copy" ofolderid="_js" ifiles="mobile-detect.min.js" />
+	<!-- copy moment.js -->
+	<control id="moment.js" type="copy" ofolderid="_js" ifiles="moment.min.js" />
+
+	<!--
+		Template files
+	-->
+	<control id="html" type="copy" remark="Copy text files" ifolder="html" ofolderid="_html" />
+	<!-- register content -->
+	<control id="register_content_html" type="other" ofolderid="_html" ofile="register_content" oext="html" ifiles="register_content.html" cond="proj/SecRegisterPage/EQ/True,proj/SecType/EQ/Use Table|Both">
+		<session type="key" value="register_content_html" />
+	</control>
+
+	<!--
+		Global configuration file
+		All web site configuration settings are stored here
+	-->
+	<control id="ewconfig" type="other" ofile="ewcfg12" oext="*" ifiles="ewcfg.php">
+		<!-- configuration -->
+		<session type="key" value="phpcommon-config" ifile="phpcommon.php" />
+		<session type="key" value="ewconfig" />
+		<session type="key" value="ewconfigmenu" />
+		<session type="key" value="ewconfigpdf" />
+	</control>
+
+	<!-- MySQL driver -->
+	<control id="ewmysql" type="other" ofile="ewmysql12" oext="*" ifiles="ewmysql.php" cond="function/IsMySQL/Boolean/EQ/True,function/UseADOdb/Boolean/EQ/False">
+		<session type="key" value="mysqldriver" />
+	</control>
+
+	<!-- ADODB -->
+	<control id="adodb5" type="copy" remark="Copy ADODB" ofolder="adodb5" ifolder="adodb5" cond="function/UseADOdb/Boolean/EQ/True" />
+
+	<!-- html2text -->
+	<control id="html2text" type="copy" remark="Html to Text" ofolder="html2text" ifolder="html2text" />
+
+	<!--
+		Global Header, Menu and Footer
+	-->
+	<!-- header file -->
+	<control id="header" type="other" ofile="header" oext="*" ifiles="template.php">
+		<!-- configuration -->
+		<session type="key" value="phpcommon-config" ifile="phpcommon.php" />
+		<session type="key" value="common_config" />
+		<session type="key" value="header_top" />
+		<session type="key" value="header_top_2" />
+		<session type="key" value="header_top_3" />
+		<session type="key" value="menu" />
+		<session type="key" value="header_bottom" />
+	</control>
+
+	<!-- menu file -->
+	<control id="menu" type="other" ofile="ewmenu" oext="*" ifiles="ewmenu.php">
+		<!-- configuration -->
+		<session type="key" value="phpcommon-config" ifile="phpcommon.php" />
+		<session type="key" value="menu" />
+	</control>
+
+	<!-- mobile menu -->
+	<control id="mobilemenu" type="other" ofile="ewmobilemenu" oext="*" ifiles="ewmenu.php">
+		<!-- configuration -->
+		<session type="key" value="phpcommon-config" ifile="phpcommon.php" />
+		<session type="key" value="mobilemenu" />
+	</control>
+
+	<!-- menu file for report maker -->
+	<control id="reportmenu" type="other" ofile="ewmenu2" oext="*" ifiles="ewmenu.php" cond="function/CompatOldReport/Boolean/EQ/True">
+		<!-- configuration -->
+		<session type="key" value="phpcommon-config" ifile="phpcommon.php" />
+		<session type="key" value="reportmenu" />
+	</control>
+
+	<!-- footer file -->
+	<control id="footer" type="other" ofile="footer" oext="*" ifiles="template.php">
+		<!-- configuration -->
+		<session type="key" value="phpcommon-config" ifile="phpcommon.php" />
+		<session type="key" value="common_config" />
+		<session type="key" value="footer" />
+	</control>
+
+	<!--
+		Commonly used functions
+	-->
+	<!-- shared code -->
+	<control id="ewshared" type="other" ofile="ewshared12" oext="*" ifiles="ewshared.php">
+		<session type="key" value="sharedfunction" />
+	</control>
+
+	<!-- common php classes and functions  -->
+	<control id="phpmkrfn" type="other" ofile="phpfn12" oext="*" ifiles="phpfn.php">
+		<!-- configuration -->
+		<session type="key" value="phpcommon-config" ifile="phpcommon.php" />
+		<!-- classes and functions -->
+		<session type="key" value="fieldclass" />
+		<session type="key" value="advancedsearchclass" />
+		<session type="key" value="fileuploadclass" />
+		<session type="key" value="userprofileclass" />
+		<session type="key" value="phpfunction" />
+		<session type="key" value="formfunction" />
+		<session type="key" value="thumbnailfunction" />
+		<session type="key" value="searchfunction" />
+		<session type="key" value="autoidfunction" />
+	</control>
+
+	<!-- image resize -->
+	<control id="PHPThumb.php" type="copy" ofolder="phpinc" ifiles="PHPThumb.php" />
+
+	<!-- PasswordHash.php -->
+	<control id="passwordhash.php" type="copy" remark="Copy passwordhash.php" ifiles="passwordhash.php" />
+
+	<!-- user php functions -->
+	<control id="userfn" type="other" ofile="userfn12" oext="*" ifiles="userfn.php">
+		<!-- functions -->
+		<session type="key" value="userfunction" />
+	</control>
+
+	<!-- database helper -->
+	<control id="dbhelper" remark="Database helper" type="other" ofile="ewdbhelper12" oext="*" ifiles="ewdb.php" cond="proj/GenDatabaseHelper/EQ/True">
+		<session type="key" value="ewdb" />
+	</control>
+
+	<!-- user js functions -->
+	<control id="userglobaljs" type="other" ofolderid="_js" ofile="userfn12" oext="js" ifiles="userfn.js">
+		<!-- functions -->
+		<session type="key" value="global" />
+	</control>
+	<control id="usereventjs" type="other" ofolderid="_js" ofile="userevt12" oext="js" ifiles="userfn.js">
+		<!-- functions -->
+		<session type="key" value="event" />
+	</control>
+
+	<!-- Mobile detect function -->
+	<control id="mobiledetect" type="copy" remark="Copy mobile_detect.php" ifiles="mobile_detect.php" />
+
+	<!-- html5 upload -->
+	<control id="ewupload" type="other" ofile="ewupload12" oext="*" ifiles="ewupload.php">
+		<!-- php directive -->
+		<session type="key" value="phpcommon-config" ifile="phpcommon.php" />
+		<session type="key" value="phpcommon-directive" ifile="phpcommon.php" />
+		<!-- include files -->
+		<session type="include" value="ewconfig" />
+		<session type="include" value="_adodb" />
+		<session type="include" value="phpmkrfn" />
+		<session type="include" value="userfn" />
+		<!-- php script -->
+		<session type="key" value="upload_script" />
+	</control>
+	<control id="uploadhandler" type="copy" remark="Copy uploadhandler.php" ifiles="uploadhandler.php" />
+
+	<!--
+		File viewer
+	-->
+	<control id="file" type="other" ofile="ewfile12" oext="*" ifiles="ewfile.php">
+		<!-- php directive -->
+		<session type="key" value="phpcommon-config" ifile="phpcommon.php" />
+		<session type="key" value="phpcommon-directive" ifile="phpcommon.php" />
+		<!-- include files -->
+		<session type="include" value="ewconfig" />
+		<session type="include" value="_adodb" />
+		<session type="include" value="phpmkrfn" />
+		<session type="include" value="userfn" />
+		<!-- php script -->
+		<session type="key" value="file_script" />
+	</control>
+	
+	<!--
+		Ajax related files
+	-->
+	<!-- ajax lookup -->
+	<control id="lookup" type="other" ofile="ewlookup12" oext="*" ifiles="ewlookup.php">
+		<!-- php directive -->
+		<session type="key" value="phpcommon-config" ifile="phpcommon.php" />
+		<session type="key" value="phpcommon-directive" ifile="phpcommon.php" />
+		<!-- include files -->
+		<session type="include" value="ewconfig" />
+		<session type="include" value="_adodb" />
+		<session type="include" value="phpmkrfn" />
+		<session type="include" value="userfn" />
+		<!-- php script -->
+		<session type="key" value="lookup_script" />
+	</control>
+
+	<!-- session handler -->
+	<control id="session" type="other" ofile="ewsession12" oext="*" ifiles="ewsession.php">
+		<!-- php directive -->
+		<session type="key" value="phpcommon-config" ifile="phpcommon.php" />
+		<session type="key" value="phpcommon-directive" ifile="phpcommon.php" />
+		<!-- include files -->
+		<session type="include" value="ewconfig" />
+		<session type="include" value="_adodb" />
+		<session type="include" value="phpmkrfn" />
+		<session type="include" value="userfn" />
+		<!-- php script -->
+		<session type="key" value="session_script" />
+	</control>
+
+	<!-- export email -->
+	<control id="ewemail" type="other" ofile="ewemail12" oext="*" ifiles="ewemail.php">
+		<!-- configuration -->
+		<session type="key" value="phpcommon-config" ifile="phpcommon.php" />
+		<!-- htm -->
+		<session type="key" value="exportemail_htm" />
+	</control>
+
+	<!--
+		Security related files
+	-->
+	<!-- login -->
+	<control id="login" type="other" ofile="login" oext="*" ifiles="login.php" cond="proj/SecType/EQ/Hard Code|Use Table|Both">
+		<!-- config current table -->
+		<session type="key" value="currenttable" />
+		<!-- php directive -->
+		<session type="key" value="phpcommon-config" ifile="phpcommon.php" />
+		<session type="key" value="phpcommon-directive" ifile="phpcommon.php" />
+		<!-- include files -->
+		<session type="include" value="ewconfig" />
+		<session type="include" value="_adodb" />
+		<session type="include" value="phpmkrfn" />
+		<session type="include" value="info" />
+		<session type="include" value="userfn" />
+		<!-- page class -->
+		<session type="key" value="phppageclassbegin" ifile="phpcommon-scripts.php" />
+		<session type="key" value="phpmain" />
+		<session type="key" value="phpfunction" />
+		<session type="key" value="phpevents" ifile="phpcommon-scripts.php" />
+		<session type="key" value="phpevents" />
+		<session type="key" value="phppageclassend" ifile="phpcommon-scripts.php" />
+		<!-- initial codes -->
+		<session type="key" value="phpload" ifile="phpcommon-scripts.php" />
+		<!-- include "header" -->
+		<session type="include" value="header" />
+		<session type="key" value="clientscript" ifile="phpcommon-scripts.php" />
+		<!-- htm -->
+		<session type="key" value="login_htm" />
+		<session type="key" value="clientstartupscript" ifile="phpcommon-scripts.php" />
+		<!-- include "footer" -->
+		<session type="include" value="footer" />
+		<!-- final codes -->
+		<session type="key" value="phpunload" ifile="phpcommon-scripts.php" />
+	</control>
+
+	<!-- forgot password -->
+	<control id="forgotpwd" type="other" ofile="forgotpwd" oext="*" ifiles="forgotpwd.php" cond="proj/SecForgetPwdPage/EQ/True,proj/SecType/EQ/Use Table|Both">
+		<!-- config current table -->
+		<session type="key" value="currenttable" />
+		<!-- php directive -->
+		<session type="key" value="phpcommon-config" ifile="phpcommon.php" />
+		<session type="key" value="phpcommon-directive" ifile="phpcommon.php" />
+		<!-- configuration -->
+		<session type="key" value="phpcommon-table-config" ifile="phpcommon-table.php" />
+		<!-- include files -->
+		<session type="include" value="ewconfig" />
+		<session type="include" value="_adodb" />
+		<session type="include" value="phpmkrfn" />
+		<session type="include" value="info" />
+		<session type="include" value="userfn" />
+		<!-- page class -->
+		<session type="key" value="phppageclassbegin" ifile="phpcommon-scripts.php" />
+		<session type="key" value="phpmain" />
+		<session type="key" value="phpfunction" />
+		<session type="key" value="phpevents" ifile="phpcommon-scripts.php" />
+		<session type="key" value="phpevents" />
+		<session type="key" value="phppageclassend" ifile="phpcommon-scripts.php" />
+		<!-- initial codes -->
+		<session type="key" value="phpload" ifile="phpcommon-scripts.php" />
+		<!-- include "header" -->
+		<session type="include" value="header" />
+		<session type="key" value="clientscript" ifile="phpcommon-scripts.php" />
+		<!-- htm -->
+		<session type="key" value="forgotpwd_htm" />
+		<session type="key" value="clientstartupscript" ifile="phpcommon-scripts.php" />
+		<!-- include "footer" -->
+		<session type="include" value="footer" />
+		<!-- final codes -->
+		<session type="key" value="phpunload" ifile="phpcommon-scripts.php" />
+	</control>
+
+	<!-- change password -->
+	<control id="changepwd" type="other" ofile="changepwd" oext="*" ifiles="changepwd.php" cond="function/GenChangePwd/Boolean/EQ/True">
+		<!-- config current table -->
+		<session type="key" value="currenttable" />
+		<!-- php directive -->
+		<session type="key" value="phpcommon-config" ifile="phpcommon.php" />
+		<session type="key" value="phpcommon-directive" ifile="phpcommon.php" />
+		<!-- configuration -->
+		<session type="key" value="phpcommon-table-config" ifile="phpcommon-table.php" />
+		<!-- include files -->
+		<session type="include" value="ewconfig" />
+		<session type="include" value="_adodb" />
+		<session type="include" value="phpmkrfn" />
+		<session type="include" value="info" />
+		<session type="include" value="userfn" />
+		<!-- page class -->
+		<session type="key" value="phppageclassbegin" ifile="phpcommon-scripts.php" />
+		<session type="key" value="phpmain" />
+		<session type="key" value="phpfunction" />
+		<session type="key" value="phpevents" ifile="phpcommon-scripts.php" />
+		<session type="key" value="phpevents" />
+		<session type="key" value="phppageclassend" ifile="phpcommon-scripts.php" />
+		<!-- initial php codes -->
+		<session type="key" value="phpload" ifile="phpcommon-scripts.php" />
+		<!-- include "header" -->
+		<session type="include" value="header" />
+		<session type="key" value="clientscript" ifile="phpcommon-scripts.php" />
+		<!-- htm -->
+		<session type="key" value="changepwd_htm" />
+		<session type="key" value="clientstartupscript" ifile="phpcommon-scripts.php" />
+		<!-- include "footer" -->
+		<session type="include" value="footer" />
+		<!-- final codes -->
+		<session type="key" value="phpunload" ifile="phpcommon-scripts.php" />
+	</control>
+
+	<!-- register -->
+	<control id="register" type="other" ofile="register" oext="*" ifiles="register.php" cond="proj/SecRegisterPage/EQ/True,proj/SecType/EQ/Use Table|Both">
+		<!-- config current table -->
+		<session type="key" value="currenttable" />
+		<!-- php directive -->
+		<session type="key" value="phpcommon-config" ifile="phpcommon.php" />
+		<session type="key" value="phpcommon-directive" ifile="phpcommon.php" />
+		<!-- configuration -->
+		<session type="key" value="phpcommon-table-config" ifile="phpcommon-table.php" />
+		<!-- include files -->
+		<session type="include" value="ewconfig" />
+		<session type="include" value="_adodb" />
+		<session type="include" value="phpmkrfn" />
+		<session type="include" value="info" />
+		<session type="key" value="phpcommon-table-include" ifile="phpcommon-table.php" />
+		<session type="include" value="userfn" />
+		<!-- page class -->
+		<session type="key" value="phppageclassbegin" ifile="phpcommon-scripts.php" />
+		<session type="key" value="phpmain" />
+		<session type="key" value="phpfunction" />
+		<session type="key" value="sharefunction" ifile="share-script.php" />
+		<session type="key" value="audittrail" ifile="audittrail.php" />
+		<session type="key" value="phpevents" ifile="phpcommon-scripts.php" />
+		<session type="key" value="phpevents" />
+		<session type="key" value="phppageclassend" ifile="phpcommon-scripts.php" />
+		<!-- initial php codes -->
+		<session type="key" value="phpload" ifile="phpcommon-scripts.php" />
+		<!-- include "header" -->
+		<session type="include" value="header" />
+		<!-- js -->
+		<session type="key" value="js_local_begin" ifile="ew_addon.js" />
+		<session type="key" value="js_local_end" ifile="ew_addon.js" />
+		<session type="key" value="clientscript" ifile="phpcommon-scripts.php" />
+		<!-- htm -->
+		<session type="key" value="htmtable" />
+		<session type="key" value="clientstartupscript" ifile="phpcommon-scripts.php" />
+		<!-- include "footer" -->
+		<session type="include" value="footer" />
+		<!-- final codes -->
+		<session type="key" value="phpunload" ifile="phpcommon-scripts.php" />
+	</control>
+
+	<!-- user privilege -->
+	<control id="userpriv" type="other" ofile="userpriv" oext="*" ifiles="userpriv.php" cond="db/UseDynamicUserLevel/EQ/True,db/UserLevelTbl/NE/''">
+		<!-- config current table -->
+		<session type="key" value="currenttable" />
+		<!-- php directive -->
+		<session type="key" value="phpcommon-config" ifile="phpcommon.php" />
+		<session type="key" value="phpcommon-directive" ifile="phpcommon.php" />
+		<!-- configuration -->
+		<session type="key" value="phpcommon-table-config" ifile="phpcommon-table.php" />
+		<!-- include files -->
+		<session type="include" value="ewconfig" />
+		<session type="include" value="_adodb" />
+		<session type="include" value="phpmkrfn" />
+		<session type="include" value="info" />
+		<session type="key" value="phpcommon-table-include" ifile="phpcommon-table.php" />
+		<session type="include" value="userfn" />
+		<!-- page config -->
+		<session type="key" value="phpconfig" />
+		<!-- page class -->
+		<session type="key" value="phppageclassbegin" ifile="phpcommon-scripts.php" />
+		<session type="key" value="phpmain" />
+		<session type="key" value="phpfunction" />
+		<session type="key" value="phpevents" ifile="phpcommon-scripts.php" />
+		<session type="key" value="phppageclassend" ifile="phpcommon-scripts.php" />
+		<!-- initial php codes -->
+		<session type="key" value="phpload" ifile="phpcommon-scripts.php" />
+		<!-- include "header" -->
+		<session type="include" value="header" />
+		<!-- js -->
+		<session type="key" value="js_local_begin" ifile="ew_addon.js" />
+		<session type="key" value="js_local_end" ifile="ew_addon.js" />
+		<session type="key" value="clientscript" ifile="phpcommon-scripts.php" />
+		<!-- htm -->
+		<session type="key" value="htmtable" />
+		<session type="key" value="clientstartupscript" ifile="phpcommon-scripts.php" />
+		<!-- include "footer" -->
+		<session type="include" value="footer" />
+		<!-- final codes -->
+		<session type="key" value="phpunload" ifile="phpcommon-scripts.php" />
+	</control>
+
+	<!-- logout -->
+	<control id="logout" type="other" ofile="logout" oext="*" ifiles="logout.php" cond="proj/SecType/EQ/Hard Code|Use Table|Both">
+		<!-- config current table -->
+		<session type="key" value="currenttable" />
+		<!-- php directive -->
+		<session type="key" value="phpcommon-config" ifile="phpcommon.php" />
+		<session type="key" value="phpcommon-directive" ifile="phpcommon.php" />
+		<!-- include files -->
+		<session type="include" value="ewconfig" />
+		<session type="include" value="_adodb" />
+		<session type="include" value="phpmkrfn" />
+		<session type="include" value="info" />
+		<session type="include" value="userfn" />
+		<!-- page class -->
+		<session type="key" value="phppageclassbegin" ifile="phpcommon-scripts.php" />
+		<session type="key" value="phpmain" />
+		<session type="key" value="phpevents" ifile="phpcommon-scripts.php" />
+		<session type="key" value="phpevents" />
+		<session type="key" value="phppageclassend" ifile="phpcommon-scripts.php" />
+		<!-- initial codes -->
+		<session type="key" value="phpload" ifile="phpcommon-scripts.php" />
+		<!-- final codes -->
+		<session type="key" value="phpunload" ifile="phpcommon-scripts.php" />
+	</control>
+
+	<!--
+		Default page
+	-->
+	<control id="default" type="simple" ofile="*" oext="*" ifiles="index.php">
+		<!-- php directive -->
+		<session type="key" value="phpcommon-config" ifile="phpcommon.php" />
+		<session type="key" value="phpcommon-directive" ifile="phpcommon.php" />
+		<!-- include files -->
+		<session type="include" value="ewconfig" />
+		<session type="include" value="_adodb" />
+		<session type="include" value="phpmkrfn" />
+		<session type="include" value="info" />
+		<session type="include" value="userfn" />
+		<!-- page class -->
+		<session type="key" value="phppageclassbegin" ifile="phpcommon-scripts.php" />
+		<session type="key" value="phpmain" />
+		<session type="key" value="phpevents" ifile="phpcommon-scripts.php" />
+		<session type="key" value="phppageclassend" ifile="phpcommon-scripts.php" />
+		<!-- initial codes -->
+		<session type="key" value="phpload" ifile="phpcommon-scripts.php" />
+		<!-- include "header" -->
+		<session type="include" value="header" />
+		<!-- htm -->
+		<session type="key" value="default_htm" />
+		<!-- include "footer" -->
+		<session type="include" value="footer" />
+		<!-- final codes -->
+		<session type="key" value="phpunload" ifile="phpcommon-scripts.php" />
+	</control>
+
+	<!--
+		Table specific files, one set for each table
+	-->
+	<!-- table common information -->
+	<control id="info" type="table" remark="Required by all table related pages" ofile="info" oext="*" ifiles="info.php">
+		<!-- configuration -->
+		<session type="key" value="phpcommon-config" ifile="phpcommon.php" />
+		<session type="key" value="phpcommon-table-config" ifile="phpcommon-table.php" />
+		<session type="key" value="infoconfig" />
+		<!-- class info -->
+		<session type="key" value="infoclass" />
+	</control>
+ 
+	<!-- table master view -->
+	<control id="master" type="table" ofile="master" oext="*" ifiles="master-script.php" cond="table/TblIsMaster/EQ/True">
+		<!-- configuration -->
+		<session type="key" value="phpcommon-config" ifile="phpcommon.php" />
+		<session type="key" value="phpcommon-table-config" ifile="phpcommon-table.php" />
+		<!-- htm -->
+		<session type="key" value="masterhtm" />
+	</control>
+
+	<!-- table list page -->
+	<control id="list" type="table" ofile="list" oext="*" ifiles="list-script.php">
+		<!-- php directive -->
+		<session type="key" value="phpcommon-config" ifile="phpcommon.php" />
+		<session type="key" value="phpcommon-directive" ifile="phpcommon.php" />
+		<!-- configuration -->
+		<session type="key" value="phpcommon-table-config" ifile="phpcommon-table.php" />
+		<!-- include files -->
+		<session type="include" value="ewconfig" />
+		<session type="include" value="_adodb" />
+		<session type="include" value="phpmkrfn" />
+		<session type="include" value="info" />
+		<session type="key" value="phpcommon-table-include" ifile="phpcommon-table.php" />
+		<session type="include" value="userfn" />
+		<!-- page config -->
+		<session type="key" value="phpconfig" />
+		<!-- page class -->
+		<session type="key" value="phppageclassbegin" ifile="phpcommon-scripts.php" />
+		<session type="key" value="phpmain" />
+		<session type="key" value="listfunction" ifile="list-script-function.php" />
+		<session type="key" value="setuplistoptionsext-start" ifile="list-script-function.php" />
+		<session type="key" value="setuplistoptionsext-end" ifile="list-script-function.php" />
+		<session type="key" value="renderlistoptionsext-start" ifile="list-script-function.php" />
+		<session type="key" value="renderlistoptionsext-end" ifile="list-script-function.php" />
+		<session type="key" value="pagerfunction" ifile="pager.php" />
+		<session type="key" value="sharefunction" ifile="share-script.php" />
+		<session type="key" value="audittrail" ifile="audittrail.php" />
+		<session type="key" value="phpevents" ifile="phpcommon-scripts.php" />
+		<session type="key" value="phpevents" />
+		<session type="key" value="phppageclassend" ifile="phpcommon-scripts.php" />
+		<!-- initial php codes -->
+		<session type="key" value="phpload" ifile="phpcommon-scripts.php" />
+		<!-- include "header" -->
+		<session type="include" value="header" />
+		<session type="key" value="export-check-all-start" ifile="export-check.php" />
+		<!-- js -->
+		<session type="key" value="js_local_begin" ifile="ew_addon.js" />
+		<session type="key" value="js_local_end" ifile="ew_addon.js" />
+		<session type="key" value="clientscript" ifile="phpcommon-scripts.php" />
+		<session type="key" value="export-check-all-end" ifile="export-check.php" />
+		<!-- htm header -->
+		<session type="key" value="htmheader" />
+		<!-- htm master -->
+		<session type="key" value="htmmaster" />
+		<!-- php load data -->
+		<session type="key" value="phploadrecordset" />
+		<!-- search htm -->
+		<session type="key" value="searchchkbegin" ifile="list-script-search.php" />
+		<session type="key" value="htmsearch" ifile="list-script-search.php" />
+		<session type="key" value="searchchkend" ifile="list-script-search.php" />
+		<!-- htm main -->
+		<session type="key" value="htmmain" />
+		<session type="key" value="export-check-all-start" ifile="export-check.php" />
+		<session type="key" value="clientstartupscript" ifile="phpcommon-scripts.php" />
+		<session type="key" value="export-check-all-end" ifile="export-check.php" />
+		<!-- include "footer" -->
+		<session type="include" value="footer" />
+		<!-- final codes -->
+		<session type="key" value="phpunload" ifile="phpcommon-scripts.php" />
+	</control>
+
+	<!-- detail grid -->
+	<control id="grid" type="table" ofile="grid" oext="*" ifiles="list-script.php" cond="table/TblIsDetail/EQ/True">
+		<!-- configuration -->
+		<session type="key" value="phpcommon-config" ifile="phpcommon.php" />
+		<session type="key" value="phpcommon-table-config" ifile="phpcommon-table.php" />
+		<!-- include files -->
+<!-- optional
+		<session type="include" value="ewconfig" />
+		<session type="include" value="_adodb" />
+		<session type="include" value="phpmkrfn" />
+		<session type="include" value="info" />
+-->
+		<session type="key" value="phpcommon-table-include" ifile="phpcommon-table.php" />
+<!-- optional
+		<session type="include" value="userfn" />
+-->
+		<!-- page config -->
+		<session type="key" value="phpconfig" />
+		<!-- initial php codes -->
+		<session type="key" value="phpload" ifile="phpcommon-scripts.php" />
+		<!-- js -->
+		<session type="key" value="export-check-all-start" ifile="export-check.php" />
+		<session type="key" value="js_local_begin" ifile="ew_addon.js" />
+		<session type="key" value="js_local_end" ifile="ew_addon.js" />
+		<session type="key" value="export-check-all-end" ifile="export-check.php" />
+		<!-- htm main -->
+		<session type="key" value="htmheader" />
+		<session type="key" value="phploadrecordset" />
+		<session type="key" value="htmmain" />
+		<!-- final codes -->
+		<session type="key" value="phpunload" ifile="phpcommon-scripts.php" />
+	</control>
+
+	<!-- detail grid class -->
+	<control id="gridcls" type="table" ofile="gridcls" oext="*" ifiles="list-script.php" cond="table/TblIsDetail/EQ/True">
+		<!-- configuration -->
+		<session type="key" value="phpcommon-config" ifile="phpcommon.php" />
+		<session type="key" value="phpcommon-table-config" ifile="phpcommon-table.php" />
+		<!-- include files -->
+<!-- optional
+		<session type="include" value="ewconfig" />
+		<session type="include" value="_adodb" />
+		<session type="include" value="phpmkrfn" />
+-->
+		<session type="include" value="info" />
+		<session type="key" value="phpcommon-table-include" ifile="phpcommon-table.php" />
+<!-- optional
+		<session type="include" value="userfn" />
+-->
+		<!-- page class functions -->
+		<session type="key" value="phppageclassbegin" ifile="phpcommon-scripts.php" />
+		<session type="key" value="phpmain" />
+		<session type="key" value="listfunction" ifile="list-script-function.php" />
+		<session type="key" value="renderlistoptionsext-start" ifile="list-script-function.php" />
+		<session type="key" value="renderlistoptionsext-end" ifile="list-script-function.php" />
+		<session type="key" value="pagerfunction" ifile="pager.php" />
+		<session type="key" value="sharefunction" ifile="share-script.php" />
+		<session type="key" value="audittrail" ifile="audittrail.php" />
+		<session type="key" value="phpevents" ifile="phpcommon-scripts.php" />
+		<session type="key" value="phpevents" />
+		<session type="key" value="phppageclassend" ifile="phpcommon-scripts.php" />
+	</control>
+
+	<!-- table add page -->
+	<control id="add" type="table" ofile="add" oext="*" ifiles="add-script.php" cond="table/TblAdd/EQ/True">
+		<!-- php directive -->
+		<session type="key" value="phpcommon-config" ifile="phpcommon.php" />
+		<session type="key" value="phpcommon-directive" ifile="phpcommon.php" />
+		<!-- configuration -->
+		<session type="key" value="phpcommon-table-config" ifile="phpcommon-table.php" />
+		<!-- include files -->
+		<session type="include" value="ewconfig" />
+		<session type="include" value="_adodb" />
+		<session type="include" value="phpmkrfn" />
+		<session type="include" value="info" />
+		<session type="key" value="phpcommon-table-include" ifile="phpcommon-table.php" />
+		<session type="include" value="userfn" />
+		<!-- page class -->
+		<session type="key" value="phppageclassbegin" ifile="phpcommon-scripts.php" />
+		<session type="key" value="phpmain" />
+		<session type="key" value="sharefunction" ifile="share-script.php" />
+		<session type="key" value="audittrail" ifile="audittrail.php" />
+		<session type="key" value="phpevents" ifile="phpcommon-scripts.php" />
+		<session type="key" value="phpevents" />
+		<session type="key" value="phppageclassend" ifile="phpcommon-scripts.php" />
+		<!-- initial php codes -->
+		<session type="key" value="phpload" ifile="phpcommon-scripts.php" />
+		<!-- include "header" -->
+		<session type="include" value="header" />
+		<!-- js -->
+		<session type="key" value="js_local_begin" ifile="ew_addon.js" />
+		<session type="key" value="js_local_end" ifile="ew_addon.js" />
+		<session type="key" value="clientscript" ifile="phpcommon-scripts.php" />
+		<!-- htm -->
+		<session type="key" value="htmtable" />
+		<session type="key" value="clientstartupscript" ifile="phpcommon-scripts.php" />
+		<!-- include "footer" -->
+		<session type="include" value="footer" />
+		<!-- final codes -->
+		<session type="key" value="phpunload" ifile="phpcommon-scripts.php" />
+	</control>
+
+	<!-- table add option page -->
+	<control id="addopt" type="table" ofile="addopt" oext="*" ifiles="addopt-script.php" cond="table/TblAddOpt/EQ/True">
+		<!-- php directive -->
+		<session type="key" value="phpcommon-config" ifile="phpcommon.php" />
+		<session type="key" value="phpcommon-directive" ifile="phpcommon.php" />
+		<!-- configuration -->
+		<session type="key" value="phpcommon-table-config" ifile="phpcommon-table.php" />
+		<!-- include files -->
+		<session type="include" value="ewconfig" />
+		<session type="include" value="_adodb" />
+		<session type="include" value="phpmkrfn" />
+		<session type="include" value="info" />
+		<session type="key" value="phpcommon-table-include" ifile="phpcommon-table.php" />
+		<session type="include" value="userfn" />
+		<!-- page class -->
+		<session type="key" value="phppageclassbegin" ifile="phpcommon-scripts.php" />
+		<session type="key" value="phpmain" />
+		<session type="key" value="sharefunction" ifile="share-script.php" />
+		<session type="key" value="audittrail" ifile="audittrail.php" />
+		<session type="key" value="phpevents" ifile="phpcommon-scripts.php" />
+		<session type="key" value="phpevents" />
+		<session type="key" value="phppageclassend" ifile="phpcommon-scripts.php" />
+		<!-- initial php codes -->
+		<session type="key" value="phpload" ifile="phpcommon-scripts.php" />
+		<!-- js -->
+		<session type="key" value="js_local_begin" ifile="ew_addon.js" />
+		<session type="key" value="js_local_end" ifile="ew_addon.js" />
+		<session type="key" value="clientscript" ifile="phpcommon-scripts.php" />
+		<!-- htm -->
+		<session type="key" value="htmtable" />
+		<session type="key" value="clientstartupscript" ifile="phpcommon-scripts.php" />
+		<!-- include "footer" -->
+		<!-- final codes -->
+		<session type="key" value="phpunload" ifile="phpcommon-scripts.php" />
+	</control>
+
+	<!-- table view page -->
+	<control id="view" type="table" ofile="view" oext="*" ifiles="view-script.php" cond="table/TblView/EQ/True">
+		<!-- php directive -->
+		<session type="key" value="phpcommon-config" ifile="phpcommon.php" />
+		<session type="key" value="phpcommon-directive" ifile="phpcommon.php" />
+		<!-- configuration -->
+		<session type="key" value="phpcommon-table-config" ifile="phpcommon-table.php" />
+		<!-- include files -->
+		<session type="include" value="ewconfig" />
+		<session type="include" value="_adodb" />
+		<session type="include" value="phpmkrfn" />
+		<session type="include" value="info" />
+		<session type="key" value="phpcommon-table-include" ifile="phpcommon-table.php" />
+		<session type="include" value="userfn" />
+		<!-- page class -->
+		<session type="key" value="phppageclassbegin" ifile="phpcommon-scripts.php" />
+		<session type="key" value="phpmain" />
+		<session type="key" value="phpfunction" />
+		<session type="key" value="pagerfunction" ifile="pager.php" />
+		<session type="key" value="sharefunction" ifile="share-script.php" />
+		<session type="key" value="audittrail" ifile="audittrail.php" />
+		<session type="key" value="phpevents" ifile="phpcommon-scripts.php" />
+		<session type="key" value="phpevents" />
+		<session type="key" value="phppageclassend" ifile="phpcommon-scripts.php" />
+		<!-- initial php codes -->
+		<session type="key" value="phpload" ifile="phpcommon-scripts.php" />
+		<!-- include "header" -->
+		<session type="include" value="header" />
+		<!-- js -->
+		<!-- export check start -->
+		<session type="key" value="export-check-all-start" ifile="export-check.php" />
+		<session type="key" value="js_local_begin" ifile="ew_addon.js" />
+		<session type="key" value="js_local_end" ifile="ew_addon.js" />
+		<session type="key" value="clientscript" ifile="phpcommon-scripts.php" />
+		<!-- export check end -->
+		<session type="key" value="export-check-all-end" ifile="export-check.php" />
+		<!-- htm -->
+		<session type="key" value="htmtable" />
+		<!-- export check start -->
+		<session type="key" value="export-check-all-start" ifile="export-check.php" />
+		<session type="key" value="clientstartupscript" ifile="phpcommon-scripts.php" />
+		<!-- export check end -->
+		<session type="key" value="export-check-all-end" ifile="export-check.php" />
+		<!-- include "footer" -->
+		<session type="include" value="footer" />
+		<!-- final codes -->
+		<session type="key" value="phpunload" ifile="phpcommon-scripts.php" />
+	</control>
+
+	<!-- table edit page -->
+	<control id="edit" type="table" ofile="edit" oext="*" ifiles="edit-script.php" cond="table/TblEdit/EQ/True">
+		<!-- php directive -->
+		<session type="key" value="phpcommon-config" ifile="phpcommon.php" />
+		<session type="key" value="phpcommon-directive" ifile="phpcommon.php" />
+		<!-- configuration -->
+		<session type="key" value="phpcommon-table-config" ifile="phpcommon-table.php" />
+		<!-- include files -->
+		<session type="include" value="ewconfig" />
+		<session type="include" value="_adodb" />
+		<session type="include" value="phpmkrfn" />
+		<session type="include" value="info" />
+		<session type="key" value="phpcommon-table-include" ifile="phpcommon-table.php" />
+		<session type="include" value="userfn" />
+		<!-- page class -->
+		<session type="key" value="phppageclassbegin" ifile="phpcommon-scripts.php" />
+		<session type="key" value="phpmain" />
+		<session type="key" value="pagerfunction" ifile="pager.php" />
+		<session type="key" value="sharefunction" ifile="share-script.php" />
+		<session type="key" value="audittrail" ifile="audittrail.php" />
+		<session type="key" value="phpevents" ifile="phpcommon-scripts.php" />
+		<session type="key" value="phpevents" />
+		<session type="key" value="phppageclassend" ifile="phpcommon-scripts.php" />
+		<!-- initial php codes -->
+		<session type="key" value="phpload" ifile="phpcommon-scripts.php" />
+		<!-- include "header" -->
+		<session type="include" value="header" />
+		<!-- js -->
+		<session type="key" value="js_local_begin" ifile="ew_addon.js" />
+		<session type="key" value="js_local_end" ifile="ew_addon.js" />
+		<session type="key" value="clientscript" ifile="phpcommon-scripts.php" />
+		<!-- htm -->
+		<session type="key" value="htmtable" />
+		<session type="key" value="clientstartupscript" ifile="phpcommon-scripts.php" />
+		<!-- include "footer" -->
+		<session type="include" value="footer" />
+		<!-- final codes -->
+		<session type="key" value="phpunload" ifile="phpcommon-scripts.php" />
+	</control>
+
+	<!-- table multi update page -->
+	<control id="update" type="table" ofile="update" oext="*" ifiles="update-script.php" cond="table/TblMultiUpdate/EQ/True">
+		<!-- php directive -->
+		<session type="key" value="phpcommon-config" ifile="phpcommon.php" />
+		<session type="key" value="phpcommon-directive" ifile="phpcommon.php" />
+		<!-- configuration -->
+		<session type="key" value="phpcommon-table-config" ifile="phpcommon-table.php" />
+		<!-- include files -->
+		<session type="include" value="ewconfig" />
+		<session type="include" value="_adodb" />
+		<session type="include" value="phpmkrfn" />
+		<session type="include" value="info" />
+		<session type="key" value="phpcommon-table-include" ifile="phpcommon-table.php" />
+		<session type="include" value="userfn" />
+		<!-- page class -->
+		<session type="key" value="phppageclassbegin" ifile="phpcommon-scripts.php" />
+		<session type="key" value="phpmain" />
+		<session type="key" value="phpfunction" />
+		<session type="key" value="sharefunction" ifile="share-script.php" />
+		<session type="key" value="audittrail" ifile="audittrail.php" />
+		<session type="key" value="phpevents" ifile="phpcommon-scripts.php" />
+		<session type="key" value="phpevents" />
+		<session type="key" value="phppageclassend" ifile="phpcommon-scripts.php" />
+		<!-- initial php codes -->
+		<session type="key" value="phpload" ifile="phpcommon-scripts.php" />
+		<!-- include "header" -->
+		<session type="include" value="header" />
+		<!-- js -->
+		<session type="key" value="js_local_begin" ifile="ew_addon.js" />
+		<session type="key" value="js_local_end" ifile="ew_addon.js" />
+		<session type="key" value="clientscript" ifile="phpcommon-scripts.php" />
+		<!-- htm -->
+		<session type="key" value="htmtable" />
+		<session type="key" value="clientstartupscript" ifile="phpcommon-scripts.php" />
+		<!-- include "footer" -->
+		<session type="include" value="footer" />
+		<!-- final codes -->
+		<session type="key" value="phpunload" ifile="phpcommon-scripts.php" />
+	</control>
+
+	<!-- table delete page -->
+	<control id="delete" type="table" ofile="delete" oext="*" ifiles="delete-script.php" cond="table/TblDelete/EQ/True">
+		<!-- php directive -->
+		<session type="key" value="phpcommon-config" ifile="phpcommon.php" />
+		<session type="key" value="phpcommon-directive" ifile="phpcommon.php" />
+		<!-- configuration -->
+		<session type="key" value="phpcommon-table-config" ifile="phpcommon-table.php" />
+		<!-- include files -->
+		<session type="include" value="ewconfig" />
+		<session type="include" value="_adodb" />
+		<session type="include" value="phpmkrfn" />
+		<session type="include" value="info" />
+		<session type="key" value="phpcommon-table-include" ifile="phpcommon-table.php" />
+		<session type="include" value="userfn" />
+		<!-- page class -->
+		<session type="key" value="phppageclassbegin" ifile="phpcommon-scripts.php" />
+		<session type="key" value="phpmain" />
+		<session type="key" value="phpfunction" />
+		<session type="key" value="sharefunction" ifile="share-script.php" />
+		<session type="key" value="audittrail" ifile="audittrail.php" />
+		<session type="key" value="phpevents" ifile="phpcommon-scripts.php" />
+		<session type="key" value="phpevents" />
+		<session type="key" value="phppageclassend" ifile="phpcommon-scripts.php" />
+		<!-- initial php codes -->
+		<session type="key" value="phpload" ifile="phpcommon-scripts.php" />
+		<!-- include "header" -->
+		<session type="include" value="header" />
+		<!-- js -->
+		<session type="key" value="js_local_begin" ifile="ew_addon.js" />
+		<session type="key" value="js_local_end" ifile="ew_addon.js" />
+		<session type="key" value="clientscript" ifile="phpcommon-scripts.php" />
+		<!-- htm -->
+		<session type="key" value="htmtable" />
+		<session type="key" value="clientstartupscript" ifile="phpcommon-scripts.php" />
+		<!-- include "footer" -->
+		<session type="include" value="footer" />
+		<!-- final codes -->
+		<session type="key" value="phpunload" ifile="phpcommon-scripts.php" />
+	</control>
+
+	<!-- table search page -->
+	<control id="search" type="table" ofile="srch" oext="*" ifiles="search-script.php" cond="table/TblSearch/EQ/True">
+		<!-- php directive -->
+		<session type="key" value="phpcommon-config" ifile="phpcommon.php" />
+		<session type="key" value="phpcommon-directive" ifile="phpcommon.php" />
+		<!-- configuration -->
+		<session type="key" value="phpcommon-table-config" ifile="phpcommon-table.php" />
+		<!-- include files -->
+		<session type="include" value="ewconfig" />
+		<session type="include" value="_adodb" />
+		<session type="include" value="phpmkrfn" />
+		<session type="include" value="info" />
+		<session type="key" value="phpcommon-table-include" ifile="phpcommon-table.php" />
+		<session type="include" value="userfn" />
+		<!-- page class -->
+		<session type="key" value="phppageclassbegin" ifile="phpcommon-scripts.php" />
+		<session type="key" value="phpmain" />
+		<session type="key" value="phpfunction" />
+		<session type="key" value="sharefunction" ifile="share-script.php" />
+		<session type="key" value="phpevents" ifile="phpcommon-scripts.php" />
+		<session type="key" value="phpevents" />
+		<session type="key" value="phppageclassend" ifile="phpcommon-scripts.php" />
+		<!-- initial php codes -->
+		<session type="key" value="phpload" ifile="phpcommon-scripts.php" />
+		<!-- include "header" -->
+		<session type="include" value="header" />
+		<!-- js -->
+		<session type="key" value="js_local_begin" ifile="ew_addon.js" />
+		<session type="key" value="js_local_end" ifile="ew_addon.js" />
+		<session type="key" value="clientscript" ifile="phpcommon-scripts.php" />
+		<!-- htm -->
+		<session type="key" value="htmtable" />
+		<session type="key" value="clientstartupscript" ifile="phpcommon-scripts.php" />
+		<!-- include "footer" -->
+		<session type="include" value="footer" />
+		<!-- final codes -->
+		<session type="key" value="phpunload" ifile="phpcommon-scripts.php" />
+	</control>
+
+	<!--
+		Blob Field related file
+	-->
+	<control id="blobview" type="field" ofile="_bv" oext="*" ifiles="ewgetfile.php" cond="field/FldHtmlTag/EQ/FILE">
+		<!-- php directive -->
+		<session type="key" value="phpcommon-config" ifile="phpcommon.php" />
+		<session type="key" value="phpcommon-directive" ifile="phpcommon.php" />
+		<!-- configuration -->
+		<session type="key" value="phpcommon-table-config" ifile="phpcommon-table.php" />
+		<!-- include files -->
+		<session type="include" value="ewconfig" />
+		<session type="include" value="_adodb" />
+		<session type="include" value="phpmkrfn" />
+		<session type="include" value="info" />
+		<session type="key" value="phpcommon-table-include" ifile="phpcommon-table.php" />
+		<session type="include" value="userfn" />
+		<!-- page class -->
+		<session type="key" value="phppageclassbegin" ifile="phpcommon-scripts.php" />
+		<session type="key" value="phpmain" />
+		<session type="key" value="phpevents" ifile="phpcommon-scripts.php" />
+		<session type="key" value="phppageclassend" ifile="phpcommon-scripts.php" />
+		<!-- initial php codes -->
+		<session type="key" value="phpload" ifile="phpcommon-scripts.php" />
+		<!-- final codes -->
+		<session type="key" value="phpunload" ifile="phpcommon-scripts.php" />
+	</control>
+
+	<!--
+		Report related
+	-->
+	<control id="report" type="report" ofile="report" oext="*" ifiles="report.php" cond="table/TblReportType/NE/custom">
+		<!-- php directive -->
+		<session type="key" value="phpcommon-config" ifile="phpcommon.php" />
+		<session type="key" value="phpcommon-directive" ifile="phpcommon.php" />
+		<!-- configuration -->
+		<session type="key" value="phpcommon-table-config" ifile="phpcommon-table.php" />
+		<!-- include files -->
+		<session type="include" value="ewconfig" />
+		<session type="include" value="_adodb" />
+		<session type="include" value="phpmkrfn" />
+		<session type="key" value="infoconfig" ifile="info.php" />
+		<session type="key" value="infoclass" ifile="info.php" />
+		<session type="key" value="phpcommon-table-include" ifile="phpcommon-table.php" />
+		<session type="include" value="userfn" />
+		<!-- page config -->
+		<session type="key" value="phpconfig" />
+		<!-- page class -->
+		<session type="key" value="phppageclassbegin" ifile="phpcommon-scripts.php" />
+		<session type="key" value="phpmain" />
+		<session type="key" value="phpfunction" />
+		<session type="key" value="sharefunction" ifile="share-script.php" />
+		<session type="key" value="report_export_functions" ifile="phpcommon-scripts.php" />
+		<session type="key" value="phpevents" ifile="phpcommon-scripts.php" />
+		<session type="key" value="phppageclassend" ifile="phpcommon-scripts.php" />
+		<!-- initial php codes -->
+		<session type="key" value="phpload" ifile="phpcommon-scripts.php" />
+		<!-- include "header" -->
+		<session type="include" value="header" />
+		<session type="key" value="export-check-all-start" ifile="export-check.php" />
+		<session type="key" value="clientscript" ifile="phpcommon-scripts.php" />
+		<session type="key" value="export-check-all-end" ifile="export-check.php" />
+		<!-- htm -->
+		<session type="key" value="reportcontent" />
+		<session type="key" value="export-check-all-start" ifile="export-check.php" />
+		<session type="key" value="clientstartupscript" ifile="phpcommon-scripts.php" />
+		<!-- export check end -->
+		<session type="key" value="export-check-all-end" ifile="export-check.php" />
+		<!-- include "footer" -->
+		<session type="include" value="footer" />
+		<!-- final codes -->
+		<session type="key" value="phpunload" ifile="phpcommon-scripts.php" />
+	</control>
+
+	<!-- custom page -->
+	<control id="custom" type="report" ofile="" oext="" ifiles="custom.php" cond="table/TblReportType/EQ/custom">
+		<session type="key" value="content" />
+	</control>
+
+</phpmaker>

@@ -1,0 +1,12 @@
+<?xml version="1.0"?>
+<configuration date="2015/10/04" author="e.World Technology Ltd.">
+<project id="{07091A10-D58A-4784-942B-0E21010F5DFC}" file="D:\workingfolder\daftar\www\phptest\sana\resources\sanaPHPMaker.pmp" name="sanaPHPMaker" product="PHPMaker" version="12.0" datetime="2015/10/04 11:39:53" languagefolder="phplang" userlevel="-2,&quot;Anonymous&quot;,0;0,&quot;Default&quot;,0">
+<table id="sana_location" name="sana_location" caption="sana location" userlevel="-2,&quot;Anonymous&quot;,0;0,&quot;Default&quot;,0" priv="1"/>
+<table id="sana_object" name="sana_object" caption="sana object" userlevel="-2,&quot;Anonymous&quot;,0;0,&quot;Default&quot;,0" priv="1"/>
+<table id="sana_person" name="sana_person" caption="sana person" userlevel="-2,&quot;Anonymous&quot;,0;0,&quot;Default&quot;,0" priv="1"/>
+<table id="sana_project" name="sana_project" caption="sana project" userlevel="-2,&quot;Anonymous&quot;,0;0,&quot;Default&quot;,0" priv="1"/>
+<table id="sana_state" name="sana_state" caption="sana state" userlevel="-2,&quot;Anonymous&quot;,0;0,&quot;Default&quot;,0" priv="1"/>
+<table id="sana_user" name="sana_user" caption="sana user" userlevel="-2,&quot;Anonymous&quot;,0;0,&quot;Default&quot;,0" priv="1"/>
+<table id="userlevelpermissions" name="userlevelpermissions" caption="userlevelpermissions" userlevel="-2,&quot;Anonymous&quot;,0;" priv="1"/>
+<table id="userlevels" name="userlevels" caption="userlevels" userlevel="-2,&quot;Anonymous&quot;,0;" priv="1"/>
+</project></configuration>

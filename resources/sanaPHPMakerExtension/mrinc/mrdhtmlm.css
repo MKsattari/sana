@@ -1,0 +1,35 @@
+	#dhtml_menu{	/* Menu object */
+		
+		margin:1px;
+		padding:0px;
+		width:150px;	/* Width of menu */
+	}
+	#dhtml_menu li{
+		margin-top:1px;	/* Space between each menu item */
+		
+		
+		/* Don't change these four values */
+		list-style-type:none;				
+		clear:both;
+		display:block;	
+		overflow:auto;
+	}
+	
+	#dhtml_menu li a{	/* Text rules for the menu items */
+		color:#000;	/* Black text color */
+		text-decoration:none;	/* No underline */
+		font-family: Tahoma;	/* Font to use */
+		letter-spacing:0px;	/* Extra space between each letter of the menu items */
+		font-size:xx-small;	/* Fixed font size */
+		/* font-weight:bold;	/* Bold font */
+		float:right;
+		background-color:#F1F1F1;
+		padding-left:3px;
+		padding-right:3px;
+		line-height:25px;	/* Height of menu links */
+
+	}
+	#dhtml_menu li div{
+		float:right;
+
+	}

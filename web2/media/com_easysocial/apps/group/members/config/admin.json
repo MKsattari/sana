@@ -1,0 +1,16 @@
+[
+    {
+        "title": "APP_GROUP_MEMBERS_SETTINGS_WIDGETS",
+        "desc": "APP_GROUP_MEMBERS_SETTINGS_WIDGEST_DESC",
+        "fields":
+        [
+            {
+                "label": "APP_GROUP_MEMBERS_SETTINGS_WIDGETS_SHOW_MEMBERS",
+                "tooltip": "APP_GROUP_MEMBERS_SETTINGS_WIDGETS_SHOW_MEMBERS_DESC",
+                "name": "show_members",
+                "type": "boolean",
+                "default": true
+            }
+        ]
+    }
+]

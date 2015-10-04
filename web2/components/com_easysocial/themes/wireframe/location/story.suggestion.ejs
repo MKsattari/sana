@@ -1,0 +1,19 @@
+<?php
+/**
+* @package 		EasySocial
+* @copyright	Copyright (C) 2010 - 2014 Stack Ideas Sdn Bhd. All rights reserved.
+* @license 		Proprietary Use License http://stackideas.com/licensing.html
+* @author 		Stack Ideas Sdn Bhd
+*/
+defined( '_JEXEC' ) or die( 'Unauthorized Access' );
+?>
+<div class="es-story-location-suggestion" data-story-location-suggestion>
+    [% if (location.fulladdress) { %]
+    <span class="formatted_address">[%= location.fulladdress %]</span>
+    [% } else { %]
+	<span class="formatted_address">[%= location.name %]</span>
+    [% if (location.address) { %]
+    <div class="fd-small">[%= location.address %]</div>
+    [% } %]
+    [% } %]
+</div>

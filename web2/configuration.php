@@ -54,8 +54,8 @@ class JConfig {
 	public $sef_suffix = '0';
 	public $unicodeslugs = '0';
 	public $feed_limit = '10';
-	public $log_path = '/home2/saminaa/public_html/logs';
-	public $tmp_path = '/home2/saminaa/public_html/tmp';
+	public $log_path = '/home2/saminaa/public_html/sana/web2/logs';
+	public $tmp_path = '/home2/saminaa/public_html/sana/web2/tmp';
 	public $lifetime = '15';
 	public $session_handler = 'database';
 }

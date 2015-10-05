@@ -49,7 +49,7 @@ $EW_FONT_PATH = realpath('./phpfont');
 define("EW_USE_ADODB", FALSE, TRUE); // Use ADOdb
 if (!defined("EW_USE_MYSQLI"))
 	define('EW_USE_MYSQLI', extension_loaded("mysqli"), TRUE); // Use MySQLi
-$EW_CONN["DB"] = array("conn" => NULL, "id" => "DB", "type" => "MYSQL", "host" => "localhost", "port" => 3306, "user" => "saminaa_sana", "pass" => "sana%%044004", "db" => "sana", "qs" => "`", "qe" => "`");
+$EW_CONN["DB"] = array("conn" => NULL, "id" => "DB", "type" => "MYSQL", "host" => "localhost", "port" => 3306, "user" => "saminaa_sana", "pass" => "sana%%044004", "db" => "saminaa_sana2", "qs" => "`", "qe" => "`");
 $EW_CONN[0] = &$EW_CONN["DB"];
 
 // Set up database error function

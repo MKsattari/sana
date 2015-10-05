@@ -6,7 +6,6 @@ ob_start(); // Turn on output buffering
 <?php include_once ((EW_USE_ADODB) ? "adodb5/adodb.inc.php" : "ewmysql12.php") ?>
 <?php include_once "phpfn12.php" ?>
 <?php include_once "sana_personinfo.php" ?>
-<?php include_once "sana_userinfo.php" ?>
 <?php include_once "userfn12.php" ?>
 <?php
 
@@ -244,7 +243,6 @@ class csana_person_view extends csana_person {
 	//
 	function __construct() {
 		global $conn, $Language;
-		global $UserTable, $UserTableConn;
 		$GLOBALS["Page"] = &$this;
 		$this->TokenTimeout = ew_SessionTimeoutTime();
 
@@ -272,9 +270,6 @@ class csana_person_view extends csana_person {
 		$this->ExportCsvUrl = $this->PageUrl() . "export=csv" . $KeyUrl;
 		$this->ExportPdfUrl = $this->PageUrl() . "export=pdf" . $KeyUrl;
 
-		// Table object (sana_user)
-		if (!isset($GLOBALS['sana_user'])) $GLOBALS['sana_user'] = new csana_user();
-
 		// Page ID
 		if (!defined("EW_PAGE_ID"))
 			define("EW_PAGE_ID", 'view', TRUE);
@@ -288,12 +283,6 @@ class csana_person_view extends csana_person {
 
 		// Open connection
 		if (!isset($conn)) $conn = ew_Connect($this->DBID);
-
-		// User table object (sana_user)
-		if (!isset($UserTable)) {
-			$UserTable = new csana_user();
-			$UserTableConn = Conn($UserTable->DBID);
-		}
 
 		// Export options
 		$this->ExportOptions = new cListOptions();
@@ -314,19 +303,6 @@ class csana_person_view extends csana_person {
 	//
 	function Page_Init() {
 		global $gsExport, $gsCustomExport, $gsExportFile, $UserProfile, $Language, $Security, $objForm;
-
-		// Security
-		$Security = new cAdvancedSecurity();
-		if (!$Security->IsLoggedIn()) $Security->AutoLogin();
-		if ($Security->IsLoggedIn()) $Security->TablePermission_Loading();
-		$Security->LoadCurrentUserLevel($this->ProjectID . $this->TableName);
-		if ($Security->IsLoggedIn()) $Security->TablePermission_Loaded();
-		if (!$Security->IsLoggedIn()) $this->Page_Terminate(ew_GetUrl("login.php"));
-		if ($Security->IsLoggedIn()) {
-			$Security->UserID_Loading();
-			$Security->LoadUserID();
-			$Security->UserID_Loaded();
-		}
 		$this->CurrentAction = (@$_GET["a"] <> "") ? $_GET["a"] : @$_POST["a_list"]; // Set up current action
 		$this->personID->Visible = !$this->IsAdd() && !$this->IsCopy() && !$this->IsGridAdd();
 
@@ -455,22 +431,22 @@ class csana_person_view extends csana_person {
 		// Add
 		$item = &$option->Add("add");
 		$item->Body = "<a class=\"ewAction ewAdd\" title=\"" . ew_HtmlTitle($Language->Phrase("ViewPageAddLink")) . "\" data-caption=\"" . ew_HtmlTitle($Language->Phrase("ViewPageAddLink")) . "\" href=\"" . ew_HtmlEncode($this->AddUrl) . "\">" . $Language->Phrase("ViewPageAddLink") . "</a>";
-		$item->Visible = ($this->AddUrl <> "" && $Security->CanAdd());
+		$item->Visible = ($this->AddUrl <> "");
 
 		// Edit
 		$item = &$option->Add("edit");
 		$item->Body = "<a class=\"ewAction ewEdit\" title=\"" . ew_HtmlTitle($Language->Phrase("ViewPageEditLink")) . "\" data-caption=\"" . ew_HtmlTitle($Language->Phrase("ViewPageEditLink")) . "\" href=\"" . ew_HtmlEncode($this->EditUrl) . "\">" . $Language->Phrase("ViewPageEditLink") . "</a>";
-		$item->Visible = ($this->EditUrl <> "" && $Security->CanEdit());
+		$item->Visible = ($this->EditUrl <> "");
 
 		// Copy
 		$item = &$option->Add("copy");
 		$item->Body = "<a class=\"ewAction ewCopy\" title=\"" . ew_HtmlTitle($Language->Phrase("ViewPageCopyLink")) . "\" data-caption=\"" . ew_HtmlTitle($Language->Phrase("ViewPageCopyLink")) . "\" href=\"" . ew_HtmlEncode($this->CopyUrl) . "\">" . $Language->Phrase("ViewPageCopyLink") . "</a>";
-		$item->Visible = ($this->CopyUrl <> "" && $Security->CanAdd());
+		$item->Visible = ($this->CopyUrl <> "");
 
 		// Delete
 		$item = &$option->Add("delete");
 		$item->Body = "<a class=\"ewAction ewDelete\" title=\"" . ew_HtmlTitle($Language->Phrase("ViewPageDeleteLink")) . "\" data-caption=\"" . ew_HtmlTitle($Language->Phrase("ViewPageDeleteLink")) . "\" href=\"" . ew_HtmlEncode($this->DeleteUrl) . "\">" . $Language->Phrase("ViewPageDeleteLink") . "</a>";
-		$item->Visible = ($this->DeleteUrl <> "" && $Security->CanDelete());
+		$item->Visible = ($this->DeleteUrl <> "");
 
 		// Set up action default
 		$option = &$options["action"];
@@ -553,14 +529,15 @@ class csana_person_view extends csana_person {
 		$this->lastName->setDbValue($rs->fields('lastName'));
 		$this->nationalID->setDbValue($rs->fields('nationalID'));
 		$this->nationalNumber->setDbValue($rs->fields('nationalNumber'));
+		$this->passportNumber->setDbValue($rs->fields('passportNumber'));
 		$this->fatherName->setDbValue($rs->fields('fatherName'));
 		$this->gender->setDbValue($rs->fields('gender'));
-		$this->country->setDbValue($rs->fields('country'));
-		$this->province->setDbValue($rs->fields('province'));
-		$this->county->setDbValue($rs->fields('county'));
-		$this->district->setDbValue($rs->fields('district'));
-		$this->city_ruralDistrict->setDbValue($rs->fields('city_ruralDistrict'));
-		$this->region_village->setDbValue($rs->fields('region_village'));
+		$this->locationLevel1->setDbValue($rs->fields('locationLevel1'));
+		$this->locationLevel2->setDbValue($rs->fields('locationLevel2'));
+		$this->locationLevel3->setDbValue($rs->fields('locationLevel3'));
+		$this->locationLevel4->setDbValue($rs->fields('locationLevel4'));
+		$this->locationLevel5->setDbValue($rs->fields('locationLevel5'));
+		$this->locationLevel6->setDbValue($rs->fields('locationLevel6'));
 		$this->address->setDbValue($rs->fields('address'));
 		$this->convoy->setDbValue($rs->fields('convoy'));
 		$this->convoyManager->setDbValue($rs->fields('convoyManager'));
@@ -577,7 +554,8 @@ class csana_person_view extends csana_person {
 		$this->_email->setDbValue($rs->fields('email'));
 		$this->temporaryResidence->setDbValue($rs->fields('temporaryResidence'));
 		$this->visitsCount->setDbValue($rs->fields('visitsCount'));
-		$this->picture->setDbValue($rs->fields('picture'));
+		$this->picture->Upload->DbValue = $rs->fields('picture');
+		$this->picture->CurrentValue = $this->picture->Upload->DbValue;
 		$this->registrationUser->setDbValue($rs->fields('registrationUser'));
 		$this->registrationDateTime->setDbValue($rs->fields('registrationDateTime'));
 		$this->registrationStation->setDbValue($rs->fields('registrationStation'));
@@ -594,14 +572,15 @@ class csana_person_view extends csana_person {
 		$this->lastName->DbValue = $row['lastName'];
 		$this->nationalID->DbValue = $row['nationalID'];
 		$this->nationalNumber->DbValue = $row['nationalNumber'];
+		$this->passportNumber->DbValue = $row['passportNumber'];
 		$this->fatherName->DbValue = $row['fatherName'];
 		$this->gender->DbValue = $row['gender'];
-		$this->country->DbValue = $row['country'];
-		$this->province->DbValue = $row['province'];
-		$this->county->DbValue = $row['county'];
-		$this->district->DbValue = $row['district'];
-		$this->city_ruralDistrict->DbValue = $row['city_ruralDistrict'];
-		$this->region_village->DbValue = $row['region_village'];
+		$this->locationLevel1->DbValue = $row['locationLevel1'];
+		$this->locationLevel2->DbValue = $row['locationLevel2'];
+		$this->locationLevel3->DbValue = $row['locationLevel3'];
+		$this->locationLevel4->DbValue = $row['locationLevel4'];
+		$this->locationLevel5->DbValue = $row['locationLevel5'];
+		$this->locationLevel6->DbValue = $row['locationLevel6'];
 		$this->address->DbValue = $row['address'];
 		$this->convoy->DbValue = $row['convoy'];
 		$this->convoyManager->DbValue = $row['convoyManager'];
@@ -618,7 +597,7 @@ class csana_person_view extends csana_person {
 		$this->_email->DbValue = $row['email'];
 		$this->temporaryResidence->DbValue = $row['temporaryResidence'];
 		$this->visitsCount->DbValue = $row['visitsCount'];
-		$this->picture->DbValue = $row['picture'];
+		$this->picture->Upload->DbValue = $row['picture'];
 		$this->registrationUser->DbValue = $row['registrationUser'];
 		$this->registrationDateTime->DbValue = $row['registrationDateTime'];
 		$this->registrationStation->DbValue = $row['registrationStation'];
@@ -647,14 +626,15 @@ class csana_person_view extends csana_person {
 		// lastName
 		// nationalID
 		// nationalNumber
+		// passportNumber
 		// fatherName
 		// gender
-		// country
-		// province
-		// county
-		// district
-		// city_ruralDistrict
-		// region_village
+		// locationLevel1
+		// locationLevel2
+		// locationLevel3
+		// locationLevel4
+		// locationLevel5
+		// locationLevel6
 		// address
 		// convoy
 		// convoyManager
@@ -700,37 +680,163 @@ class csana_person_view extends csana_person {
 		$this->nationalNumber->ViewValue = $this->nationalNumber->CurrentValue;
 		$this->nationalNumber->ViewCustomAttributes = "";
 
+		// passportNumber
+		$this->passportNumber->ViewValue = $this->passportNumber->CurrentValue;
+		$this->passportNumber->ViewCustomAttributes = "";
+
 		// fatherName
 		$this->fatherName->ViewValue = $this->fatherName->CurrentValue;
 		$this->fatherName->ViewCustomAttributes = "";
 
 		// gender
-		$this->gender->ViewValue = $this->gender->CurrentValue;
+		if (strval($this->gender->CurrentValue) <> "") {
+			$sFilterWrk = "`stateName`" . ew_SearchString("=", $this->gender->CurrentValue, EW_DATATYPE_STRING, "");
+		switch (@$gsLanguage) {
+			case "en":
+				$sSqlWrk = "SELECT `stateName`, `stateName` AS `DispFld`, '' AS `Disp2Fld`, '' AS `Disp3Fld`, '' AS `Disp4Fld` FROM `sana_state`";
+				$sWhereWrk = "";
+				break;
+			case "fa":
+				$sSqlWrk = "SELECT `stateName`, `stateName` AS `DispFld`, '' AS `Disp2Fld`, '' AS `Disp3Fld`, '' AS `Disp4Fld` FROM `sana_state`";
+				$sWhereWrk = "";
+				break;
+			default:
+				$sSqlWrk = "SELECT `stateName`, `stateName` AS `DispFld`, '' AS `Disp2Fld`, '' AS `Disp3Fld`, '' AS `Disp4Fld` FROM `sana_state`";
+				$sWhereWrk = "";
+				break;
+		}
+		$lookuptblfilter = "`stateLanguage` = '" . CurrentLanguageID() . "' AND `stateClass` = 'gender'";
+		ew_AddFilter($sWhereWrk, $lookuptblfilter);
+		ew_AddFilter($sWhereWrk, $sFilterWrk);
+		$this->Lookup_Selecting($this->gender, $sWhereWrk); // Call Lookup selecting
+		if ($sWhereWrk <> "") $sSqlWrk .= " WHERE " . $sWhereWrk;
+			$rswrk = Conn()->Execute($sSqlWrk);
+			if ($rswrk && !$rswrk->EOF) { // Lookup values found
+				$arwrk = array();
+				$arwrk[1] = $rswrk->fields('DispFld');
+				$this->gender->ViewValue = $this->gender->DisplayValue($arwrk);
+				$rswrk->Close();
+			} else {
+				$this->gender->ViewValue = $this->gender->CurrentValue;
+			}
+		} else {
+			$this->gender->ViewValue = NULL;
+		}
 		$this->gender->ViewCustomAttributes = "";
 
-		// country
-		$this->country->ViewValue = $this->country->CurrentValue;
-		$this->country->ViewCustomAttributes = "";
+		// locationLevel1
+		if (strval($this->locationLevel1->CurrentValue) <> "") {
+			$sFilterWrk = "`locationName`" . ew_SearchString("=", $this->locationLevel1->CurrentValue, EW_DATATYPE_STRING, "");
+		switch (@$gsLanguage) {
+			case "en":
+				$sSqlWrk = "SELECT `locationName`, `locationName` AS `DispFld`, '' AS `Disp2Fld`, '' AS `Disp3Fld`, '' AS `Disp4Fld` FROM `sana_location_level1`";
+				$sWhereWrk = "";
+				break;
+			case "fa":
+				$sSqlWrk = "SELECT `locationName`, `locationName` AS `DispFld`, '' AS `Disp2Fld`, '' AS `Disp3Fld`, '' AS `Disp4Fld` FROM `sana_location_level1`";
+				$sWhereWrk = "";
+				break;
+			default:
+				$sSqlWrk = "SELECT `locationName`, `locationName` AS `DispFld`, '' AS `Disp2Fld`, '' AS `Disp3Fld`, '' AS `Disp4Fld` FROM `sana_location_level1`";
+				$sWhereWrk = "";
+				break;
+		}
+		ew_AddFilter($sWhereWrk, $sFilterWrk);
+		$this->Lookup_Selecting($this->locationLevel1, $sWhereWrk); // Call Lookup selecting
+		if ($sWhereWrk <> "") $sSqlWrk .= " WHERE " . $sWhereWrk;
+			$rswrk = Conn()->Execute($sSqlWrk);
+			if ($rswrk && !$rswrk->EOF) { // Lookup values found
+				$arwrk = array();
+				$arwrk[1] = $rswrk->fields('DispFld');
+				$this->locationLevel1->ViewValue = $this->locationLevel1->DisplayValue($arwrk);
+				$rswrk->Close();
+			} else {
+				$this->locationLevel1->ViewValue = $this->locationLevel1->CurrentValue;
+			}
+		} else {
+			$this->locationLevel1->ViewValue = NULL;
+		}
+		$this->locationLevel1->ViewCustomAttributes = "";
 
-		// province
-		$this->province->ViewValue = $this->province->CurrentValue;
-		$this->province->ViewCustomAttributes = "";
+		// locationLevel2
+		if (strval($this->locationLevel2->CurrentValue) <> "") {
+			$sFilterWrk = "`locationName`" . ew_SearchString("=", $this->locationLevel2->CurrentValue, EW_DATATYPE_STRING, "");
+		switch (@$gsLanguage) {
+			case "en":
+				$sSqlWrk = "SELECT `locationName`, `locationName` AS `DispFld`, '' AS `Disp2Fld`, '' AS `Disp3Fld`, '' AS `Disp4Fld` FROM `sana_location_level2`";
+				$sWhereWrk = "";
+				break;
+			case "fa":
+				$sSqlWrk = "SELECT `locationName`, `locationName` AS `DispFld`, '' AS `Disp2Fld`, '' AS `Disp3Fld`, '' AS `Disp4Fld` FROM `sana_location_level2`";
+				$sWhereWrk = "";
+				break;
+			default:
+				$sSqlWrk = "SELECT `locationName`, `locationName` AS `DispFld`, '' AS `Disp2Fld`, '' AS `Disp3Fld`, '' AS `Disp4Fld` FROM `sana_location_level2`";
+				$sWhereWrk = "";
+				break;
+		}
+		ew_AddFilter($sWhereWrk, $sFilterWrk);
+		$this->Lookup_Selecting($this->locationLevel2, $sWhereWrk); // Call Lookup selecting
+		if ($sWhereWrk <> "") $sSqlWrk .= " WHERE " . $sWhereWrk;
+			$rswrk = Conn()->Execute($sSqlWrk);
+			if ($rswrk && !$rswrk->EOF) { // Lookup values found
+				$arwrk = array();
+				$arwrk[1] = $rswrk->fields('DispFld');
+				$this->locationLevel2->ViewValue = $this->locationLevel2->DisplayValue($arwrk);
+				$rswrk->Close();
+			} else {
+				$this->locationLevel2->ViewValue = $this->locationLevel2->CurrentValue;
+			}
+		} else {
+			$this->locationLevel2->ViewValue = NULL;
+		}
+		$this->locationLevel2->ViewCustomAttributes = "";
 
-		// county
-		$this->county->ViewValue = $this->county->CurrentValue;
-		$this->county->ViewCustomAttributes = "";
+		// locationLevel3
+		if (strval($this->locationLevel3->CurrentValue) <> "") {
+			$sFilterWrk = "`locationName`" . ew_SearchString("=", $this->locationLevel3->CurrentValue, EW_DATATYPE_STRING, "");
+		switch (@$gsLanguage) {
+			case "en":
+				$sSqlWrk = "SELECT `locationName`, `locationName` AS `DispFld`, '' AS `Disp2Fld`, '' AS `Disp3Fld`, '' AS `Disp4Fld` FROM `sana_location_level3`";
+				$sWhereWrk = "";
+				break;
+			case "fa":
+				$sSqlWrk = "SELECT `locationName`, `locationName` AS `DispFld`, '' AS `Disp2Fld`, '' AS `Disp3Fld`, '' AS `Disp4Fld` FROM `sana_location_level3`";
+				$sWhereWrk = "";
+				break;
+			default:
+				$sSqlWrk = "SELECT `locationName`, `locationName` AS `DispFld`, '' AS `Disp2Fld`, '' AS `Disp3Fld`, '' AS `Disp4Fld` FROM `sana_location_level3`";
+				$sWhereWrk = "";
+				break;
+		}
+		ew_AddFilter($sWhereWrk, $sFilterWrk);
+		$this->Lookup_Selecting($this->locationLevel3, $sWhereWrk); // Call Lookup selecting
+		if ($sWhereWrk <> "") $sSqlWrk .= " WHERE " . $sWhereWrk;
+			$rswrk = Conn()->Execute($sSqlWrk);
+			if ($rswrk && !$rswrk->EOF) { // Lookup values found
+				$arwrk = array();
+				$arwrk[1] = $rswrk->fields('DispFld');
+				$this->locationLevel3->ViewValue = $this->locationLevel3->DisplayValue($arwrk);
+				$rswrk->Close();
+			} else {
+				$this->locationLevel3->ViewValue = $this->locationLevel3->CurrentValue;
+			}
+		} else {
+			$this->locationLevel3->ViewValue = NULL;
+		}
+		$this->locationLevel3->ViewCustomAttributes = "";
 
-		// district
-		$this->district->ViewValue = $this->district->CurrentValue;
-		$this->district->ViewCustomAttributes = "";
+		// locationLevel4
+		$this->locationLevel4->ViewValue = $this->locationLevel4->CurrentValue;
+		$this->locationLevel4->ViewCustomAttributes = "";
 
-		// city_ruralDistrict
-		$this->city_ruralDistrict->ViewValue = $this->city_ruralDistrict->CurrentValue;
-		$this->city_ruralDistrict->ViewCustomAttributes = "";
+		// locationLevel5
+		$this->locationLevel5->ViewValue = $this->locationLevel5->CurrentValue;
+		$this->locationLevel5->ViewCustomAttributes = "";
 
-		// region_village
-		$this->region_village->ViewValue = $this->region_village->CurrentValue;
-		$this->region_village->ViewCustomAttributes = "";
+		// locationLevel6
+		$this->locationLevel6->ViewValue = $this->locationLevel6->CurrentValue;
+		$this->locationLevel6->ViewCustomAttributes = "";
 
 		// address
 		$this->address->ViewValue = $this->address->CurrentValue;
@@ -749,7 +855,39 @@ class csana_person_view extends csana_person {
 		$this->followersName->ViewCustomAttributes = "";
 
 		// status
-		$this->status->ViewValue = $this->status->CurrentValue;
+		if (strval($this->status->CurrentValue) <> "") {
+			$sFilterWrk = "`stateName`" . ew_SearchString("=", $this->status->CurrentValue, EW_DATATYPE_STRING, "");
+		switch (@$gsLanguage) {
+			case "en":
+				$sSqlWrk = "SELECT `stateName`, `stateName` AS `DispFld`, '' AS `Disp2Fld`, '' AS `Disp3Fld`, '' AS `Disp4Fld` FROM `sana_state`";
+				$sWhereWrk = "";
+				break;
+			case "fa":
+				$sSqlWrk = "SELECT `stateName`, `stateName` AS `DispFld`, '' AS `Disp2Fld`, '' AS `Disp3Fld`, '' AS `Disp4Fld` FROM `sana_state`";
+				$sWhereWrk = "";
+				break;
+			default:
+				$sSqlWrk = "SELECT `stateName`, `stateName` AS `DispFld`, '' AS `Disp2Fld`, '' AS `Disp3Fld`, '' AS `Disp4Fld` FROM `sana_state`";
+				$sWhereWrk = "";
+				break;
+		}
+		$lookuptblfilter = "`stateLanguage` = '" . CurrentLanguageID() . "' AND `stateClass` = 'person'";
+		ew_AddFilter($sWhereWrk, $lookuptblfilter);
+		ew_AddFilter($sWhereWrk, $sFilterWrk);
+		$this->Lookup_Selecting($this->status, $sWhereWrk); // Call Lookup selecting
+		if ($sWhereWrk <> "") $sSqlWrk .= " WHERE " . $sWhereWrk;
+			$rswrk = Conn()->Execute($sSqlWrk);
+			if ($rswrk && !$rswrk->EOF) { // Lookup values found
+				$arwrk = array();
+				$arwrk[1] = $rswrk->fields('DispFld');
+				$this->status->ViewValue = $this->status->DisplayValue($arwrk);
+				$rswrk->Close();
+			} else {
+				$this->status->ViewValue = $this->status->CurrentValue;
+			}
+		} else {
+			$this->status->ViewValue = NULL;
+		}
 		$this->status->ViewCustomAttributes = "";
 
 		// isolatedLocation
@@ -761,7 +899,39 @@ class csana_person_view extends csana_person {
 		$this->birthDate->ViewCustomAttributes = "";
 
 		// ageRange
-		$this->ageRange->ViewValue = $this->ageRange->CurrentValue;
+		if (strval($this->ageRange->CurrentValue) <> "") {
+			$sFilterWrk = "`stateName`" . ew_SearchString("=", $this->ageRange->CurrentValue, EW_DATATYPE_STRING, "");
+		switch (@$gsLanguage) {
+			case "en":
+				$sSqlWrk = "SELECT `stateName`, `stateName` AS `DispFld`, '' AS `Disp2Fld`, '' AS `Disp3Fld`, '' AS `Disp4Fld` FROM `sana_state`";
+				$sWhereWrk = "";
+				break;
+			case "fa":
+				$sSqlWrk = "SELECT `stateName`, `stateName` AS `DispFld`, '' AS `Disp2Fld`, '' AS `Disp3Fld`, '' AS `Disp4Fld` FROM `sana_state`";
+				$sWhereWrk = "";
+				break;
+			default:
+				$sSqlWrk = "SELECT `stateName`, `stateName` AS `DispFld`, '' AS `Disp2Fld`, '' AS `Disp3Fld`, '' AS `Disp4Fld` FROM `sana_state`";
+				$sWhereWrk = "";
+				break;
+		}
+		$lookuptblfilter = " `stateClass` = 'age' ";
+		ew_AddFilter($sWhereWrk, $lookuptblfilter);
+		ew_AddFilter($sWhereWrk, $sFilterWrk);
+		$this->Lookup_Selecting($this->ageRange, $sWhereWrk); // Call Lookup selecting
+		if ($sWhereWrk <> "") $sSqlWrk .= " WHERE " . $sWhereWrk;
+			$rswrk = Conn()->Execute($sSqlWrk);
+			if ($rswrk && !$rswrk->EOF) { // Lookup values found
+				$arwrk = array();
+				$arwrk[1] = $rswrk->fields('DispFld');
+				$this->ageRange->ViewValue = $this->ageRange->DisplayValue($arwrk);
+				$rswrk->Close();
+			} else {
+				$this->ageRange->ViewValue = $this->ageRange->CurrentValue;
+			}
+		} else {
+			$this->ageRange->ViewValue = NULL;
+		}
 		$this->ageRange->ViewCustomAttributes = "";
 
 		// dress1
@@ -797,7 +967,14 @@ class csana_person_view extends csana_person {
 		$this->visitsCount->ViewCustomAttributes = "";
 
 		// picture
-		$this->picture->ViewValue = $this->picture->CurrentValue;
+		if (!ew_Empty($this->picture->Upload->DbValue)) {
+			$this->picture->ImageWidth = 70;
+			$this->picture->ImageHeight = 70;
+			$this->picture->ImageAlt = $this->picture->FldAlt();
+			$this->picture->ViewValue = $this->picture->Upload->DbValue;
+		} else {
+			$this->picture->ViewValue = "";
+		}
 		$this->picture->ViewCustomAttributes = "";
 
 		// registrationUser
@@ -847,6 +1024,11 @@ class csana_person_view extends csana_person {
 			$this->nationalNumber->HrefValue = "";
 			$this->nationalNumber->TooltipValue = "";
 
+			// passportNumber
+			$this->passportNumber->LinkCustomAttributes = "";
+			$this->passportNumber->HrefValue = "";
+			$this->passportNumber->TooltipValue = "";
+
 			// fatherName
 			$this->fatherName->LinkCustomAttributes = "";
 			$this->fatherName->HrefValue = "";
@@ -857,35 +1039,35 @@ class csana_person_view extends csana_person {
 			$this->gender->HrefValue = "";
 			$this->gender->TooltipValue = "";
 
-			// country
-			$this->country->LinkCustomAttributes = "";
-			$this->country->HrefValue = "";
-			$this->country->TooltipValue = "";
+			// locationLevel1
+			$this->locationLevel1->LinkCustomAttributes = "";
+			$this->locationLevel1->HrefValue = "";
+			$this->locationLevel1->TooltipValue = "";
 
-			// province
-			$this->province->LinkCustomAttributes = "";
-			$this->province->HrefValue = "";
-			$this->province->TooltipValue = "";
+			// locationLevel2
+			$this->locationLevel2->LinkCustomAttributes = "";
+			$this->locationLevel2->HrefValue = "";
+			$this->locationLevel2->TooltipValue = "";
 
-			// county
-			$this->county->LinkCustomAttributes = "";
-			$this->county->HrefValue = "";
-			$this->county->TooltipValue = "";
+			// locationLevel3
+			$this->locationLevel3->LinkCustomAttributes = "";
+			$this->locationLevel3->HrefValue = "";
+			$this->locationLevel3->TooltipValue = "";
 
-			// district
-			$this->district->LinkCustomAttributes = "";
-			$this->district->HrefValue = "";
-			$this->district->TooltipValue = "";
+			// locationLevel4
+			$this->locationLevel4->LinkCustomAttributes = "";
+			$this->locationLevel4->HrefValue = "";
+			$this->locationLevel4->TooltipValue = "";
 
-			// city_ruralDistrict
-			$this->city_ruralDistrict->LinkCustomAttributes = "";
-			$this->city_ruralDistrict->HrefValue = "";
-			$this->city_ruralDistrict->TooltipValue = "";
+			// locationLevel5
+			$this->locationLevel5->LinkCustomAttributes = "";
+			$this->locationLevel5->HrefValue = "";
+			$this->locationLevel5->TooltipValue = "";
 
-			// region_village
-			$this->region_village->LinkCustomAttributes = "";
-			$this->region_village->HrefValue = "";
-			$this->region_village->TooltipValue = "";
+			// locationLevel6
+			$this->locationLevel6->LinkCustomAttributes = "";
+			$this->locationLevel6->HrefValue = "";
+			$this->locationLevel6->TooltipValue = "";
 
 			// address
 			$this->address->LinkCustomAttributes = "";
@@ -969,8 +1151,25 @@ class csana_person_view extends csana_person {
 
 			// picture
 			$this->picture->LinkCustomAttributes = "";
-			$this->picture->HrefValue = "";
+			if (!ew_Empty($this->picture->Upload->DbValue)) {
+				$this->picture->HrefValue = ew_GetFileUploadUrl($this->picture, $this->picture->Upload->DbValue); // Add prefix/suffix
+				$this->picture->LinkAttrs["target"] = ""; // Add target
+				if ($this->Export <> "") $this->picture->HrefValue = ew_ConvertFullUrl($this->picture->HrefValue);
+			} else {
+				$this->picture->HrefValue = "";
+			}
+			$this->picture->HrefValue2 = $this->picture->UploadPath . $this->picture->Upload->DbValue;
 			$this->picture->TooltipValue = "";
+			if ($this->picture->UseColorbox) {
+				$this->picture->LinkAttrs["title"] = $Language->Phrase("ViewImageGallery");
+				$this->picture->LinkAttrs["data-rel"] = "sana_person_x_picture";
+
+				//$this->picture->LinkAttrs["class"] = "ewLightbox ewTooltip img-thumbnail";
+				//$this->picture->LinkAttrs["data-placement"] = "bottom";
+				//$this->picture->LinkAttrs["data-container"] = "body";
+
+				$this->picture->LinkAttrs["class"] = "ewLightbox img-thumbnail";
+			}
 
 			// registrationUser
 			$this->registrationUser->LinkCustomAttributes = "";
@@ -1141,8 +1340,14 @@ fsana_personview.ValidateRequired = false;
 <?php } ?>
 
 // Dynamic selection lists
-// Form object for search
+fsana_personview.Lists["x_gender"] = {"LinkField":"x_stateName","Ajax":true,"AutoFill":false,"DisplayFields":["x_stateName","","",""],"ParentFields":[],"ChildFields":[],"FilterFields":[],"Options":[],"Template":""};
+fsana_personview.Lists["x_locationLevel1"] = {"LinkField":"x_locationName","Ajax":true,"AutoFill":false,"DisplayFields":["x_locationName","","",""],"ParentFields":[],"ChildFields":["x_locationLevel2"],"FilterFields":[],"Options":[],"Template":""};
+fsana_personview.Lists["x_locationLevel2"] = {"LinkField":"x_locationName","Ajax":true,"AutoFill":false,"DisplayFields":["x_locationName","","",""],"ParentFields":[],"ChildFields":["x_locationLevel3"],"FilterFields":[],"Options":[],"Template":""};
+fsana_personview.Lists["x_locationLevel3"] = {"LinkField":"x_locationName","Ajax":true,"AutoFill":false,"DisplayFields":["x_locationName","","",""],"ParentFields":[],"ChildFields":[],"FilterFields":[],"Options":[],"Template":""};
+fsana_personview.Lists["x_status"] = {"LinkField":"x_stateName","Ajax":true,"AutoFill":false,"DisplayFields":["x_stateName","","",""],"ParentFields":[],"ChildFields":[],"FilterFields":[],"Options":[],"Template":""};
+fsana_personview.Lists["x_ageRange"] = {"LinkField":"x_stateName","Ajax":true,"AutoFill":false,"DisplayFields":["x_stateName","","",""],"ParentFields":[],"ChildFields":[],"FilterFields":[],"Options":[],"Template":""};
 
+// Form object for search
 </script>
 <script type="text/javascript">
 
@@ -1223,6 +1428,17 @@ $sana_person_view->ShowMessage();
 </td>
 	</tr>
 <?php } ?>
+<?php if ($sana_person->passportNumber->Visible) { // passportNumber ?>
+	<tr id="r_passportNumber">
+		<td><span id="elh_sana_person_passportNumber"><?php echo $sana_person->passportNumber->FldCaption() ?></span></td>
+		<td data-name="passportNumber"<?php echo $sana_person->passportNumber->CellAttributes() ?>>
+<span id="el_sana_person_passportNumber">
+<span<?php echo $sana_person->passportNumber->ViewAttributes() ?>>
+<?php echo $sana_person->passportNumber->ViewValue ?></span>
+</span>
+</td>
+	</tr>
+<?php } ?>
 <?php if ($sana_person->fatherName->Visible) { // fatherName ?>
 	<tr id="r_fatherName">
 		<td><span id="elh_sana_person_fatherName"><?php echo $sana_person->fatherName->FldCaption() ?></span></td>
@@ -1245,68 +1461,68 @@ $sana_person_view->ShowMessage();
 </td>
 	</tr>
 <?php } ?>
-<?php if ($sana_person->country->Visible) { // country ?>
-	<tr id="r_country">
-		<td><span id="elh_sana_person_country"><?php echo $sana_person->country->FldCaption() ?></span></td>
-		<td data-name="country"<?php echo $sana_person->country->CellAttributes() ?>>
-<span id="el_sana_person_country">
-<span<?php echo $sana_person->country->ViewAttributes() ?>>
-<?php echo $sana_person->country->ViewValue ?></span>
+<?php if ($sana_person->locationLevel1->Visible) { // locationLevel1 ?>
+	<tr id="r_locationLevel1">
+		<td><span id="elh_sana_person_locationLevel1"><?php echo $sana_person->locationLevel1->FldCaption() ?></span></td>
+		<td data-name="locationLevel1"<?php echo $sana_person->locationLevel1->CellAttributes() ?>>
+<span id="el_sana_person_locationLevel1">
+<span<?php echo $sana_person->locationLevel1->ViewAttributes() ?>>
+<?php echo $sana_person->locationLevel1->ViewValue ?></span>
 </span>
 </td>
 	</tr>
 <?php } ?>
-<?php if ($sana_person->province->Visible) { // province ?>
-	<tr id="r_province">
-		<td><span id="elh_sana_person_province"><?php echo $sana_person->province->FldCaption() ?></span></td>
-		<td data-name="province"<?php echo $sana_person->province->CellAttributes() ?>>
-<span id="el_sana_person_province">
-<span<?php echo $sana_person->province->ViewAttributes() ?>>
-<?php echo $sana_person->province->ViewValue ?></span>
+<?php if ($sana_person->locationLevel2->Visible) { // locationLevel2 ?>
+	<tr id="r_locationLevel2">
+		<td><span id="elh_sana_person_locationLevel2"><?php echo $sana_person->locationLevel2->FldCaption() ?></span></td>
+		<td data-name="locationLevel2"<?php echo $sana_person->locationLevel2->CellAttributes() ?>>
+<span id="el_sana_person_locationLevel2">
+<span<?php echo $sana_person->locationLevel2->ViewAttributes() ?>>
+<?php echo $sana_person->locationLevel2->ViewValue ?></span>
 </span>
 </td>
 	</tr>
 <?php } ?>
-<?php if ($sana_person->county->Visible) { // county ?>
-	<tr id="r_county">
-		<td><span id="elh_sana_person_county"><?php echo $sana_person->county->FldCaption() ?></span></td>
-		<td data-name="county"<?php echo $sana_person->county->CellAttributes() ?>>
-<span id="el_sana_person_county">
-<span<?php echo $sana_person->county->ViewAttributes() ?>>
-<?php echo $sana_person->county->ViewValue ?></span>
+<?php if ($sana_person->locationLevel3->Visible) { // locationLevel3 ?>
+	<tr id="r_locationLevel3">
+		<td><span id="elh_sana_person_locationLevel3"><?php echo $sana_person->locationLevel3->FldCaption() ?></span></td>
+		<td data-name="locationLevel3"<?php echo $sana_person->locationLevel3->CellAttributes() ?>>
+<span id="el_sana_person_locationLevel3">
+<span<?php echo $sana_person->locationLevel3->ViewAttributes() ?>>
+<?php echo $sana_person->locationLevel3->ViewValue ?></span>
 </span>
 </td>
 	</tr>
 <?php } ?>
-<?php if ($sana_person->district->Visible) { // district ?>
-	<tr id="r_district">
-		<td><span id="elh_sana_person_district"><?php echo $sana_person->district->FldCaption() ?></span></td>
-		<td data-name="district"<?php echo $sana_person->district->CellAttributes() ?>>
-<span id="el_sana_person_district">
-<span<?php echo $sana_person->district->ViewAttributes() ?>>
-<?php echo $sana_person->district->ViewValue ?></span>
+<?php if ($sana_person->locationLevel4->Visible) { // locationLevel4 ?>
+	<tr id="r_locationLevel4">
+		<td><span id="elh_sana_person_locationLevel4"><?php echo $sana_person->locationLevel4->FldCaption() ?></span></td>
+		<td data-name="locationLevel4"<?php echo $sana_person->locationLevel4->CellAttributes() ?>>
+<span id="el_sana_person_locationLevel4">
+<span<?php echo $sana_person->locationLevel4->ViewAttributes() ?>>
+<?php echo $sana_person->locationLevel4->ViewValue ?></span>
 </span>
 </td>
 	</tr>
 <?php } ?>
-<?php if ($sana_person->city_ruralDistrict->Visible) { // city_ruralDistrict ?>
-	<tr id="r_city_ruralDistrict">
-		<td><span id="elh_sana_person_city_ruralDistrict"><?php echo $sana_person->city_ruralDistrict->FldCaption() ?></span></td>
-		<td data-name="city_ruralDistrict"<?php echo $sana_person->city_ruralDistrict->CellAttributes() ?>>
-<span id="el_sana_person_city_ruralDistrict">
-<span<?php echo $sana_person->city_ruralDistrict->ViewAttributes() ?>>
-<?php echo $sana_person->city_ruralDistrict->ViewValue ?></span>
+<?php if ($sana_person->locationLevel5->Visible) { // locationLevel5 ?>
+	<tr id="r_locationLevel5">
+		<td><span id="elh_sana_person_locationLevel5"><?php echo $sana_person->locationLevel5->FldCaption() ?></span></td>
+		<td data-name="locationLevel5"<?php echo $sana_person->locationLevel5->CellAttributes() ?>>
+<span id="el_sana_person_locationLevel5">
+<span<?php echo $sana_person->locationLevel5->ViewAttributes() ?>>
+<?php echo $sana_person->locationLevel5->ViewValue ?></span>
 </span>
 </td>
 	</tr>
 <?php } ?>
-<?php if ($sana_person->region_village->Visible) { // region_village ?>
-	<tr id="r_region_village">
-		<td><span id="elh_sana_person_region_village"><?php echo $sana_person->region_village->FldCaption() ?></span></td>
-		<td data-name="region_village"<?php echo $sana_person->region_village->CellAttributes() ?>>
-<span id="el_sana_person_region_village">
-<span<?php echo $sana_person->region_village->ViewAttributes() ?>>
-<?php echo $sana_person->region_village->ViewValue ?></span>
+<?php if ($sana_person->locationLevel6->Visible) { // locationLevel6 ?>
+	<tr id="r_locationLevel6">
+		<td><span id="elh_sana_person_locationLevel6"><?php echo $sana_person->locationLevel6->FldCaption() ?></span></td>
+		<td data-name="locationLevel6"<?php echo $sana_person->locationLevel6->CellAttributes() ?>>
+<span id="el_sana_person_locationLevel6">
+<span<?php echo $sana_person->locationLevel6->ViewAttributes() ?>>
+<?php echo $sana_person->locationLevel6->ViewValue ?></span>
 </span>
 </td>
 	</tr>
@@ -1492,8 +1708,9 @@ $sana_person_view->ShowMessage();
 		<td><span id="elh_sana_person_picture"><?php echo $sana_person->picture->FldCaption() ?></span></td>
 		<td data-name="picture"<?php echo $sana_person->picture->CellAttributes() ?>>
 <span id="el_sana_person_picture">
-<span<?php echo $sana_person->picture->ViewAttributes() ?>>
-<?php echo $sana_person->picture->ViewValue ?></span>
+<span>
+<?php echo ew_GetFileViewTag($sana_person->picture, $sana_person->picture->ViewValue) ?>
+</span>
 </span>
 </td>
 	</tr>

@@ -6,7 +6,6 @@ ob_start(); // Turn on output buffering
 <?php include_once ((EW_USE_ADODB) ? "adodb5/adodb.inc.php" : "ewmysql12.php") ?>
 <?php include_once "phpfn12.php" ?>
 <?php include_once "sana_objectinfo.php" ?>
-<?php include_once "sana_userinfo.php" ?>
 <?php include_once "userfn12.php" ?>
 <?php
 
@@ -244,7 +243,6 @@ class csana_object_view extends csana_object {
 	//
 	function __construct() {
 		global $conn, $Language;
-		global $UserTable, $UserTableConn;
 		$GLOBALS["Page"] = &$this;
 		$this->TokenTimeout = ew_SessionTimeoutTime();
 
@@ -272,9 +270,6 @@ class csana_object_view extends csana_object {
 		$this->ExportCsvUrl = $this->PageUrl() . "export=csv" . $KeyUrl;
 		$this->ExportPdfUrl = $this->PageUrl() . "export=pdf" . $KeyUrl;
 
-		// Table object (sana_user)
-		if (!isset($GLOBALS['sana_user'])) $GLOBALS['sana_user'] = new csana_user();
-
 		// Page ID
 		if (!defined("EW_PAGE_ID"))
 			define("EW_PAGE_ID", 'view', TRUE);
@@ -288,12 +283,6 @@ class csana_object_view extends csana_object {
 
 		// Open connection
 		if (!isset($conn)) $conn = ew_Connect($this->DBID);
-
-		// User table object (sana_user)
-		if (!isset($UserTable)) {
-			$UserTable = new csana_user();
-			$UserTableConn = Conn($UserTable->DBID);
-		}
 
 		// Export options
 		$this->ExportOptions = new cListOptions();
@@ -314,19 +303,6 @@ class csana_object_view extends csana_object {
 	//
 	function Page_Init() {
 		global $gsExport, $gsCustomExport, $gsExportFile, $UserProfile, $Language, $Security, $objForm;
-
-		// Security
-		$Security = new cAdvancedSecurity();
-		if (!$Security->IsLoggedIn()) $Security->AutoLogin();
-		if ($Security->IsLoggedIn()) $Security->TablePermission_Loading();
-		$Security->LoadCurrentUserLevel($this->ProjectID . $this->TableName);
-		if ($Security->IsLoggedIn()) $Security->TablePermission_Loaded();
-		if (!$Security->IsLoggedIn()) $this->Page_Terminate(ew_GetUrl("login.php"));
-		if ($Security->IsLoggedIn()) {
-			$Security->UserID_Loading();
-			$Security->LoadUserID();
-			$Security->UserID_Loaded();
-		}
 		$this->CurrentAction = (@$_GET["a"] <> "") ? $_GET["a"] : @$_POST["a_list"]; // Set up current action
 		$this->objectID->Visible = !$this->IsAdd() && !$this->IsCopy() && !$this->IsGridAdd();
 
@@ -455,22 +431,22 @@ class csana_object_view extends csana_object {
 		// Add
 		$item = &$option->Add("add");
 		$item->Body = "<a class=\"ewAction ewAdd\" title=\"" . ew_HtmlTitle($Language->Phrase("ViewPageAddLink")) . "\" data-caption=\"" . ew_HtmlTitle($Language->Phrase("ViewPageAddLink")) . "\" href=\"" . ew_HtmlEncode($this->AddUrl) . "\">" . $Language->Phrase("ViewPageAddLink") . "</a>";
-		$item->Visible = ($this->AddUrl <> "" && $Security->CanAdd());
+		$item->Visible = ($this->AddUrl <> "");
 
 		// Edit
 		$item = &$option->Add("edit");
 		$item->Body = "<a class=\"ewAction ewEdit\" title=\"" . ew_HtmlTitle($Language->Phrase("ViewPageEditLink")) . "\" data-caption=\"" . ew_HtmlTitle($Language->Phrase("ViewPageEditLink")) . "\" href=\"" . ew_HtmlEncode($this->EditUrl) . "\">" . $Language->Phrase("ViewPageEditLink") . "</a>";
-		$item->Visible = ($this->EditUrl <> "" && $Security->CanEdit());
+		$item->Visible = ($this->EditUrl <> "");
 
 		// Copy
 		$item = &$option->Add("copy");
 		$item->Body = "<a class=\"ewAction ewCopy\" title=\"" . ew_HtmlTitle($Language->Phrase("ViewPageCopyLink")) . "\" data-caption=\"" . ew_HtmlTitle($Language->Phrase("ViewPageCopyLink")) . "\" href=\"" . ew_HtmlEncode($this->CopyUrl) . "\">" . $Language->Phrase("ViewPageCopyLink") . "</a>";
-		$item->Visible = ($this->CopyUrl <> "" && $Security->CanAdd());
+		$item->Visible = ($this->CopyUrl <> "");
 
 		// Delete
 		$item = &$option->Add("delete");
 		$item->Body = "<a class=\"ewAction ewDelete\" title=\"" . ew_HtmlTitle($Language->Phrase("ViewPageDeleteLink")) . "\" data-caption=\"" . ew_HtmlTitle($Language->Phrase("ViewPageDeleteLink")) . "\" href=\"" . ew_HtmlEncode($this->DeleteUrl) . "\">" . $Language->Phrase("ViewPageDeleteLink") . "</a>";
-		$item->Visible = ($this->DeleteUrl <> "" && $Security->CanDelete());
+		$item->Visible = ($this->DeleteUrl <> "");
 
 		// Set up action default
 		$option = &$options["action"];

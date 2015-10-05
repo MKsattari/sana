@@ -12,14 +12,15 @@ class csana_person extends cTable {
 	var $lastName;
 	var $nationalID;
 	var $nationalNumber;
+	var $passportNumber;
 	var $fatherName;
 	var $gender;
-	var $country;
-	var $province;
-	var $county;
-	var $district;
-	var $city_ruralDistrict;
-	var $region_village;
+	var $locationLevel1;
+	var $locationLevel2;
+	var $locationLevel3;
+	var $locationLevel4;
+	var $locationLevel5;
+	var $locationLevel6;
 	var $address;
 	var $convoy;
 	var $convoyManager;
@@ -94,37 +95,41 @@ class csana_person extends cTable {
 		$this->nationalNumber = new cField('sana_person', 'sana_person', 'x_nationalNumber', 'nationalNumber', '`nationalNumber`', '`nationalNumber`', 200, -1, FALSE, '`nationalNumber`', FALSE, FALSE, FALSE, 'FORMATTED TEXT', 'TEXT');
 		$this->fields['nationalNumber'] = &$this->nationalNumber;
 
+		// passportNumber
+		$this->passportNumber = new cField('sana_person', 'sana_person', 'x_passportNumber', 'passportNumber', '`passportNumber`', '`passportNumber`', 200, -1, FALSE, '`passportNumber`', FALSE, FALSE, FALSE, 'FORMATTED TEXT', 'TEXT');
+		$this->fields['passportNumber'] = &$this->passportNumber;
+
 		// fatherName
 		$this->fatherName = new cField('sana_person', 'sana_person', 'x_fatherName', 'fatherName', '`fatherName`', '`fatherName`', 200, -1, FALSE, '`fatherName`', FALSE, FALSE, FALSE, 'FORMATTED TEXT', 'TEXT');
 		$this->fields['fatherName'] = &$this->fatherName;
 
 		// gender
-		$this->gender = new cField('sana_person', 'sana_person', 'x_gender', 'gender', '`gender`', '`gender`', 200, -1, FALSE, '`gender`', FALSE, FALSE, FALSE, 'FORMATTED TEXT', 'TEXT');
+		$this->gender = new cField('sana_person', 'sana_person', 'x_gender', 'gender', '`gender`', '`gender`', 200, -1, FALSE, '`gender`', FALSE, FALSE, FALSE, 'FORMATTED TEXT', 'SELECT');
 		$this->fields['gender'] = &$this->gender;
 
-		// country
-		$this->country = new cField('sana_person', 'sana_person', 'x_country', 'country', '`country`', '`country`', 200, -1, FALSE, '`country`', FALSE, FALSE, FALSE, 'FORMATTED TEXT', 'TEXT');
-		$this->fields['country'] = &$this->country;
+		// locationLevel1
+		$this->locationLevel1 = new cField('sana_person', 'sana_person', 'x_locationLevel1', 'locationLevel1', '`locationLevel1`', '`locationLevel1`', 200, -1, FALSE, '`locationLevel1`', FALSE, FALSE, FALSE, 'FORMATTED TEXT', 'SELECT');
+		$this->fields['locationLevel1'] = &$this->locationLevel1;
 
-		// province
-		$this->province = new cField('sana_person', 'sana_person', 'x_province', 'province', '`province`', '`province`', 200, -1, FALSE, '`province`', FALSE, FALSE, FALSE, 'FORMATTED TEXT', 'TEXT');
-		$this->fields['province'] = &$this->province;
+		// locationLevel2
+		$this->locationLevel2 = new cField('sana_person', 'sana_person', 'x_locationLevel2', 'locationLevel2', '`locationLevel2`', '`locationLevel2`', 200, -1, FALSE, '`locationLevel2`', FALSE, FALSE, FALSE, 'FORMATTED TEXT', 'SELECT');
+		$this->fields['locationLevel2'] = &$this->locationLevel2;
 
-		// county
-		$this->county = new cField('sana_person', 'sana_person', 'x_county', 'county', '`county`', '`county`', 200, -1, FALSE, '`county`', FALSE, FALSE, FALSE, 'FORMATTED TEXT', 'TEXT');
-		$this->fields['county'] = &$this->county;
+		// locationLevel3
+		$this->locationLevel3 = new cField('sana_person', 'sana_person', 'x_locationLevel3', 'locationLevel3', '`locationLevel3`', '`locationLevel3`', 200, -1, FALSE, '`locationLevel3`', FALSE, FALSE, FALSE, 'FORMATTED TEXT', 'SELECT');
+		$this->fields['locationLevel3'] = &$this->locationLevel3;
 
-		// district
-		$this->district = new cField('sana_person', 'sana_person', 'x_district', 'district', '`district`', '`district`', 200, -1, FALSE, '`district`', FALSE, FALSE, FALSE, 'FORMATTED TEXT', 'TEXT');
-		$this->fields['district'] = &$this->district;
+		// locationLevel4
+		$this->locationLevel4 = new cField('sana_person', 'sana_person', 'x_locationLevel4', 'locationLevel4', '`locationLevel4`', '`locationLevel4`', 200, -1, FALSE, '`locationLevel4`', FALSE, FALSE, FALSE, 'FORMATTED TEXT', 'TEXT');
+		$this->fields['locationLevel4'] = &$this->locationLevel4;
 
-		// city_ruralDistrict
-		$this->city_ruralDistrict = new cField('sana_person', 'sana_person', 'x_city_ruralDistrict', 'city_ruralDistrict', '`city_ruralDistrict`', '`city_ruralDistrict`', 200, -1, FALSE, '`city_ruralDistrict`', FALSE, FALSE, FALSE, 'FORMATTED TEXT', 'TEXT');
-		$this->fields['city_ruralDistrict'] = &$this->city_ruralDistrict;
+		// locationLevel5
+		$this->locationLevel5 = new cField('sana_person', 'sana_person', 'x_locationLevel5', 'locationLevel5', '`locationLevel5`', '`locationLevel5`', 200, -1, FALSE, '`locationLevel5`', FALSE, FALSE, FALSE, 'FORMATTED TEXT', 'TEXT');
+		$this->fields['locationLevel5'] = &$this->locationLevel5;
 
-		// region_village
-		$this->region_village = new cField('sana_person', 'sana_person', 'x_region_village', 'region_village', '`region_village`', '`region_village`', 200, -1, FALSE, '`region_village`', FALSE, FALSE, FALSE, 'FORMATTED TEXT', 'TEXT');
-		$this->fields['region_village'] = &$this->region_village;
+		// locationLevel6
+		$this->locationLevel6 = new cField('sana_person', 'sana_person', 'x_locationLevel6', 'locationLevel6', '`locationLevel6`', '`locationLevel6`', 200, -1, FALSE, '`locationLevel6`', FALSE, FALSE, FALSE, 'FORMATTED TEXT', 'TEXT');
+		$this->fields['locationLevel6'] = &$this->locationLevel6;
 
 		// address
 		$this->address = new cField('sana_person', 'sana_person', 'x_address', 'address', '`address`', '`address`', 200, -1, FALSE, '`address`', FALSE, FALSE, FALSE, 'FORMATTED TEXT', 'TEXT');
@@ -139,11 +144,11 @@ class csana_person extends cTable {
 		$this->fields['convoyManager'] = &$this->convoyManager;
 
 		// followersName
-		$this->followersName = new cField('sana_person', 'sana_person', 'x_followersName', 'followersName', '`followersName`', '`followersName`', 200, -1, FALSE, '`followersName`', FALSE, FALSE, FALSE, 'FORMATTED TEXT', 'TEXT');
+		$this->followersName = new cField('sana_person', 'sana_person', 'x_followersName', 'followersName', '`followersName`', '`followersName`', 200, -1, FALSE, '`followersName`', FALSE, FALSE, FALSE, 'FORMATTED TEXT', 'TEXTAREA');
 		$this->fields['followersName'] = &$this->followersName;
 
 		// status
-		$this->status = new cField('sana_person', 'sana_person', 'x_status', 'status', '`status`', '`status`', 200, -1, FALSE, '`status`', FALSE, FALSE, FALSE, 'FORMATTED TEXT', 'TEXT');
+		$this->status = new cField('sana_person', 'sana_person', 'x_status', 'status', '`status`', '`status`', 200, -1, FALSE, '`status`', FALSE, FALSE, FALSE, 'FORMATTED TEXT', 'SELECT');
 		$this->fields['status'] = &$this->status;
 
 		// isolatedLocation
@@ -156,7 +161,7 @@ class csana_person extends cTable {
 		$this->fields['birthDate'] = &$this->birthDate;
 
 		// ageRange
-		$this->ageRange = new cField('sana_person', 'sana_person', 'x_ageRange', 'ageRange', '`ageRange`', '`ageRange`', 200, -1, FALSE, '`ageRange`', FALSE, FALSE, FALSE, 'FORMATTED TEXT', 'TEXT');
+		$this->ageRange = new cField('sana_person', 'sana_person', 'x_ageRange', 'ageRange', '`ageRange`', '`ageRange`', 200, -1, FALSE, '`ageRange`', FALSE, FALSE, FALSE, 'FORMATTED TEXT', 'SELECT');
 		$this->fields['ageRange'] = &$this->ageRange;
 
 		// dress1
@@ -172,7 +177,7 @@ class csana_person extends cTable {
 		$this->fields['signTags'] = &$this->signTags;
 
 		// phone
-		$this->phone = new cField('sana_person', 'sana_person', 'x_phone', 'phone', '`phone`', '`phone`', 200, -1, FALSE, '`phone`', FALSE, FALSE, FALSE, 'FORMATTED TEXT', 'TEXT');
+		$this->phone = new cField('sana_person', 'sana_person', 'x_phone', 'phone', '`phone`', '`phone`', 200, -1, FALSE, '`phone`', FALSE, FALSE, FALSE, 'FORMATTED TEXT', 'TEXTAREA');
 		$this->fields['phone'] = &$this->phone;
 
 		// mobilePhone
@@ -181,10 +186,11 @@ class csana_person extends cTable {
 
 		// email
 		$this->_email = new cField('sana_person', 'sana_person', 'x__email', 'email', '`email`', '`email`', 200, -1, FALSE, '`email`', FALSE, FALSE, FALSE, 'FORMATTED TEXT', 'TEXT');
+		$this->_email->FldDefaultErrMsg = $Language->Phrase("IncorrectEmail");
 		$this->fields['email'] = &$this->_email;
 
 		// temporaryResidence
-		$this->temporaryResidence = new cField('sana_person', 'sana_person', 'x_temporaryResidence', 'temporaryResidence', '`temporaryResidence`', '`temporaryResidence`', 200, -1, FALSE, '`temporaryResidence`', FALSE, FALSE, FALSE, 'FORMATTED TEXT', 'TEXT');
+		$this->temporaryResidence = new cField('sana_person', 'sana_person', 'x_temporaryResidence', 'temporaryResidence', '`temporaryResidence`', '`temporaryResidence`', 200, -1, FALSE, '`temporaryResidence`', FALSE, FALSE, FALSE, 'FORMATTED TEXT', 'TEXTAREA');
 		$this->fields['temporaryResidence'] = &$this->temporaryResidence;
 
 		// visitsCount
@@ -193,11 +199,11 @@ class csana_person extends cTable {
 		$this->fields['visitsCount'] = &$this->visitsCount;
 
 		// picture
-		$this->picture = new cField('sana_person', 'sana_person', 'x_picture', 'picture', '`picture`', '`picture`', 200, -1, FALSE, '`picture`', FALSE, FALSE, FALSE, 'FORMATTED TEXT', 'TEXT');
+		$this->picture = new cField('sana_person', 'sana_person', 'x_picture', 'picture', '`picture`', '`picture`', 200, -1, TRUE, '`picture`', FALSE, FALSE, FALSE, 'IMAGE', 'FILE');
 		$this->fields['picture'] = &$this->picture;
 
 		// registrationUser
-		$this->registrationUser = new cField('sana_person', 'sana_person', 'x_registrationUser', 'registrationUser', '`registrationUser`', '`registrationUser`', 3, -1, FALSE, '`registrationUser`', FALSE, FALSE, FALSE, 'FORMATTED TEXT', 'TEXT');
+		$this->registrationUser = new cField('sana_person', 'sana_person', 'x_registrationUser', 'registrationUser', '`registrationUser`', '`registrationUser`', 3, -1, FALSE, '`registrationUser`', FALSE, FALSE, FALSE, 'FORMATTED TEXT', 'HIDDEN');
 		$this->registrationUser->FldDefaultErrMsg = $Language->Phrase("IncorrectInteger");
 		$this->fields['registrationUser'] = &$this->registrationUser;
 
@@ -700,14 +706,15 @@ class csana_person extends cTable {
 		$this->lastName->setDbValue($rs->fields('lastName'));
 		$this->nationalID->setDbValue($rs->fields('nationalID'));
 		$this->nationalNumber->setDbValue($rs->fields('nationalNumber'));
+		$this->passportNumber->setDbValue($rs->fields('passportNumber'));
 		$this->fatherName->setDbValue($rs->fields('fatherName'));
 		$this->gender->setDbValue($rs->fields('gender'));
-		$this->country->setDbValue($rs->fields('country'));
-		$this->province->setDbValue($rs->fields('province'));
-		$this->county->setDbValue($rs->fields('county'));
-		$this->district->setDbValue($rs->fields('district'));
-		$this->city_ruralDistrict->setDbValue($rs->fields('city_ruralDistrict'));
-		$this->region_village->setDbValue($rs->fields('region_village'));
+		$this->locationLevel1->setDbValue($rs->fields('locationLevel1'));
+		$this->locationLevel2->setDbValue($rs->fields('locationLevel2'));
+		$this->locationLevel3->setDbValue($rs->fields('locationLevel3'));
+		$this->locationLevel4->setDbValue($rs->fields('locationLevel4'));
+		$this->locationLevel5->setDbValue($rs->fields('locationLevel5'));
+		$this->locationLevel6->setDbValue($rs->fields('locationLevel6'));
 		$this->address->setDbValue($rs->fields('address'));
 		$this->convoy->setDbValue($rs->fields('convoy'));
 		$this->convoyManager->setDbValue($rs->fields('convoyManager'));
@@ -724,7 +731,7 @@ class csana_person extends cTable {
 		$this->_email->setDbValue($rs->fields('email'));
 		$this->temporaryResidence->setDbValue($rs->fields('temporaryResidence'));
 		$this->visitsCount->setDbValue($rs->fields('visitsCount'));
-		$this->picture->setDbValue($rs->fields('picture'));
+		$this->picture->Upload->DbValue = $rs->fields('picture');
 		$this->registrationUser->setDbValue($rs->fields('registrationUser'));
 		$this->registrationDateTime->setDbValue($rs->fields('registrationDateTime'));
 		$this->registrationStation->setDbValue($rs->fields('registrationStation'));
@@ -745,14 +752,15 @@ class csana_person extends cTable {
 		// lastName
 		// nationalID
 		// nationalNumber
+		// passportNumber
 		// fatherName
 		// gender
-		// country
-		// province
-		// county
-		// district
-		// city_ruralDistrict
-		// region_village
+		// locationLevel1
+		// locationLevel2
+		// locationLevel3
+		// locationLevel4
+		// locationLevel5
+		// locationLevel6
 		// address
 		// convoy
 		// convoyManager
@@ -796,37 +804,163 @@ class csana_person extends cTable {
 		$this->nationalNumber->ViewValue = $this->nationalNumber->CurrentValue;
 		$this->nationalNumber->ViewCustomAttributes = "";
 
+		// passportNumber
+		$this->passportNumber->ViewValue = $this->passportNumber->CurrentValue;
+		$this->passportNumber->ViewCustomAttributes = "";
+
 		// fatherName
 		$this->fatherName->ViewValue = $this->fatherName->CurrentValue;
 		$this->fatherName->ViewCustomAttributes = "";
 
 		// gender
-		$this->gender->ViewValue = $this->gender->CurrentValue;
+		if (strval($this->gender->CurrentValue) <> "") {
+			$sFilterWrk = "`stateName`" . ew_SearchString("=", $this->gender->CurrentValue, EW_DATATYPE_STRING, "");
+		switch (@$gsLanguage) {
+			case "en":
+				$sSqlWrk = "SELECT `stateName`, `stateName` AS `DispFld`, '' AS `Disp2Fld`, '' AS `Disp3Fld`, '' AS `Disp4Fld` FROM `sana_state`";
+				$sWhereWrk = "";
+				break;
+			case "fa":
+				$sSqlWrk = "SELECT `stateName`, `stateName` AS `DispFld`, '' AS `Disp2Fld`, '' AS `Disp3Fld`, '' AS `Disp4Fld` FROM `sana_state`";
+				$sWhereWrk = "";
+				break;
+			default:
+				$sSqlWrk = "SELECT `stateName`, `stateName` AS `DispFld`, '' AS `Disp2Fld`, '' AS `Disp3Fld`, '' AS `Disp4Fld` FROM `sana_state`";
+				$sWhereWrk = "";
+				break;
+		}
+		$lookuptblfilter = "`stateLanguage` = '" . CurrentLanguageID() . "' AND `stateClass` = 'gender'";
+		ew_AddFilter($sWhereWrk, $lookuptblfilter);
+		ew_AddFilter($sWhereWrk, $sFilterWrk);
+		$this->Lookup_Selecting($this->gender, $sWhereWrk); // Call Lookup selecting
+		if ($sWhereWrk <> "") $sSqlWrk .= " WHERE " . $sWhereWrk;
+			$rswrk = Conn()->Execute($sSqlWrk);
+			if ($rswrk && !$rswrk->EOF) { // Lookup values found
+				$arwrk = array();
+				$arwrk[1] = $rswrk->fields('DispFld');
+				$this->gender->ViewValue = $this->gender->DisplayValue($arwrk);
+				$rswrk->Close();
+			} else {
+				$this->gender->ViewValue = $this->gender->CurrentValue;
+			}
+		} else {
+			$this->gender->ViewValue = NULL;
+		}
 		$this->gender->ViewCustomAttributes = "";
 
-		// country
-		$this->country->ViewValue = $this->country->CurrentValue;
-		$this->country->ViewCustomAttributes = "";
+		// locationLevel1
+		if (strval($this->locationLevel1->CurrentValue) <> "") {
+			$sFilterWrk = "`locationName`" . ew_SearchString("=", $this->locationLevel1->CurrentValue, EW_DATATYPE_STRING, "");
+		switch (@$gsLanguage) {
+			case "en":
+				$sSqlWrk = "SELECT `locationName`, `locationName` AS `DispFld`, '' AS `Disp2Fld`, '' AS `Disp3Fld`, '' AS `Disp4Fld` FROM `sana_location_level1`";
+				$sWhereWrk = "";
+				break;
+			case "fa":
+				$sSqlWrk = "SELECT `locationName`, `locationName` AS `DispFld`, '' AS `Disp2Fld`, '' AS `Disp3Fld`, '' AS `Disp4Fld` FROM `sana_location_level1`";
+				$sWhereWrk = "";
+				break;
+			default:
+				$sSqlWrk = "SELECT `locationName`, `locationName` AS `DispFld`, '' AS `Disp2Fld`, '' AS `Disp3Fld`, '' AS `Disp4Fld` FROM `sana_location_level1`";
+				$sWhereWrk = "";
+				break;
+		}
+		ew_AddFilter($sWhereWrk, $sFilterWrk);
+		$this->Lookup_Selecting($this->locationLevel1, $sWhereWrk); // Call Lookup selecting
+		if ($sWhereWrk <> "") $sSqlWrk .= " WHERE " . $sWhereWrk;
+			$rswrk = Conn()->Execute($sSqlWrk);
+			if ($rswrk && !$rswrk->EOF) { // Lookup values found
+				$arwrk = array();
+				$arwrk[1] = $rswrk->fields('DispFld');
+				$this->locationLevel1->ViewValue = $this->locationLevel1->DisplayValue($arwrk);
+				$rswrk->Close();
+			} else {
+				$this->locationLevel1->ViewValue = $this->locationLevel1->CurrentValue;
+			}
+		} else {
+			$this->locationLevel1->ViewValue = NULL;
+		}
+		$this->locationLevel1->ViewCustomAttributes = "";
 
-		// province
-		$this->province->ViewValue = $this->province->CurrentValue;
-		$this->province->ViewCustomAttributes = "";
+		// locationLevel2
+		if (strval($this->locationLevel2->CurrentValue) <> "") {
+			$sFilterWrk = "`locationName`" . ew_SearchString("=", $this->locationLevel2->CurrentValue, EW_DATATYPE_STRING, "");
+		switch (@$gsLanguage) {
+			case "en":
+				$sSqlWrk = "SELECT `locationName`, `locationName` AS `DispFld`, '' AS `Disp2Fld`, '' AS `Disp3Fld`, '' AS `Disp4Fld` FROM `sana_location_level2`";
+				$sWhereWrk = "";
+				break;
+			case "fa":
+				$sSqlWrk = "SELECT `locationName`, `locationName` AS `DispFld`, '' AS `Disp2Fld`, '' AS `Disp3Fld`, '' AS `Disp4Fld` FROM `sana_location_level2`";
+				$sWhereWrk = "";
+				break;
+			default:
+				$sSqlWrk = "SELECT `locationName`, `locationName` AS `DispFld`, '' AS `Disp2Fld`, '' AS `Disp3Fld`, '' AS `Disp4Fld` FROM `sana_location_level2`";
+				$sWhereWrk = "";
+				break;
+		}
+		ew_AddFilter($sWhereWrk, $sFilterWrk);
+		$this->Lookup_Selecting($this->locationLevel2, $sWhereWrk); // Call Lookup selecting
+		if ($sWhereWrk <> "") $sSqlWrk .= " WHERE " . $sWhereWrk;
+			$rswrk = Conn()->Execute($sSqlWrk);
+			if ($rswrk && !$rswrk->EOF) { // Lookup values found
+				$arwrk = array();
+				$arwrk[1] = $rswrk->fields('DispFld');
+				$this->locationLevel2->ViewValue = $this->locationLevel2->DisplayValue($arwrk);
+				$rswrk->Close();
+			} else {
+				$this->locationLevel2->ViewValue = $this->locationLevel2->CurrentValue;
+			}
+		} else {
+			$this->locationLevel2->ViewValue = NULL;
+		}
+		$this->locationLevel2->ViewCustomAttributes = "";
 
-		// county
-		$this->county->ViewValue = $this->county->CurrentValue;
-		$this->county->ViewCustomAttributes = "";
+		// locationLevel3
+		if (strval($this->locationLevel3->CurrentValue) <> "") {
+			$sFilterWrk = "`locationName`" . ew_SearchString("=", $this->locationLevel3->CurrentValue, EW_DATATYPE_STRING, "");
+		switch (@$gsLanguage) {
+			case "en":
+				$sSqlWrk = "SELECT `locationName`, `locationName` AS `DispFld`, '' AS `Disp2Fld`, '' AS `Disp3Fld`, '' AS `Disp4Fld` FROM `sana_location_level3`";
+				$sWhereWrk = "";
+				break;
+			case "fa":
+				$sSqlWrk = "SELECT `locationName`, `locationName` AS `DispFld`, '' AS `Disp2Fld`, '' AS `Disp3Fld`, '' AS `Disp4Fld` FROM `sana_location_level3`";
+				$sWhereWrk = "";
+				break;
+			default:
+				$sSqlWrk = "SELECT `locationName`, `locationName` AS `DispFld`, '' AS `Disp2Fld`, '' AS `Disp3Fld`, '' AS `Disp4Fld` FROM `sana_location_level3`";
+				$sWhereWrk = "";
+				break;
+		}
+		ew_AddFilter($sWhereWrk, $sFilterWrk);
+		$this->Lookup_Selecting($this->locationLevel3, $sWhereWrk); // Call Lookup selecting
+		if ($sWhereWrk <> "") $sSqlWrk .= " WHERE " . $sWhereWrk;
+			$rswrk = Conn()->Execute($sSqlWrk);
+			if ($rswrk && !$rswrk->EOF) { // Lookup values found
+				$arwrk = array();
+				$arwrk[1] = $rswrk->fields('DispFld');
+				$this->locationLevel3->ViewValue = $this->locationLevel3->DisplayValue($arwrk);
+				$rswrk->Close();
+			} else {
+				$this->locationLevel3->ViewValue = $this->locationLevel3->CurrentValue;
+			}
+		} else {
+			$this->locationLevel3->ViewValue = NULL;
+		}
+		$this->locationLevel3->ViewCustomAttributes = "";
 
-		// district
-		$this->district->ViewValue = $this->district->CurrentValue;
-		$this->district->ViewCustomAttributes = "";
+		// locationLevel4
+		$this->locationLevel4->ViewValue = $this->locationLevel4->CurrentValue;
+		$this->locationLevel4->ViewCustomAttributes = "";
 
-		// city_ruralDistrict
-		$this->city_ruralDistrict->ViewValue = $this->city_ruralDistrict->CurrentValue;
-		$this->city_ruralDistrict->ViewCustomAttributes = "";
+		// locationLevel5
+		$this->locationLevel5->ViewValue = $this->locationLevel5->CurrentValue;
+		$this->locationLevel5->ViewCustomAttributes = "";
 
-		// region_village
-		$this->region_village->ViewValue = $this->region_village->CurrentValue;
-		$this->region_village->ViewCustomAttributes = "";
+		// locationLevel6
+		$this->locationLevel6->ViewValue = $this->locationLevel6->CurrentValue;
+		$this->locationLevel6->ViewCustomAttributes = "";
 
 		// address
 		$this->address->ViewValue = $this->address->CurrentValue;
@@ -845,7 +979,39 @@ class csana_person extends cTable {
 		$this->followersName->ViewCustomAttributes = "";
 
 		// status
-		$this->status->ViewValue = $this->status->CurrentValue;
+		if (strval($this->status->CurrentValue) <> "") {
+			$sFilterWrk = "`stateName`" . ew_SearchString("=", $this->status->CurrentValue, EW_DATATYPE_STRING, "");
+		switch (@$gsLanguage) {
+			case "en":
+				$sSqlWrk = "SELECT `stateName`, `stateName` AS `DispFld`, '' AS `Disp2Fld`, '' AS `Disp3Fld`, '' AS `Disp4Fld` FROM `sana_state`";
+				$sWhereWrk = "";
+				break;
+			case "fa":
+				$sSqlWrk = "SELECT `stateName`, `stateName` AS `DispFld`, '' AS `Disp2Fld`, '' AS `Disp3Fld`, '' AS `Disp4Fld` FROM `sana_state`";
+				$sWhereWrk = "";
+				break;
+			default:
+				$sSqlWrk = "SELECT `stateName`, `stateName` AS `DispFld`, '' AS `Disp2Fld`, '' AS `Disp3Fld`, '' AS `Disp4Fld` FROM `sana_state`";
+				$sWhereWrk = "";
+				break;
+		}
+		$lookuptblfilter = "`stateLanguage` = '" . CurrentLanguageID() . "' AND `stateClass` = 'person'";
+		ew_AddFilter($sWhereWrk, $lookuptblfilter);
+		ew_AddFilter($sWhereWrk, $sFilterWrk);
+		$this->Lookup_Selecting($this->status, $sWhereWrk); // Call Lookup selecting
+		if ($sWhereWrk <> "") $sSqlWrk .= " WHERE " . $sWhereWrk;
+			$rswrk = Conn()->Execute($sSqlWrk);
+			if ($rswrk && !$rswrk->EOF) { // Lookup values found
+				$arwrk = array();
+				$arwrk[1] = $rswrk->fields('DispFld');
+				$this->status->ViewValue = $this->status->DisplayValue($arwrk);
+				$rswrk->Close();
+			} else {
+				$this->status->ViewValue = $this->status->CurrentValue;
+			}
+		} else {
+			$this->status->ViewValue = NULL;
+		}
 		$this->status->ViewCustomAttributes = "";
 
 		// isolatedLocation
@@ -857,7 +1023,39 @@ class csana_person extends cTable {
 		$this->birthDate->ViewCustomAttributes = "";
 
 		// ageRange
-		$this->ageRange->ViewValue = $this->ageRange->CurrentValue;
+		if (strval($this->ageRange->CurrentValue) <> "") {
+			$sFilterWrk = "`stateName`" . ew_SearchString("=", $this->ageRange->CurrentValue, EW_DATATYPE_STRING, "");
+		switch (@$gsLanguage) {
+			case "en":
+				$sSqlWrk = "SELECT `stateName`, `stateName` AS `DispFld`, '' AS `Disp2Fld`, '' AS `Disp3Fld`, '' AS `Disp4Fld` FROM `sana_state`";
+				$sWhereWrk = "";
+				break;
+			case "fa":
+				$sSqlWrk = "SELECT `stateName`, `stateName` AS `DispFld`, '' AS `Disp2Fld`, '' AS `Disp3Fld`, '' AS `Disp4Fld` FROM `sana_state`";
+				$sWhereWrk = "";
+				break;
+			default:
+				$sSqlWrk = "SELECT `stateName`, `stateName` AS `DispFld`, '' AS `Disp2Fld`, '' AS `Disp3Fld`, '' AS `Disp4Fld` FROM `sana_state`";
+				$sWhereWrk = "";
+				break;
+		}
+		$lookuptblfilter = " `stateClass` = 'age' ";
+		ew_AddFilter($sWhereWrk, $lookuptblfilter);
+		ew_AddFilter($sWhereWrk, $sFilterWrk);
+		$this->Lookup_Selecting($this->ageRange, $sWhereWrk); // Call Lookup selecting
+		if ($sWhereWrk <> "") $sSqlWrk .= " WHERE " . $sWhereWrk;
+			$rswrk = Conn()->Execute($sSqlWrk);
+			if ($rswrk && !$rswrk->EOF) { // Lookup values found
+				$arwrk = array();
+				$arwrk[1] = $rswrk->fields('DispFld');
+				$this->ageRange->ViewValue = $this->ageRange->DisplayValue($arwrk);
+				$rswrk->Close();
+			} else {
+				$this->ageRange->ViewValue = $this->ageRange->CurrentValue;
+			}
+		} else {
+			$this->ageRange->ViewValue = NULL;
+		}
 		$this->ageRange->ViewCustomAttributes = "";
 
 		// dress1
@@ -893,7 +1091,14 @@ class csana_person extends cTable {
 		$this->visitsCount->ViewCustomAttributes = "";
 
 		// picture
-		$this->picture->ViewValue = $this->picture->CurrentValue;
+		if (!ew_Empty($this->picture->Upload->DbValue)) {
+			$this->picture->ImageWidth = 70;
+			$this->picture->ImageHeight = 70;
+			$this->picture->ImageAlt = $this->picture->FldAlt();
+			$this->picture->ViewValue = $this->picture->Upload->DbValue;
+		} else {
+			$this->picture->ViewValue = "";
+		}
 		$this->picture->ViewCustomAttributes = "";
 
 		// registrationUser
@@ -943,6 +1148,11 @@ class csana_person extends cTable {
 		$this->nationalNumber->HrefValue = "";
 		$this->nationalNumber->TooltipValue = "";
 
+		// passportNumber
+		$this->passportNumber->LinkCustomAttributes = "";
+		$this->passportNumber->HrefValue = "";
+		$this->passportNumber->TooltipValue = "";
+
 		// fatherName
 		$this->fatherName->LinkCustomAttributes = "";
 		$this->fatherName->HrefValue = "";
@@ -953,35 +1163,35 @@ class csana_person extends cTable {
 		$this->gender->HrefValue = "";
 		$this->gender->TooltipValue = "";
 
-		// country
-		$this->country->LinkCustomAttributes = "";
-		$this->country->HrefValue = "";
-		$this->country->TooltipValue = "";
+		// locationLevel1
+		$this->locationLevel1->LinkCustomAttributes = "";
+		$this->locationLevel1->HrefValue = "";
+		$this->locationLevel1->TooltipValue = "";
 
-		// province
-		$this->province->LinkCustomAttributes = "";
-		$this->province->HrefValue = "";
-		$this->province->TooltipValue = "";
+		// locationLevel2
+		$this->locationLevel2->LinkCustomAttributes = "";
+		$this->locationLevel2->HrefValue = "";
+		$this->locationLevel2->TooltipValue = "";
 
-		// county
-		$this->county->LinkCustomAttributes = "";
-		$this->county->HrefValue = "";
-		$this->county->TooltipValue = "";
+		// locationLevel3
+		$this->locationLevel3->LinkCustomAttributes = "";
+		$this->locationLevel3->HrefValue = "";
+		$this->locationLevel3->TooltipValue = "";
 
-		// district
-		$this->district->LinkCustomAttributes = "";
-		$this->district->HrefValue = "";
-		$this->district->TooltipValue = "";
+		// locationLevel4
+		$this->locationLevel4->LinkCustomAttributes = "";
+		$this->locationLevel4->HrefValue = "";
+		$this->locationLevel4->TooltipValue = "";
 
-		// city_ruralDistrict
-		$this->city_ruralDistrict->LinkCustomAttributes = "";
-		$this->city_ruralDistrict->HrefValue = "";
-		$this->city_ruralDistrict->TooltipValue = "";
+		// locationLevel5
+		$this->locationLevel5->LinkCustomAttributes = "";
+		$this->locationLevel5->HrefValue = "";
+		$this->locationLevel5->TooltipValue = "";
 
-		// region_village
-		$this->region_village->LinkCustomAttributes = "";
-		$this->region_village->HrefValue = "";
-		$this->region_village->TooltipValue = "";
+		// locationLevel6
+		$this->locationLevel6->LinkCustomAttributes = "";
+		$this->locationLevel6->HrefValue = "";
+		$this->locationLevel6->TooltipValue = "";
 
 		// address
 		$this->address->LinkCustomAttributes = "";
@@ -1065,8 +1275,25 @@ class csana_person extends cTable {
 
 		// picture
 		$this->picture->LinkCustomAttributes = "";
-		$this->picture->HrefValue = "";
+		if (!ew_Empty($this->picture->Upload->DbValue)) {
+			$this->picture->HrefValue = ew_GetFileUploadUrl($this->picture, $this->picture->Upload->DbValue); // Add prefix/suffix
+			$this->picture->LinkAttrs["target"] = ""; // Add target
+			if ($this->Export <> "") $this->picture->HrefValue = ew_ConvertFullUrl($this->picture->HrefValue);
+		} else {
+			$this->picture->HrefValue = "";
+		}
+		$this->picture->HrefValue2 = $this->picture->UploadPath . $this->picture->Upload->DbValue;
 		$this->picture->TooltipValue = "";
+		if ($this->picture->UseColorbox) {
+			$this->picture->LinkAttrs["title"] = $Language->Phrase("ViewImageGallery");
+			$this->picture->LinkAttrs["data-rel"] = "sana_person_x_picture";
+
+			//$this->picture->LinkAttrs["class"] = "ewLightbox ewTooltip img-thumbnail";
+			//$this->picture->LinkAttrs["data-placement"] = "bottom";
+			//$this->picture->LinkAttrs["data-container"] = "body";
+
+			$this->picture->LinkAttrs["class"] = "ewLightbox img-thumbnail";
+		}
 
 		// registrationUser
 		$this->registrationUser->LinkCustomAttributes = "";
@@ -1134,6 +1361,12 @@ class csana_person extends cTable {
 		$this->nationalNumber->EditValue = $this->nationalNumber->CurrentValue;
 		$this->nationalNumber->PlaceHolder = ew_RemoveHtml($this->nationalNumber->FldCaption());
 
+		// passportNumber
+		$this->passportNumber->EditAttrs["class"] = "form-control";
+		$this->passportNumber->EditCustomAttributes = "";
+		$this->passportNumber->EditValue = $this->passportNumber->CurrentValue;
+		$this->passportNumber->PlaceHolder = ew_RemoveHtml($this->passportNumber->FldCaption());
+
 		// fatherName
 		$this->fatherName->EditAttrs["class"] = "form-control";
 		$this->fatherName->EditCustomAttributes = "";
@@ -1143,44 +1376,36 @@ class csana_person extends cTable {
 		// gender
 		$this->gender->EditAttrs["class"] = "form-control";
 		$this->gender->EditCustomAttributes = "";
-		$this->gender->EditValue = $this->gender->CurrentValue;
-		$this->gender->PlaceHolder = ew_RemoveHtml($this->gender->FldCaption());
 
-		// country
-		$this->country->EditAttrs["class"] = "form-control";
-		$this->country->EditCustomAttributes = "";
-		$this->country->EditValue = $this->country->CurrentValue;
-		$this->country->PlaceHolder = ew_RemoveHtml($this->country->FldCaption());
+		// locationLevel1
+		$this->locationLevel1->EditAttrs["class"] = "form-control";
+		$this->locationLevel1->EditCustomAttributes = "";
 
-		// province
-		$this->province->EditAttrs["class"] = "form-control";
-		$this->province->EditCustomAttributes = "";
-		$this->province->EditValue = $this->province->CurrentValue;
-		$this->province->PlaceHolder = ew_RemoveHtml($this->province->FldCaption());
+		// locationLevel2
+		$this->locationLevel2->EditAttrs["class"] = "form-control";
+		$this->locationLevel2->EditCustomAttributes = "";
 
-		// county
-		$this->county->EditAttrs["class"] = "form-control";
-		$this->county->EditCustomAttributes = "";
-		$this->county->EditValue = $this->county->CurrentValue;
-		$this->county->PlaceHolder = ew_RemoveHtml($this->county->FldCaption());
+		// locationLevel3
+		$this->locationLevel3->EditAttrs["class"] = "form-control";
+		$this->locationLevel3->EditCustomAttributes = "";
 
-		// district
-		$this->district->EditAttrs["class"] = "form-control";
-		$this->district->EditCustomAttributes = "";
-		$this->district->EditValue = $this->district->CurrentValue;
-		$this->district->PlaceHolder = ew_RemoveHtml($this->district->FldCaption());
+		// locationLevel4
+		$this->locationLevel4->EditAttrs["class"] = "form-control";
+		$this->locationLevel4->EditCustomAttributes = "";
+		$this->locationLevel4->EditValue = $this->locationLevel4->CurrentValue;
+		$this->locationLevel4->PlaceHolder = ew_RemoveHtml($this->locationLevel4->FldCaption());
 
-		// city_ruralDistrict
-		$this->city_ruralDistrict->EditAttrs["class"] = "form-control";
-		$this->city_ruralDistrict->EditCustomAttributes = "";
-		$this->city_ruralDistrict->EditValue = $this->city_ruralDistrict->CurrentValue;
-		$this->city_ruralDistrict->PlaceHolder = ew_RemoveHtml($this->city_ruralDistrict->FldCaption());
+		// locationLevel5
+		$this->locationLevel5->EditAttrs["class"] = "form-control";
+		$this->locationLevel5->EditCustomAttributes = "";
+		$this->locationLevel5->EditValue = $this->locationLevel5->CurrentValue;
+		$this->locationLevel5->PlaceHolder = ew_RemoveHtml($this->locationLevel5->FldCaption());
 
-		// region_village
-		$this->region_village->EditAttrs["class"] = "form-control";
-		$this->region_village->EditCustomAttributes = "";
-		$this->region_village->EditValue = $this->region_village->CurrentValue;
-		$this->region_village->PlaceHolder = ew_RemoveHtml($this->region_village->FldCaption());
+		// locationLevel6
+		$this->locationLevel6->EditAttrs["class"] = "form-control";
+		$this->locationLevel6->EditCustomAttributes = "";
+		$this->locationLevel6->EditValue = $this->locationLevel6->CurrentValue;
+		$this->locationLevel6->PlaceHolder = ew_RemoveHtml($this->locationLevel6->FldCaption());
 
 		// address
 		$this->address->EditAttrs["class"] = "form-control";
@@ -1209,8 +1434,6 @@ class csana_person extends cTable {
 		// status
 		$this->status->EditAttrs["class"] = "form-control";
 		$this->status->EditCustomAttributes = "";
-		$this->status->EditValue = $this->status->CurrentValue;
-		$this->status->PlaceHolder = ew_RemoveHtml($this->status->FldCaption());
 
 		// isolatedLocation
 		$this->isolatedLocation->EditAttrs["class"] = "form-control";
@@ -1227,8 +1450,6 @@ class csana_person extends cTable {
 		// ageRange
 		$this->ageRange->EditAttrs["class"] = "form-control";
 		$this->ageRange->EditCustomAttributes = "";
-		$this->ageRange->EditValue = $this->ageRange->CurrentValue;
-		$this->ageRange->PlaceHolder = ew_RemoveHtml($this->ageRange->FldCaption());
 
 		// dress1
 		$this->dress1->EditAttrs["class"] = "form-control";
@@ -1281,28 +1502,22 @@ class csana_person extends cTable {
 		// picture
 		$this->picture->EditAttrs["class"] = "form-control";
 		$this->picture->EditCustomAttributes = "";
-		$this->picture->EditValue = $this->picture->CurrentValue;
-		$this->picture->PlaceHolder = ew_RemoveHtml($this->picture->FldCaption());
+		if (!ew_Empty($this->picture->Upload->DbValue)) {
+			$this->picture->ImageWidth = 70;
+			$this->picture->ImageHeight = 70;
+			$this->picture->ImageAlt = $this->picture->FldAlt();
+			$this->picture->EditValue = $this->picture->Upload->DbValue;
+		} else {
+			$this->picture->EditValue = "";
+		}
+		if (!ew_Empty($this->picture->CurrentValue))
+			$this->picture->Upload->FileName = $this->picture->CurrentValue;
 
 		// registrationUser
-		$this->registrationUser->EditAttrs["class"] = "form-control";
-		$this->registrationUser->EditCustomAttributes = "";
-		$this->registrationUser->EditValue = $this->registrationUser->CurrentValue;
-		$this->registrationUser->PlaceHolder = ew_RemoveHtml($this->registrationUser->FldCaption());
-
 		// registrationDateTime
-		$this->registrationDateTime->EditAttrs["class"] = "form-control";
-		$this->registrationDateTime->EditCustomAttributes = "";
-		$this->registrationDateTime->EditValue = ew_FormatDateTime($this->registrationDateTime->CurrentValue, 5);
-		$this->registrationDateTime->PlaceHolder = ew_RemoveHtml($this->registrationDateTime->FldCaption());
-
 		// registrationStation
-		$this->registrationStation->EditAttrs["class"] = "form-control";
-		$this->registrationStation->EditCustomAttributes = "";
-		$this->registrationStation->EditValue = $this->registrationStation->CurrentValue;
-		$this->registrationStation->PlaceHolder = ew_RemoveHtml($this->registrationStation->FldCaption());
-
 		// isolatedDateTime
+
 		$this->isolatedDateTime->EditAttrs["class"] = "form-control";
 		$this->isolatedDateTime->EditCustomAttributes = "";
 		$this->isolatedDateTime->EditValue = ew_FormatDateTime($this->isolatedDateTime->CurrentValue, 5);
@@ -1346,14 +1561,15 @@ class csana_person extends cTable {
 					if ($this->lastName->Exportable) $Doc->ExportCaption($this->lastName);
 					if ($this->nationalID->Exportable) $Doc->ExportCaption($this->nationalID);
 					if ($this->nationalNumber->Exportable) $Doc->ExportCaption($this->nationalNumber);
+					if ($this->passportNumber->Exportable) $Doc->ExportCaption($this->passportNumber);
 					if ($this->fatherName->Exportable) $Doc->ExportCaption($this->fatherName);
 					if ($this->gender->Exportable) $Doc->ExportCaption($this->gender);
-					if ($this->country->Exportable) $Doc->ExportCaption($this->country);
-					if ($this->province->Exportable) $Doc->ExportCaption($this->province);
-					if ($this->county->Exportable) $Doc->ExportCaption($this->county);
-					if ($this->district->Exportable) $Doc->ExportCaption($this->district);
-					if ($this->city_ruralDistrict->Exportable) $Doc->ExportCaption($this->city_ruralDistrict);
-					if ($this->region_village->Exportable) $Doc->ExportCaption($this->region_village);
+					if ($this->locationLevel1->Exportable) $Doc->ExportCaption($this->locationLevel1);
+					if ($this->locationLevel2->Exportable) $Doc->ExportCaption($this->locationLevel2);
+					if ($this->locationLevel3->Exportable) $Doc->ExportCaption($this->locationLevel3);
+					if ($this->locationLevel4->Exportable) $Doc->ExportCaption($this->locationLevel4);
+					if ($this->locationLevel5->Exportable) $Doc->ExportCaption($this->locationLevel5);
+					if ($this->locationLevel6->Exportable) $Doc->ExportCaption($this->locationLevel6);
 					if ($this->address->Exportable) $Doc->ExportCaption($this->address);
 					if ($this->convoy->Exportable) $Doc->ExportCaption($this->convoy);
 					if ($this->convoyManager->Exportable) $Doc->ExportCaption($this->convoyManager);
@@ -1382,14 +1598,15 @@ class csana_person extends cTable {
 					if ($this->lastName->Exportable) $Doc->ExportCaption($this->lastName);
 					if ($this->nationalID->Exportable) $Doc->ExportCaption($this->nationalID);
 					if ($this->nationalNumber->Exportable) $Doc->ExportCaption($this->nationalNumber);
+					if ($this->passportNumber->Exportable) $Doc->ExportCaption($this->passportNumber);
 					if ($this->fatherName->Exportable) $Doc->ExportCaption($this->fatherName);
 					if ($this->gender->Exportable) $Doc->ExportCaption($this->gender);
-					if ($this->country->Exportable) $Doc->ExportCaption($this->country);
-					if ($this->province->Exportable) $Doc->ExportCaption($this->province);
-					if ($this->county->Exportable) $Doc->ExportCaption($this->county);
-					if ($this->district->Exportable) $Doc->ExportCaption($this->district);
-					if ($this->city_ruralDistrict->Exportable) $Doc->ExportCaption($this->city_ruralDistrict);
-					if ($this->region_village->Exportable) $Doc->ExportCaption($this->region_village);
+					if ($this->locationLevel1->Exportable) $Doc->ExportCaption($this->locationLevel1);
+					if ($this->locationLevel2->Exportable) $Doc->ExportCaption($this->locationLevel2);
+					if ($this->locationLevel3->Exportable) $Doc->ExportCaption($this->locationLevel3);
+					if ($this->locationLevel4->Exportable) $Doc->ExportCaption($this->locationLevel4);
+					if ($this->locationLevel5->Exportable) $Doc->ExportCaption($this->locationLevel5);
+					if ($this->locationLevel6->Exportable) $Doc->ExportCaption($this->locationLevel6);
 					if ($this->address->Exportable) $Doc->ExportCaption($this->address);
 					if ($this->convoy->Exportable) $Doc->ExportCaption($this->convoy);
 					if ($this->convoyManager->Exportable) $Doc->ExportCaption($this->convoyManager);
@@ -1406,7 +1623,6 @@ class csana_person extends cTable {
 					if ($this->_email->Exportable) $Doc->ExportCaption($this->_email);
 					if ($this->temporaryResidence->Exportable) $Doc->ExportCaption($this->temporaryResidence);
 					if ($this->visitsCount->Exportable) $Doc->ExportCaption($this->visitsCount);
-					if ($this->picture->Exportable) $Doc->ExportCaption($this->picture);
 					if ($this->registrationUser->Exportable) $Doc->ExportCaption($this->registrationUser);
 					if ($this->registrationDateTime->Exportable) $Doc->ExportCaption($this->registrationDateTime);
 					if ($this->registrationStation->Exportable) $Doc->ExportCaption($this->registrationStation);
@@ -1447,14 +1663,15 @@ class csana_person extends cTable {
 						if ($this->lastName->Exportable) $Doc->ExportField($this->lastName);
 						if ($this->nationalID->Exportable) $Doc->ExportField($this->nationalID);
 						if ($this->nationalNumber->Exportable) $Doc->ExportField($this->nationalNumber);
+						if ($this->passportNumber->Exportable) $Doc->ExportField($this->passportNumber);
 						if ($this->fatherName->Exportable) $Doc->ExportField($this->fatherName);
 						if ($this->gender->Exportable) $Doc->ExportField($this->gender);
-						if ($this->country->Exportable) $Doc->ExportField($this->country);
-						if ($this->province->Exportable) $Doc->ExportField($this->province);
-						if ($this->county->Exportable) $Doc->ExportField($this->county);
-						if ($this->district->Exportable) $Doc->ExportField($this->district);
-						if ($this->city_ruralDistrict->Exportable) $Doc->ExportField($this->city_ruralDistrict);
-						if ($this->region_village->Exportable) $Doc->ExportField($this->region_village);
+						if ($this->locationLevel1->Exportable) $Doc->ExportField($this->locationLevel1);
+						if ($this->locationLevel2->Exportable) $Doc->ExportField($this->locationLevel2);
+						if ($this->locationLevel3->Exportable) $Doc->ExportField($this->locationLevel3);
+						if ($this->locationLevel4->Exportable) $Doc->ExportField($this->locationLevel4);
+						if ($this->locationLevel5->Exportable) $Doc->ExportField($this->locationLevel5);
+						if ($this->locationLevel6->Exportable) $Doc->ExportField($this->locationLevel6);
 						if ($this->address->Exportable) $Doc->ExportField($this->address);
 						if ($this->convoy->Exportable) $Doc->ExportField($this->convoy);
 						if ($this->convoyManager->Exportable) $Doc->ExportField($this->convoyManager);
@@ -1483,14 +1700,15 @@ class csana_person extends cTable {
 						if ($this->lastName->Exportable) $Doc->ExportField($this->lastName);
 						if ($this->nationalID->Exportable) $Doc->ExportField($this->nationalID);
 						if ($this->nationalNumber->Exportable) $Doc->ExportField($this->nationalNumber);
+						if ($this->passportNumber->Exportable) $Doc->ExportField($this->passportNumber);
 						if ($this->fatherName->Exportable) $Doc->ExportField($this->fatherName);
 						if ($this->gender->Exportable) $Doc->ExportField($this->gender);
-						if ($this->country->Exportable) $Doc->ExportField($this->country);
-						if ($this->province->Exportable) $Doc->ExportField($this->province);
-						if ($this->county->Exportable) $Doc->ExportField($this->county);
-						if ($this->district->Exportable) $Doc->ExportField($this->district);
-						if ($this->city_ruralDistrict->Exportable) $Doc->ExportField($this->city_ruralDistrict);
-						if ($this->region_village->Exportable) $Doc->ExportField($this->region_village);
+						if ($this->locationLevel1->Exportable) $Doc->ExportField($this->locationLevel1);
+						if ($this->locationLevel2->Exportable) $Doc->ExportField($this->locationLevel2);
+						if ($this->locationLevel3->Exportable) $Doc->ExportField($this->locationLevel3);
+						if ($this->locationLevel4->Exportable) $Doc->ExportField($this->locationLevel4);
+						if ($this->locationLevel5->Exportable) $Doc->ExportField($this->locationLevel5);
+						if ($this->locationLevel6->Exportable) $Doc->ExportField($this->locationLevel6);
 						if ($this->address->Exportable) $Doc->ExportField($this->address);
 						if ($this->convoy->Exportable) $Doc->ExportField($this->convoy);
 						if ($this->convoyManager->Exportable) $Doc->ExportField($this->convoyManager);
@@ -1507,7 +1725,6 @@ class csana_person extends cTable {
 						if ($this->_email->Exportable) $Doc->ExportField($this->_email);
 						if ($this->temporaryResidence->Exportable) $Doc->ExportField($this->temporaryResidence);
 						if ($this->visitsCount->Exportable) $Doc->ExportField($this->visitsCount);
-						if ($this->picture->Exportable) $Doc->ExportField($this->picture);
 						if ($this->registrationUser->Exportable) $Doc->ExportField($this->registrationUser);
 						if ($this->registrationDateTime->Exportable) $Doc->ExportField($this->registrationDateTime);
 						if ($this->registrationStation->Exportable) $Doc->ExportField($this->registrationStation);

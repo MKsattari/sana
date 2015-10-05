@@ -6,7 +6,6 @@ ob_start(); // Turn on output buffering
 <?php include_once ((EW_USE_ADODB) ? "adodb5/adodb.inc.php" : "ewmysql12.php") ?>
 <?php include_once "phpfn12.php" ?>
 <?php include_once "userlevelsinfo.php" ?>
-<?php include_once "sana_userinfo.php" ?>
 <?php include_once "userfn12.php" ?>
 <?php
 
@@ -200,7 +199,6 @@ class cuserpriv extends cuserlevels {
 	//
 	function __construct() {
 		global $conn, $Language;
-		global $UserTable, $UserTableConn;
 		$GLOBALS["Page"] = &$this;
 		$this->TokenTimeout = ew_SessionTimeoutTime();
 
@@ -226,12 +224,6 @@ class cuserpriv extends cuserlevels {
 
 		// Open connection
 		if (!isset($conn)) $conn = ew_Connect($this->DBID);
-
-		// User table object (sana_user)
-		if (!isset($UserTable)) {
-			$UserTable = new csana_user();
-			$UserTableConn = Conn($UserTable->DBID);
-		}
 	}
 
 	// 
@@ -239,19 +231,6 @@ class cuserpriv extends cuserlevels {
 	//
 	function Page_Init() {
 		global $gsExport, $gsCustomExport, $gsExportFile, $UserProfile, $Language, $Security, $objForm;
-
-		// Security
-		$Security = new cAdvancedSecurity();
-		if (!$Security->IsLoggedIn()) $Security->AutoLogin();
-		if ($Security->IsLoggedIn()) $Security->TablePermission_Loading();
-		$Security->LoadCurrentUserLevel(CurrentProjectID() . 'userlevels');
-		if ($Security->IsLoggedIn()) $Security->TablePermission_Loaded();
-		if (!$Security->IsLoggedIn()) $this->Page_Terminate(ew_GetUrl("login.php"));
-		if ($Security->IsLoggedIn()) {
-			$Security->UserID_Loading();
-			$Security->LoadUserID();
-			$Security->UserID_Loaded();
-		}
 		$this->CurrentAction = (@$_GET["a"] <> "") ? $_GET["a"] : @$_POST["a_list"]; // Set up current action
 
 		// Global Page Loading event (in userfn*.php)

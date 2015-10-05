@@ -6,7 +6,6 @@ ob_start(); // Turn on output buffering
 <?php include_once ((EW_USE_ADODB) ? "adodb5/adodb.inc.php" : "ewmysql12.php") ?>
 <?php include_once "phpfn12.php" ?>
 <?php include_once "sana_personinfo.php" ?>
-<?php include_once "sana_userinfo.php" ?>
 <?php include_once "userfn12.php" ?>
 <?php
 
@@ -252,7 +251,6 @@ class csana_person_list extends csana_person {
 	//
 	function __construct() {
 		global $conn, $Language;
-		global $UserTable, $UserTableConn;
 		$GLOBALS["Page"] = &$this;
 		$this->TokenTimeout = ew_SessionTimeoutTime();
 
@@ -283,9 +281,6 @@ class csana_person_list extends csana_person {
 		$this->MultiDeleteUrl = "sana_persondelete.php";
 		$this->MultiUpdateUrl = "sana_personupdate.php";
 
-		// Table object (sana_user)
-		if (!isset($GLOBALS['sana_user'])) $GLOBALS['sana_user'] = new csana_user();
-
 		// Page ID
 		if (!defined("EW_PAGE_ID"))
 			define("EW_PAGE_ID", 'list', TRUE);
@@ -299,12 +294,6 @@ class csana_person_list extends csana_person {
 
 		// Open connection
 		if (!isset($conn)) $conn = ew_Connect($this->DBID);
-
-		// User table object (sana_user)
-		if (!isset($UserTable)) {
-			$UserTable = new csana_user();
-			$UserTableConn = Conn($UserTable->DBID);
-		}
 
 		// List options
 		$this->ListOptions = new cListOptions();
@@ -340,19 +329,6 @@ class csana_person_list extends csana_person {
 	//
 	function Page_Init() {
 		global $gsExport, $gsCustomExport, $gsExportFile, $UserProfile, $Language, $Security, $objForm;
-
-		// Security
-		$Security = new cAdvancedSecurity();
-		if (!$Security->IsLoggedIn()) $Security->AutoLogin();
-		if ($Security->IsLoggedIn()) $Security->TablePermission_Loading();
-		$Security->LoadCurrentUserLevel($this->ProjectID . $this->TableName);
-		if ($Security->IsLoggedIn()) $Security->TablePermission_Loaded();
-		if (!$Security->IsLoggedIn()) $this->Page_Terminate(ew_GetUrl("login.php"));
-		if ($Security->IsLoggedIn()) {
-			$Security->UserID_Loading();
-			$Security->LoadUserID();
-			$Security->UserID_Loaded();
-		}
 		$this->CurrentAction = (@$_GET["a"] <> "") ? $_GET["a"] : @$_POST["a_list"]; // Set up current action
 
 		// Get grid add count
@@ -547,12 +523,18 @@ class csana_person_list extends csana_person {
 
 			// Get default search criteria
 			ew_AddFilter($this->DefaultSearchWhere, $this->BasicSearchWhere(TRUE));
+			ew_AddFilter($this->DefaultSearchWhere, $this->AdvancedSearchWhere(TRUE));
 
 			// Get basic search values
 			$this->LoadBasicSearchValues();
 
+			// Get and validate search values for advanced search
+			$this->LoadSearchValues(); // Get search values
+
 			// Restore filter list
 			$this->RestoreFilterList();
+			if (!$this->ValidateSearch())
+				$this->setFailureMessage($gsSearchError);
 
 			// Restore search parms from Session if not searching / reset / export
 			if (($this->Export <> "" || $this->Command <> "search" && $this->Command <> "reset" && $this->Command <> "resetall") && $this->CheckSearchParms())
@@ -567,6 +549,10 @@ class csana_person_list extends csana_person {
 			// Get basic search criteria
 			if ($gsSearchError == "")
 				$sSrchBasic = $this->BasicSearchWhere();
+
+			// Get search criteria for advanced search
+			if ($gsSearchError == "")
+				$sSrchAdvanced = $this->AdvancedSearchWhere();
 		}
 
 		// Restore display records
@@ -586,6 +572,11 @@ class csana_person_list extends csana_person {
 			$this->BasicSearch->LoadDefault();
 			if ($this->BasicSearch->Keyword != "")
 				$sSrchBasic = $this->BasicSearchWhere();
+
+			// Load advanced search from default
+			if ($this->LoadAdvancedSearchDefault()) {
+				$sSrchAdvanced = $this->AdvancedSearchWhere();
+			}
 		}
 
 		// Build search criteria
@@ -606,8 +597,6 @@ class csana_person_list extends csana_person {
 
 		// Build filter
 		$sFilter = "";
-		if (!$Security->CanList())
-			$sFilter = "(0=1)"; // Filter all records
 		ew_AddFilter($sFilter, $this->DbDetailFilter);
 		ew_AddFilter($sFilter, $this->SearchWhere);
 
@@ -678,14 +667,15 @@ class csana_person_list extends csana_person {
 		$sFilterList = ew_Concat($sFilterList, $this->lastName->AdvancedSearch->ToJSON(), ","); // Field lastName
 		$sFilterList = ew_Concat($sFilterList, $this->nationalID->AdvancedSearch->ToJSON(), ","); // Field nationalID
 		$sFilterList = ew_Concat($sFilterList, $this->nationalNumber->AdvancedSearch->ToJSON(), ","); // Field nationalNumber
+		$sFilterList = ew_Concat($sFilterList, $this->passportNumber->AdvancedSearch->ToJSON(), ","); // Field passportNumber
 		$sFilterList = ew_Concat($sFilterList, $this->fatherName->AdvancedSearch->ToJSON(), ","); // Field fatherName
 		$sFilterList = ew_Concat($sFilterList, $this->gender->AdvancedSearch->ToJSON(), ","); // Field gender
-		$sFilterList = ew_Concat($sFilterList, $this->country->AdvancedSearch->ToJSON(), ","); // Field country
-		$sFilterList = ew_Concat($sFilterList, $this->province->AdvancedSearch->ToJSON(), ","); // Field province
-		$sFilterList = ew_Concat($sFilterList, $this->county->AdvancedSearch->ToJSON(), ","); // Field county
-		$sFilterList = ew_Concat($sFilterList, $this->district->AdvancedSearch->ToJSON(), ","); // Field district
-		$sFilterList = ew_Concat($sFilterList, $this->city_ruralDistrict->AdvancedSearch->ToJSON(), ","); // Field city_ruralDistrict
-		$sFilterList = ew_Concat($sFilterList, $this->region_village->AdvancedSearch->ToJSON(), ","); // Field region_village
+		$sFilterList = ew_Concat($sFilterList, $this->locationLevel1->AdvancedSearch->ToJSON(), ","); // Field locationLevel1
+		$sFilterList = ew_Concat($sFilterList, $this->locationLevel2->AdvancedSearch->ToJSON(), ","); // Field locationLevel2
+		$sFilterList = ew_Concat($sFilterList, $this->locationLevel3->AdvancedSearch->ToJSON(), ","); // Field locationLevel3
+		$sFilterList = ew_Concat($sFilterList, $this->locationLevel4->AdvancedSearch->ToJSON(), ","); // Field locationLevel4
+		$sFilterList = ew_Concat($sFilterList, $this->locationLevel5->AdvancedSearch->ToJSON(), ","); // Field locationLevel5
+		$sFilterList = ew_Concat($sFilterList, $this->locationLevel6->AdvancedSearch->ToJSON(), ","); // Field locationLevel6
 		$sFilterList = ew_Concat($sFilterList, $this->address->AdvancedSearch->ToJSON(), ","); // Field address
 		$sFilterList = ew_Concat($sFilterList, $this->convoy->AdvancedSearch->ToJSON(), ","); // Field convoy
 		$sFilterList = ew_Concat($sFilterList, $this->convoyManager->AdvancedSearch->ToJSON(), ","); // Field convoyManager
@@ -766,6 +756,14 @@ class csana_person_list extends csana_person {
 		$this->nationalNumber->AdvancedSearch->SearchOperator2 = @$filter["w_nationalNumber"];
 		$this->nationalNumber->AdvancedSearch->Save();
 
+		// Field passportNumber
+		$this->passportNumber->AdvancedSearch->SearchValue = @$filter["x_passportNumber"];
+		$this->passportNumber->AdvancedSearch->SearchOperator = @$filter["z_passportNumber"];
+		$this->passportNumber->AdvancedSearch->SearchCondition = @$filter["v_passportNumber"];
+		$this->passportNumber->AdvancedSearch->SearchValue2 = @$filter["y_passportNumber"];
+		$this->passportNumber->AdvancedSearch->SearchOperator2 = @$filter["w_passportNumber"];
+		$this->passportNumber->AdvancedSearch->Save();
+
 		// Field fatherName
 		$this->fatherName->AdvancedSearch->SearchValue = @$filter["x_fatherName"];
 		$this->fatherName->AdvancedSearch->SearchOperator = @$filter["z_fatherName"];
@@ -782,53 +780,53 @@ class csana_person_list extends csana_person {
 		$this->gender->AdvancedSearch->SearchOperator2 = @$filter["w_gender"];
 		$this->gender->AdvancedSearch->Save();
 
-		// Field country
-		$this->country->AdvancedSearch->SearchValue = @$filter["x_country"];
-		$this->country->AdvancedSearch->SearchOperator = @$filter["z_country"];
-		$this->country->AdvancedSearch->SearchCondition = @$filter["v_country"];
-		$this->country->AdvancedSearch->SearchValue2 = @$filter["y_country"];
-		$this->country->AdvancedSearch->SearchOperator2 = @$filter["w_country"];
-		$this->country->AdvancedSearch->Save();
+		// Field locationLevel1
+		$this->locationLevel1->AdvancedSearch->SearchValue = @$filter["x_locationLevel1"];
+		$this->locationLevel1->AdvancedSearch->SearchOperator = @$filter["z_locationLevel1"];
+		$this->locationLevel1->AdvancedSearch->SearchCondition = @$filter["v_locationLevel1"];
+		$this->locationLevel1->AdvancedSearch->SearchValue2 = @$filter["y_locationLevel1"];
+		$this->locationLevel1->AdvancedSearch->SearchOperator2 = @$filter["w_locationLevel1"];
+		$this->locationLevel1->AdvancedSearch->Save();
 
-		// Field province
-		$this->province->AdvancedSearch->SearchValue = @$filter["x_province"];
-		$this->province->AdvancedSearch->SearchOperator = @$filter["z_province"];
-		$this->province->AdvancedSearch->SearchCondition = @$filter["v_province"];
-		$this->province->AdvancedSearch->SearchValue2 = @$filter["y_province"];
-		$this->province->AdvancedSearch->SearchOperator2 = @$filter["w_province"];
-		$this->province->AdvancedSearch->Save();
+		// Field locationLevel2
+		$this->locationLevel2->AdvancedSearch->SearchValue = @$filter["x_locationLevel2"];
+		$this->locationLevel2->AdvancedSearch->SearchOperator = @$filter["z_locationLevel2"];
+		$this->locationLevel2->AdvancedSearch->SearchCondition = @$filter["v_locationLevel2"];
+		$this->locationLevel2->AdvancedSearch->SearchValue2 = @$filter["y_locationLevel2"];
+		$this->locationLevel2->AdvancedSearch->SearchOperator2 = @$filter["w_locationLevel2"];
+		$this->locationLevel2->AdvancedSearch->Save();
 
-		// Field county
-		$this->county->AdvancedSearch->SearchValue = @$filter["x_county"];
-		$this->county->AdvancedSearch->SearchOperator = @$filter["z_county"];
-		$this->county->AdvancedSearch->SearchCondition = @$filter["v_county"];
-		$this->county->AdvancedSearch->SearchValue2 = @$filter["y_county"];
-		$this->county->AdvancedSearch->SearchOperator2 = @$filter["w_county"];
-		$this->county->AdvancedSearch->Save();
+		// Field locationLevel3
+		$this->locationLevel3->AdvancedSearch->SearchValue = @$filter["x_locationLevel3"];
+		$this->locationLevel3->AdvancedSearch->SearchOperator = @$filter["z_locationLevel3"];
+		$this->locationLevel3->AdvancedSearch->SearchCondition = @$filter["v_locationLevel3"];
+		$this->locationLevel3->AdvancedSearch->SearchValue2 = @$filter["y_locationLevel3"];
+		$this->locationLevel3->AdvancedSearch->SearchOperator2 = @$filter["w_locationLevel3"];
+		$this->locationLevel3->AdvancedSearch->Save();
 
-		// Field district
-		$this->district->AdvancedSearch->SearchValue = @$filter["x_district"];
-		$this->district->AdvancedSearch->SearchOperator = @$filter["z_district"];
-		$this->district->AdvancedSearch->SearchCondition = @$filter["v_district"];
-		$this->district->AdvancedSearch->SearchValue2 = @$filter["y_district"];
-		$this->district->AdvancedSearch->SearchOperator2 = @$filter["w_district"];
-		$this->district->AdvancedSearch->Save();
+		// Field locationLevel4
+		$this->locationLevel4->AdvancedSearch->SearchValue = @$filter["x_locationLevel4"];
+		$this->locationLevel4->AdvancedSearch->SearchOperator = @$filter["z_locationLevel4"];
+		$this->locationLevel4->AdvancedSearch->SearchCondition = @$filter["v_locationLevel4"];
+		$this->locationLevel4->AdvancedSearch->SearchValue2 = @$filter["y_locationLevel4"];
+		$this->locationLevel4->AdvancedSearch->SearchOperator2 = @$filter["w_locationLevel4"];
+		$this->locationLevel4->AdvancedSearch->Save();
 
-		// Field city_ruralDistrict
-		$this->city_ruralDistrict->AdvancedSearch->SearchValue = @$filter["x_city_ruralDistrict"];
-		$this->city_ruralDistrict->AdvancedSearch->SearchOperator = @$filter["z_city_ruralDistrict"];
-		$this->city_ruralDistrict->AdvancedSearch->SearchCondition = @$filter["v_city_ruralDistrict"];
-		$this->city_ruralDistrict->AdvancedSearch->SearchValue2 = @$filter["y_city_ruralDistrict"];
-		$this->city_ruralDistrict->AdvancedSearch->SearchOperator2 = @$filter["w_city_ruralDistrict"];
-		$this->city_ruralDistrict->AdvancedSearch->Save();
+		// Field locationLevel5
+		$this->locationLevel5->AdvancedSearch->SearchValue = @$filter["x_locationLevel5"];
+		$this->locationLevel5->AdvancedSearch->SearchOperator = @$filter["z_locationLevel5"];
+		$this->locationLevel5->AdvancedSearch->SearchCondition = @$filter["v_locationLevel5"];
+		$this->locationLevel5->AdvancedSearch->SearchValue2 = @$filter["y_locationLevel5"];
+		$this->locationLevel5->AdvancedSearch->SearchOperator2 = @$filter["w_locationLevel5"];
+		$this->locationLevel5->AdvancedSearch->Save();
 
-		// Field region_village
-		$this->region_village->AdvancedSearch->SearchValue = @$filter["x_region_village"];
-		$this->region_village->AdvancedSearch->SearchOperator = @$filter["z_region_village"];
-		$this->region_village->AdvancedSearch->SearchCondition = @$filter["v_region_village"];
-		$this->region_village->AdvancedSearch->SearchValue2 = @$filter["y_region_village"];
-		$this->region_village->AdvancedSearch->SearchOperator2 = @$filter["w_region_village"];
-		$this->region_village->AdvancedSearch->Save();
+		// Field locationLevel6
+		$this->locationLevel6->AdvancedSearch->SearchValue = @$filter["x_locationLevel6"];
+		$this->locationLevel6->AdvancedSearch->SearchOperator = @$filter["z_locationLevel6"];
+		$this->locationLevel6->AdvancedSearch->SearchCondition = @$filter["v_locationLevel6"];
+		$this->locationLevel6->AdvancedSearch->SearchValue2 = @$filter["y_locationLevel6"];
+		$this->locationLevel6->AdvancedSearch->SearchOperator2 = @$filter["w_locationLevel6"];
+		$this->locationLevel6->AdvancedSearch->Save();
 
 		// Field address
 		$this->address->AdvancedSearch->SearchValue = @$filter["x_address"];
@@ -1009,21 +1007,158 @@ class csana_person_list extends csana_person {
 		$this->BasicSearch->setType(@$filter[EW_TABLE_BASIC_SEARCH_TYPE]);
 	}
 
+	// Advanced search WHERE clause based on QueryString
+	function AdvancedSearchWhere($Default = FALSE) {
+		global $Security;
+		$sWhere = "";
+		$this->BuildSearchSql($sWhere, $this->personID, $Default, FALSE); // personID
+		$this->BuildSearchSql($sWhere, $this->personName, $Default, FALSE); // personName
+		$this->BuildSearchSql($sWhere, $this->lastName, $Default, FALSE); // lastName
+		$this->BuildSearchSql($sWhere, $this->nationalID, $Default, FALSE); // nationalID
+		$this->BuildSearchSql($sWhere, $this->nationalNumber, $Default, FALSE); // nationalNumber
+		$this->BuildSearchSql($sWhere, $this->passportNumber, $Default, FALSE); // passportNumber
+		$this->BuildSearchSql($sWhere, $this->fatherName, $Default, FALSE); // fatherName
+		$this->BuildSearchSql($sWhere, $this->gender, $Default, FALSE); // gender
+		$this->BuildSearchSql($sWhere, $this->locationLevel1, $Default, FALSE); // locationLevel1
+		$this->BuildSearchSql($sWhere, $this->locationLevel2, $Default, FALSE); // locationLevel2
+		$this->BuildSearchSql($sWhere, $this->locationLevel3, $Default, FALSE); // locationLevel3
+		$this->BuildSearchSql($sWhere, $this->locationLevel4, $Default, FALSE); // locationLevel4
+		$this->BuildSearchSql($sWhere, $this->locationLevel5, $Default, FALSE); // locationLevel5
+		$this->BuildSearchSql($sWhere, $this->locationLevel6, $Default, FALSE); // locationLevel6
+		$this->BuildSearchSql($sWhere, $this->address, $Default, FALSE); // address
+		$this->BuildSearchSql($sWhere, $this->convoy, $Default, FALSE); // convoy
+		$this->BuildSearchSql($sWhere, $this->convoyManager, $Default, FALSE); // convoyManager
+		$this->BuildSearchSql($sWhere, $this->followersName, $Default, FALSE); // followersName
+		$this->BuildSearchSql($sWhere, $this->status, $Default, FALSE); // status
+		$this->BuildSearchSql($sWhere, $this->isolatedLocation, $Default, FALSE); // isolatedLocation
+		$this->BuildSearchSql($sWhere, $this->birthDate, $Default, FALSE); // birthDate
+		$this->BuildSearchSql($sWhere, $this->ageRange, $Default, FALSE); // ageRange
+		$this->BuildSearchSql($sWhere, $this->dress1, $Default, FALSE); // dress1
+		$this->BuildSearchSql($sWhere, $this->dress2, $Default, FALSE); // dress2
+		$this->BuildSearchSql($sWhere, $this->signTags, $Default, FALSE); // signTags
+		$this->BuildSearchSql($sWhere, $this->phone, $Default, FALSE); // phone
+		$this->BuildSearchSql($sWhere, $this->mobilePhone, $Default, FALSE); // mobilePhone
+		$this->BuildSearchSql($sWhere, $this->_email, $Default, FALSE); // email
+		$this->BuildSearchSql($sWhere, $this->temporaryResidence, $Default, FALSE); // temporaryResidence
+		$this->BuildSearchSql($sWhere, $this->visitsCount, $Default, FALSE); // visitsCount
+		$this->BuildSearchSql($sWhere, $this->picture, $Default, FALSE); // picture
+		$this->BuildSearchSql($sWhere, $this->registrationUser, $Default, FALSE); // registrationUser
+		$this->BuildSearchSql($sWhere, $this->registrationDateTime, $Default, FALSE); // registrationDateTime
+		$this->BuildSearchSql($sWhere, $this->registrationStation, $Default, FALSE); // registrationStation
+		$this->BuildSearchSql($sWhere, $this->isolatedDateTime, $Default, FALSE); // isolatedDateTime
+		$this->BuildSearchSql($sWhere, $this->description, $Default, FALSE); // description
+
+		// Set up search parm
+		if (!$Default && $sWhere <> "") {
+			$this->Command = "search";
+		}
+		if (!$Default && $this->Command == "search") {
+			$this->personID->AdvancedSearch->Save(); // personID
+			$this->personName->AdvancedSearch->Save(); // personName
+			$this->lastName->AdvancedSearch->Save(); // lastName
+			$this->nationalID->AdvancedSearch->Save(); // nationalID
+			$this->nationalNumber->AdvancedSearch->Save(); // nationalNumber
+			$this->passportNumber->AdvancedSearch->Save(); // passportNumber
+			$this->fatherName->AdvancedSearch->Save(); // fatherName
+			$this->gender->AdvancedSearch->Save(); // gender
+			$this->locationLevel1->AdvancedSearch->Save(); // locationLevel1
+			$this->locationLevel2->AdvancedSearch->Save(); // locationLevel2
+			$this->locationLevel3->AdvancedSearch->Save(); // locationLevel3
+			$this->locationLevel4->AdvancedSearch->Save(); // locationLevel4
+			$this->locationLevel5->AdvancedSearch->Save(); // locationLevel5
+			$this->locationLevel6->AdvancedSearch->Save(); // locationLevel6
+			$this->address->AdvancedSearch->Save(); // address
+			$this->convoy->AdvancedSearch->Save(); // convoy
+			$this->convoyManager->AdvancedSearch->Save(); // convoyManager
+			$this->followersName->AdvancedSearch->Save(); // followersName
+			$this->status->AdvancedSearch->Save(); // status
+			$this->isolatedLocation->AdvancedSearch->Save(); // isolatedLocation
+			$this->birthDate->AdvancedSearch->Save(); // birthDate
+			$this->ageRange->AdvancedSearch->Save(); // ageRange
+			$this->dress1->AdvancedSearch->Save(); // dress1
+			$this->dress2->AdvancedSearch->Save(); // dress2
+			$this->signTags->AdvancedSearch->Save(); // signTags
+			$this->phone->AdvancedSearch->Save(); // phone
+			$this->mobilePhone->AdvancedSearch->Save(); // mobilePhone
+			$this->_email->AdvancedSearch->Save(); // email
+			$this->temporaryResidence->AdvancedSearch->Save(); // temporaryResidence
+			$this->visitsCount->AdvancedSearch->Save(); // visitsCount
+			$this->picture->AdvancedSearch->Save(); // picture
+			$this->registrationUser->AdvancedSearch->Save(); // registrationUser
+			$this->registrationDateTime->AdvancedSearch->Save(); // registrationDateTime
+			$this->registrationStation->AdvancedSearch->Save(); // registrationStation
+			$this->isolatedDateTime->AdvancedSearch->Save(); // isolatedDateTime
+			$this->description->AdvancedSearch->Save(); // description
+		}
+		return $sWhere;
+	}
+
+	// Build search SQL
+	function BuildSearchSql(&$Where, &$Fld, $Default, $MultiValue) {
+		$FldParm = substr($Fld->FldVar, 2);
+		$FldVal = ($Default) ? $Fld->AdvancedSearch->SearchValueDefault : $Fld->AdvancedSearch->SearchValue; // @$_GET["x_$FldParm"]
+		$FldOpr = ($Default) ? $Fld->AdvancedSearch->SearchOperatorDefault : $Fld->AdvancedSearch->SearchOperator; // @$_GET["z_$FldParm"]
+		$FldCond = ($Default) ? $Fld->AdvancedSearch->SearchConditionDefault : $Fld->AdvancedSearch->SearchCondition; // @$_GET["v_$FldParm"]
+		$FldVal2 = ($Default) ? $Fld->AdvancedSearch->SearchValue2Default : $Fld->AdvancedSearch->SearchValue2; // @$_GET["y_$FldParm"]
+		$FldOpr2 = ($Default) ? $Fld->AdvancedSearch->SearchOperator2Default : $Fld->AdvancedSearch->SearchOperator2; // @$_GET["w_$FldParm"]
+		$sWrk = "";
+
+		//$FldVal = ew_StripSlashes($FldVal);
+		if (is_array($FldVal)) $FldVal = implode(",", $FldVal);
+
+		//$FldVal2 = ew_StripSlashes($FldVal2);
+		if (is_array($FldVal2)) $FldVal2 = implode(",", $FldVal2);
+		$FldOpr = strtoupper(trim($FldOpr));
+		if ($FldOpr == "") $FldOpr = "=";
+		$FldOpr2 = strtoupper(trim($FldOpr2));
+		if ($FldOpr2 == "") $FldOpr2 = "=";
+		if (EW_SEARCH_MULTI_VALUE_OPTION == 1 || $FldOpr <> "LIKE" ||
+			($FldOpr2 <> "LIKE" && $FldVal2 <> ""))
+			$MultiValue = FALSE;
+		if ($MultiValue) {
+			$sWrk1 = ($FldVal <> "") ? ew_GetMultiSearchSql($Fld, $FldOpr, $FldVal, $this->DBID) : ""; // Field value 1
+			$sWrk2 = ($FldVal2 <> "") ? ew_GetMultiSearchSql($Fld, $FldOpr2, $FldVal2, $this->DBID) : ""; // Field value 2
+			$sWrk = $sWrk1; // Build final SQL
+			if ($sWrk2 <> "")
+				$sWrk = ($sWrk <> "") ? "($sWrk) $FldCond ($sWrk2)" : $sWrk2;
+		} else {
+			$FldVal = $this->ConvertSearchValue($Fld, $FldVal);
+			$FldVal2 = $this->ConvertSearchValue($Fld, $FldVal2);
+			$sWrk = ew_GetSearchSql($Fld, $FldVal, $FldOpr, $FldCond, $FldVal2, $FldOpr2, $this->DBID);
+		}
+		ew_AddFilter($Where, $sWrk);
+	}
+
+	// Convert search value
+	function ConvertSearchValue(&$Fld, $FldVal) {
+		if ($FldVal == EW_NULL_VALUE || $FldVal == EW_NOT_NULL_VALUE)
+			return $FldVal;
+		$Value = $FldVal;
+		if ($Fld->FldDataType == EW_DATATYPE_BOOLEAN) {
+			if ($FldVal <> "") $Value = ($FldVal == "1" || strtolower(strval($FldVal)) == "y" || strtolower(strval($FldVal)) == "t") ? $Fld->TrueValue : $Fld->FalseValue;
+		} elseif ($Fld->FldDataType == EW_DATATYPE_DATE) {
+			if ($FldVal <> "") $Value = ew_UnFormatDateTime($FldVal, $Fld->FldDateTimeFormat);
+		}
+		return $Value;
+	}
+
 	// Return basic search SQL
 	function BasicSearchSQL($arKeywords, $type) {
 		$sWhere = "";
+		$this->BuildBasicSearchSQL($sWhere, $this->personID, $arKeywords, $type);
 		$this->BuildBasicSearchSQL($sWhere, $this->personName, $arKeywords, $type);
 		$this->BuildBasicSearchSQL($sWhere, $this->lastName, $arKeywords, $type);
 		$this->BuildBasicSearchSQL($sWhere, $this->nationalID, $arKeywords, $type);
 		$this->BuildBasicSearchSQL($sWhere, $this->nationalNumber, $arKeywords, $type);
+		$this->BuildBasicSearchSQL($sWhere, $this->passportNumber, $arKeywords, $type);
 		$this->BuildBasicSearchSQL($sWhere, $this->fatherName, $arKeywords, $type);
 		$this->BuildBasicSearchSQL($sWhere, $this->gender, $arKeywords, $type);
-		$this->BuildBasicSearchSQL($sWhere, $this->country, $arKeywords, $type);
-		$this->BuildBasicSearchSQL($sWhere, $this->province, $arKeywords, $type);
-		$this->BuildBasicSearchSQL($sWhere, $this->county, $arKeywords, $type);
-		$this->BuildBasicSearchSQL($sWhere, $this->district, $arKeywords, $type);
-		$this->BuildBasicSearchSQL($sWhere, $this->city_ruralDistrict, $arKeywords, $type);
-		$this->BuildBasicSearchSQL($sWhere, $this->region_village, $arKeywords, $type);
+		$this->BuildBasicSearchSQL($sWhere, $this->locationLevel1, $arKeywords, $type);
+		$this->BuildBasicSearchSQL($sWhere, $this->locationLevel2, $arKeywords, $type);
+		$this->BuildBasicSearchSQL($sWhere, $this->locationLevel3, $arKeywords, $type);
+		$this->BuildBasicSearchSQL($sWhere, $this->locationLevel4, $arKeywords, $type);
+		$this->BuildBasicSearchSQL($sWhere, $this->locationLevel5, $arKeywords, $type);
+		$this->BuildBasicSearchSQL($sWhere, $this->locationLevel6, $arKeywords, $type);
 		$this->BuildBasicSearchSQL($sWhere, $this->address, $arKeywords, $type);
 		$this->BuildBasicSearchSQL($sWhere, $this->convoy, $arKeywords, $type);
 		$this->BuildBasicSearchSQL($sWhere, $this->convoyManager, $arKeywords, $type);
@@ -1112,7 +1247,6 @@ class csana_person_list extends csana_person {
 	function BasicSearchWhere($Default = FALSE) {
 		global $Security;
 		$sSearchStr = "";
-		if (!$Security->CanSearch()) return "";
 		$sSearchKeyword = ($Default) ? $this->BasicSearch->KeywordDefault : $this->BasicSearch->Keyword;
 		$sSearchType = ($Default) ? $this->BasicSearch->TypeDefault : $this->BasicSearch->Type;
 		if ($sSearchKeyword <> "") {
@@ -1165,6 +1299,78 @@ class csana_person_list extends csana_person {
 		// Check basic search
 		if ($this->BasicSearch->IssetSession())
 			return TRUE;
+		if ($this->personID->AdvancedSearch->IssetSession())
+			return TRUE;
+		if ($this->personName->AdvancedSearch->IssetSession())
+			return TRUE;
+		if ($this->lastName->AdvancedSearch->IssetSession())
+			return TRUE;
+		if ($this->nationalID->AdvancedSearch->IssetSession())
+			return TRUE;
+		if ($this->nationalNumber->AdvancedSearch->IssetSession())
+			return TRUE;
+		if ($this->passportNumber->AdvancedSearch->IssetSession())
+			return TRUE;
+		if ($this->fatherName->AdvancedSearch->IssetSession())
+			return TRUE;
+		if ($this->gender->AdvancedSearch->IssetSession())
+			return TRUE;
+		if ($this->locationLevel1->AdvancedSearch->IssetSession())
+			return TRUE;
+		if ($this->locationLevel2->AdvancedSearch->IssetSession())
+			return TRUE;
+		if ($this->locationLevel3->AdvancedSearch->IssetSession())
+			return TRUE;
+		if ($this->locationLevel4->AdvancedSearch->IssetSession())
+			return TRUE;
+		if ($this->locationLevel5->AdvancedSearch->IssetSession())
+			return TRUE;
+		if ($this->locationLevel6->AdvancedSearch->IssetSession())
+			return TRUE;
+		if ($this->address->AdvancedSearch->IssetSession())
+			return TRUE;
+		if ($this->convoy->AdvancedSearch->IssetSession())
+			return TRUE;
+		if ($this->convoyManager->AdvancedSearch->IssetSession())
+			return TRUE;
+		if ($this->followersName->AdvancedSearch->IssetSession())
+			return TRUE;
+		if ($this->status->AdvancedSearch->IssetSession())
+			return TRUE;
+		if ($this->isolatedLocation->AdvancedSearch->IssetSession())
+			return TRUE;
+		if ($this->birthDate->AdvancedSearch->IssetSession())
+			return TRUE;
+		if ($this->ageRange->AdvancedSearch->IssetSession())
+			return TRUE;
+		if ($this->dress1->AdvancedSearch->IssetSession())
+			return TRUE;
+		if ($this->dress2->AdvancedSearch->IssetSession())
+			return TRUE;
+		if ($this->signTags->AdvancedSearch->IssetSession())
+			return TRUE;
+		if ($this->phone->AdvancedSearch->IssetSession())
+			return TRUE;
+		if ($this->mobilePhone->AdvancedSearch->IssetSession())
+			return TRUE;
+		if ($this->_email->AdvancedSearch->IssetSession())
+			return TRUE;
+		if ($this->temporaryResidence->AdvancedSearch->IssetSession())
+			return TRUE;
+		if ($this->visitsCount->AdvancedSearch->IssetSession())
+			return TRUE;
+		if ($this->picture->AdvancedSearch->IssetSession())
+			return TRUE;
+		if ($this->registrationUser->AdvancedSearch->IssetSession())
+			return TRUE;
+		if ($this->registrationDateTime->AdvancedSearch->IssetSession())
+			return TRUE;
+		if ($this->registrationStation->AdvancedSearch->IssetSession())
+			return TRUE;
+		if ($this->isolatedDateTime->AdvancedSearch->IssetSession())
+			return TRUE;
+		if ($this->description->AdvancedSearch->IssetSession())
+			return TRUE;
 		return FALSE;
 	}
 
@@ -1177,6 +1383,9 @@ class csana_person_list extends csana_person {
 
 		// Clear basic search parameters
 		$this->ResetBasicSearchParms();
+
+		// Clear advanced search parameters
+		$this->ResetAdvancedSearchParms();
 	}
 
 	// Load advanced search default values
@@ -1189,12 +1398,90 @@ class csana_person_list extends csana_person {
 		$this->BasicSearch->UnsetSession();
 	}
 
+	// Clear all advanced search parameters
+	function ResetAdvancedSearchParms() {
+		$this->personID->AdvancedSearch->UnsetSession();
+		$this->personName->AdvancedSearch->UnsetSession();
+		$this->lastName->AdvancedSearch->UnsetSession();
+		$this->nationalID->AdvancedSearch->UnsetSession();
+		$this->nationalNumber->AdvancedSearch->UnsetSession();
+		$this->passportNumber->AdvancedSearch->UnsetSession();
+		$this->fatherName->AdvancedSearch->UnsetSession();
+		$this->gender->AdvancedSearch->UnsetSession();
+		$this->locationLevel1->AdvancedSearch->UnsetSession();
+		$this->locationLevel2->AdvancedSearch->UnsetSession();
+		$this->locationLevel3->AdvancedSearch->UnsetSession();
+		$this->locationLevel4->AdvancedSearch->UnsetSession();
+		$this->locationLevel5->AdvancedSearch->UnsetSession();
+		$this->locationLevel6->AdvancedSearch->UnsetSession();
+		$this->address->AdvancedSearch->UnsetSession();
+		$this->convoy->AdvancedSearch->UnsetSession();
+		$this->convoyManager->AdvancedSearch->UnsetSession();
+		$this->followersName->AdvancedSearch->UnsetSession();
+		$this->status->AdvancedSearch->UnsetSession();
+		$this->isolatedLocation->AdvancedSearch->UnsetSession();
+		$this->birthDate->AdvancedSearch->UnsetSession();
+		$this->ageRange->AdvancedSearch->UnsetSession();
+		$this->dress1->AdvancedSearch->UnsetSession();
+		$this->dress2->AdvancedSearch->UnsetSession();
+		$this->signTags->AdvancedSearch->UnsetSession();
+		$this->phone->AdvancedSearch->UnsetSession();
+		$this->mobilePhone->AdvancedSearch->UnsetSession();
+		$this->_email->AdvancedSearch->UnsetSession();
+		$this->temporaryResidence->AdvancedSearch->UnsetSession();
+		$this->visitsCount->AdvancedSearch->UnsetSession();
+		$this->picture->AdvancedSearch->UnsetSession();
+		$this->registrationUser->AdvancedSearch->UnsetSession();
+		$this->registrationDateTime->AdvancedSearch->UnsetSession();
+		$this->registrationStation->AdvancedSearch->UnsetSession();
+		$this->isolatedDateTime->AdvancedSearch->UnsetSession();
+		$this->description->AdvancedSearch->UnsetSession();
+	}
+
 	// Restore all search parameters
 	function RestoreSearchParms() {
 		$this->RestoreSearch = TRUE;
 
 		// Restore basic search values
 		$this->BasicSearch->Load();
+
+		// Restore advanced search values
+		$this->personID->AdvancedSearch->Load();
+		$this->personName->AdvancedSearch->Load();
+		$this->lastName->AdvancedSearch->Load();
+		$this->nationalID->AdvancedSearch->Load();
+		$this->nationalNumber->AdvancedSearch->Load();
+		$this->passportNumber->AdvancedSearch->Load();
+		$this->fatherName->AdvancedSearch->Load();
+		$this->gender->AdvancedSearch->Load();
+		$this->locationLevel1->AdvancedSearch->Load();
+		$this->locationLevel2->AdvancedSearch->Load();
+		$this->locationLevel3->AdvancedSearch->Load();
+		$this->locationLevel4->AdvancedSearch->Load();
+		$this->locationLevel5->AdvancedSearch->Load();
+		$this->locationLevel6->AdvancedSearch->Load();
+		$this->address->AdvancedSearch->Load();
+		$this->convoy->AdvancedSearch->Load();
+		$this->convoyManager->AdvancedSearch->Load();
+		$this->followersName->AdvancedSearch->Load();
+		$this->status->AdvancedSearch->Load();
+		$this->isolatedLocation->AdvancedSearch->Load();
+		$this->birthDate->AdvancedSearch->Load();
+		$this->ageRange->AdvancedSearch->Load();
+		$this->dress1->AdvancedSearch->Load();
+		$this->dress2->AdvancedSearch->Load();
+		$this->signTags->AdvancedSearch->Load();
+		$this->phone->AdvancedSearch->Load();
+		$this->mobilePhone->AdvancedSearch->Load();
+		$this->_email->AdvancedSearch->Load();
+		$this->temporaryResidence->AdvancedSearch->Load();
+		$this->visitsCount->AdvancedSearch->Load();
+		$this->picture->AdvancedSearch->Load();
+		$this->registrationUser->AdvancedSearch->Load();
+		$this->registrationDateTime->AdvancedSearch->Load();
+		$this->registrationStation->AdvancedSearch->Load();
+		$this->isolatedDateTime->AdvancedSearch->Load();
+		$this->description->AdvancedSearch->Load();
 	}
 
 	// Set up sort parameters
@@ -1209,35 +1496,13 @@ class csana_person_list extends csana_person {
 			$this->UpdateSort($this->lastName); // lastName
 			$this->UpdateSort($this->nationalID); // nationalID
 			$this->UpdateSort($this->nationalNumber); // nationalNumber
+			$this->UpdateSort($this->passportNumber); // passportNumber
 			$this->UpdateSort($this->fatherName); // fatherName
 			$this->UpdateSort($this->gender); // gender
-			$this->UpdateSort($this->country); // country
-			$this->UpdateSort($this->province); // province
-			$this->UpdateSort($this->county); // county
-			$this->UpdateSort($this->district); // district
-			$this->UpdateSort($this->city_ruralDistrict); // city_ruralDistrict
-			$this->UpdateSort($this->region_village); // region_village
-			$this->UpdateSort($this->address); // address
-			$this->UpdateSort($this->convoy); // convoy
-			$this->UpdateSort($this->convoyManager); // convoyManager
-			$this->UpdateSort($this->followersName); // followersName
-			$this->UpdateSort($this->status); // status
-			$this->UpdateSort($this->isolatedLocation); // isolatedLocation
-			$this->UpdateSort($this->birthDate); // birthDate
-			$this->UpdateSort($this->ageRange); // ageRange
-			$this->UpdateSort($this->dress1); // dress1
-			$this->UpdateSort($this->dress2); // dress2
-			$this->UpdateSort($this->signTags); // signTags
-			$this->UpdateSort($this->phone); // phone
+			$this->UpdateSort($this->locationLevel1); // locationLevel1
+			$this->UpdateSort($this->locationLevel2); // locationLevel2
 			$this->UpdateSort($this->mobilePhone); // mobilePhone
-			$this->UpdateSort($this->_email); // email
-			$this->UpdateSort($this->temporaryResidence); // temporaryResidence
-			$this->UpdateSort($this->visitsCount); // visitsCount
 			$this->UpdateSort($this->picture); // picture
-			$this->UpdateSort($this->registrationUser); // registrationUser
-			$this->UpdateSort($this->registrationDateTime); // registrationDateTime
-			$this->UpdateSort($this->registrationStation); // registrationStation
-			$this->UpdateSort($this->isolatedDateTime); // isolatedDateTime
 			$this->setStartRecordNumber(1); // Reset start position
 		}
 	}
@@ -1275,35 +1540,13 @@ class csana_person_list extends csana_person {
 				$this->lastName->setSort("");
 				$this->nationalID->setSort("");
 				$this->nationalNumber->setSort("");
+				$this->passportNumber->setSort("");
 				$this->fatherName->setSort("");
 				$this->gender->setSort("");
-				$this->country->setSort("");
-				$this->province->setSort("");
-				$this->county->setSort("");
-				$this->district->setSort("");
-				$this->city_ruralDistrict->setSort("");
-				$this->region_village->setSort("");
-				$this->address->setSort("");
-				$this->convoy->setSort("");
-				$this->convoyManager->setSort("");
-				$this->followersName->setSort("");
-				$this->status->setSort("");
-				$this->isolatedLocation->setSort("");
-				$this->birthDate->setSort("");
-				$this->ageRange->setSort("");
-				$this->dress1->setSort("");
-				$this->dress2->setSort("");
-				$this->signTags->setSort("");
-				$this->phone->setSort("");
+				$this->locationLevel1->setSort("");
+				$this->locationLevel2->setSort("");
 				$this->mobilePhone->setSort("");
-				$this->_email->setSort("");
-				$this->temporaryResidence->setSort("");
-				$this->visitsCount->setSort("");
 				$this->picture->setSort("");
-				$this->registrationUser->setSort("");
-				$this->registrationDateTime->setSort("");
-				$this->registrationStation->setSort("");
-				$this->isolatedDateTime->setSort("");
 			}
 
 			// Reset start position
@@ -1325,25 +1568,25 @@ class csana_person_list extends csana_person {
 		// "view"
 		$item = &$this->ListOptions->Add("view");
 		$item->CssStyle = "white-space: nowrap;";
-		$item->Visible = $Security->CanView();
+		$item->Visible = TRUE;
 		$item->OnLeft = FALSE;
 
 		// "edit"
 		$item = &$this->ListOptions->Add("edit");
 		$item->CssStyle = "white-space: nowrap;";
-		$item->Visible = $Security->CanEdit();
+		$item->Visible = TRUE;
 		$item->OnLeft = FALSE;
 
 		// "copy"
 		$item = &$this->ListOptions->Add("copy");
 		$item->CssStyle = "white-space: nowrap;";
-		$item->Visible = $Security->CanAdd();
+		$item->Visible = TRUE;
 		$item->OnLeft = FALSE;
 
 		// "delete"
 		$item = &$this->ListOptions->Add("delete");
 		$item->CssStyle = "white-space: nowrap;";
-		$item->Visible = $Security->CanDelete();
+		$item->Visible = TRUE;
 		$item->OnLeft = FALSE;
 
 		// List actions
@@ -1385,14 +1628,14 @@ class csana_person_list extends csana_person {
 
 		// "view"
 		$oListOpt = &$this->ListOptions->Items["view"];
-		if ($Security->CanView())
+		if (TRUE)
 			$oListOpt->Body = "<a class=\"ewRowLink ewView\" title=\"" . ew_HtmlTitle($Language->Phrase("ViewLink")) . "\" data-caption=\"" . ew_HtmlTitle($Language->Phrase("ViewLink")) . "\" href=\"" . ew_HtmlEncode($this->ViewUrl) . "\">" . $Language->Phrase("ViewLink") . "</a>";
 		else
 			$oListOpt->Body = "";
 
 		// "edit"
 		$oListOpt = &$this->ListOptions->Items["edit"];
-		if ($Security->CanEdit()) {
+		if (TRUE) {
 			$oListOpt->Body = "<a class=\"ewRowLink ewEdit\" title=\"" . ew_HtmlTitle($Language->Phrase("EditLink")) . "\" data-caption=\"" . ew_HtmlTitle($Language->Phrase("EditLink")) . "\" href=\"" . ew_HtmlEncode($this->EditUrl) . "\">" . $Language->Phrase("EditLink") . "</a>";
 		} else {
 			$oListOpt->Body = "";
@@ -1400,7 +1643,7 @@ class csana_person_list extends csana_person {
 
 		// "copy"
 		$oListOpt = &$this->ListOptions->Items["copy"];
-		if ($Security->CanAdd()) {
+		if (TRUE) {
 			$oListOpt->Body = "<a class=\"ewRowLink ewCopy\" title=\"" . ew_HtmlTitle($Language->Phrase("CopyLink")) . "\" data-caption=\"" . ew_HtmlTitle($Language->Phrase("CopyLink")) . "\" href=\"" . ew_HtmlEncode($this->CopyUrl) . "\">" . $Language->Phrase("CopyLink") . "</a>";
 		} else {
 			$oListOpt->Body = "";
@@ -1408,7 +1651,7 @@ class csana_person_list extends csana_person {
 
 		// "delete"
 		$oListOpt = &$this->ListOptions->Items["delete"];
-		if ($Security->CanDelete())
+		if (TRUE)
 			$oListOpt->Body = "<a class=\"ewRowLink ewDelete\"" . "" . " title=\"" . ew_HtmlTitle($Language->Phrase("DeleteLink")) . "\" data-caption=\"" . ew_HtmlTitle($Language->Phrase("DeleteLink")) . "\" href=\"" . ew_HtmlEncode($this->DeleteUrl) . "\">" . $Language->Phrase("DeleteLink") . "</a>";
 		else
 			$oListOpt->Body = "";
@@ -1460,7 +1703,7 @@ class csana_person_list extends csana_person {
 		// Add
 		$item = &$option->Add("add");
 		$item->Body = "<a class=\"ewAddEdit ewAdd\" title=\"" . ew_HtmlTitle($Language->Phrase("AddLink")) . "\" data-caption=\"" . ew_HtmlTitle($Language->Phrase("AddLink")) . "\" href=\"" . ew_HtmlEncode($this->AddUrl) . "\">" . $Language->Phrase("AddLink") . "</a>";
-		$item->Visible = ($this->AddUrl <> "" && $Security->CanAdd());
+		$item->Visible = ($this->AddUrl <> "");
 		$option = $options["action"];
 
 		// Set up options default
@@ -1618,6 +1861,11 @@ class csana_person_list extends csana_person {
 		$item->Body = "<a class=\"btn btn-default ewShowAll\" title=\"" . $Language->Phrase("ShowAll") . "\" data-caption=\"" . $Language->Phrase("ShowAll") . "\" href=\"" . $this->PageUrl() . "cmd=reset\">" . $Language->Phrase("ShowAllBtn") . "</a>";
 		$item->Visible = ($this->SearchWhere <> $this->DefaultSearchWhere && $this->SearchWhere <> "0=101");
 
+		// Advanced search button
+		$item = &$this->SearchOptions->Add("advancedsearch");
+		$item->Body = "<a class=\"btn btn-default ewAdvancedSearch\" title=\"" . $Language->Phrase("AdvancedSearch") . "\" data-caption=\"" . $Language->Phrase("AdvancedSearch") . "\" href=\"sana_personsrch.php\">" . $Language->Phrase("AdvancedSearchBtn") . "</a>";
+		$item->Visible = TRUE;
+
 		// Button group for search
 		$this->SearchOptions->UseDropDownButton = FALSE;
 		$this->SearchOptions->UseImageAndText = TRUE;
@@ -1632,11 +1880,6 @@ class csana_person_list extends csana_person {
 		// Hide search options
 		if ($this->Export <> "" || $this->CurrentAction <> "")
 			$this->SearchOptions->HideAllOptions();
-		global $Security;
-		if (!$Security->CanSearch()) {
-			$this->SearchOptions->HideAllOptions();
-			$this->FilterOptions->HideAllOptions();
-		}
 	}
 
 	function SetupListOptionsExt() {
@@ -1688,6 +1931,193 @@ class csana_person_list extends csana_person {
 		$this->BasicSearch->Keyword = @$_GET[EW_TABLE_BASIC_SEARCH];
 		if ($this->BasicSearch->Keyword <> "") $this->Command = "search";
 		$this->BasicSearch->Type = @$_GET[EW_TABLE_BASIC_SEARCH_TYPE];
+	}
+
+	// Load search values for validation
+	function LoadSearchValues() {
+		global $objForm;
+
+		// Load search values
+		// personID
+
+		$this->personID->AdvancedSearch->SearchValue = ew_StripSlashes(@$_GET["x_personID"]);
+		if ($this->personID->AdvancedSearch->SearchValue <> "") $this->Command = "search";
+		$this->personID->AdvancedSearch->SearchOperator = @$_GET["z_personID"];
+
+		// personName
+		$this->personName->AdvancedSearch->SearchValue = ew_StripSlashes(@$_GET["x_personName"]);
+		if ($this->personName->AdvancedSearch->SearchValue <> "") $this->Command = "search";
+		$this->personName->AdvancedSearch->SearchOperator = @$_GET["z_personName"];
+
+		// lastName
+		$this->lastName->AdvancedSearch->SearchValue = ew_StripSlashes(@$_GET["x_lastName"]);
+		if ($this->lastName->AdvancedSearch->SearchValue <> "") $this->Command = "search";
+		$this->lastName->AdvancedSearch->SearchOperator = @$_GET["z_lastName"];
+
+		// nationalID
+		$this->nationalID->AdvancedSearch->SearchValue = ew_StripSlashes(@$_GET["x_nationalID"]);
+		if ($this->nationalID->AdvancedSearch->SearchValue <> "") $this->Command = "search";
+		$this->nationalID->AdvancedSearch->SearchOperator = @$_GET["z_nationalID"];
+
+		// nationalNumber
+		$this->nationalNumber->AdvancedSearch->SearchValue = ew_StripSlashes(@$_GET["x_nationalNumber"]);
+		if ($this->nationalNumber->AdvancedSearch->SearchValue <> "") $this->Command = "search";
+		$this->nationalNumber->AdvancedSearch->SearchOperator = @$_GET["z_nationalNumber"];
+
+		// passportNumber
+		$this->passportNumber->AdvancedSearch->SearchValue = ew_StripSlashes(@$_GET["x_passportNumber"]);
+		if ($this->passportNumber->AdvancedSearch->SearchValue <> "") $this->Command = "search";
+		$this->passportNumber->AdvancedSearch->SearchOperator = @$_GET["z_passportNumber"];
+
+		// fatherName
+		$this->fatherName->AdvancedSearch->SearchValue = ew_StripSlashes(@$_GET["x_fatherName"]);
+		if ($this->fatherName->AdvancedSearch->SearchValue <> "") $this->Command = "search";
+		$this->fatherName->AdvancedSearch->SearchOperator = @$_GET["z_fatherName"];
+
+		// gender
+		$this->gender->AdvancedSearch->SearchValue = ew_StripSlashes(@$_GET["x_gender"]);
+		if ($this->gender->AdvancedSearch->SearchValue <> "") $this->Command = "search";
+		$this->gender->AdvancedSearch->SearchOperator = @$_GET["z_gender"];
+
+		// locationLevel1
+		$this->locationLevel1->AdvancedSearch->SearchValue = ew_StripSlashes(@$_GET["x_locationLevel1"]);
+		if ($this->locationLevel1->AdvancedSearch->SearchValue <> "") $this->Command = "search";
+		$this->locationLevel1->AdvancedSearch->SearchOperator = @$_GET["z_locationLevel1"];
+
+		// locationLevel2
+		$this->locationLevel2->AdvancedSearch->SearchValue = ew_StripSlashes(@$_GET["x_locationLevel2"]);
+		if ($this->locationLevel2->AdvancedSearch->SearchValue <> "") $this->Command = "search";
+		$this->locationLevel2->AdvancedSearch->SearchOperator = @$_GET["z_locationLevel2"];
+
+		// locationLevel3
+		$this->locationLevel3->AdvancedSearch->SearchValue = ew_StripSlashes(@$_GET["x_locationLevel3"]);
+		if ($this->locationLevel3->AdvancedSearch->SearchValue <> "") $this->Command = "search";
+		$this->locationLevel3->AdvancedSearch->SearchOperator = @$_GET["z_locationLevel3"];
+
+		// locationLevel4
+		$this->locationLevel4->AdvancedSearch->SearchValue = ew_StripSlashes(@$_GET["x_locationLevel4"]);
+		if ($this->locationLevel4->AdvancedSearch->SearchValue <> "") $this->Command = "search";
+		$this->locationLevel4->AdvancedSearch->SearchOperator = @$_GET["z_locationLevel4"];
+
+		// locationLevel5
+		$this->locationLevel5->AdvancedSearch->SearchValue = ew_StripSlashes(@$_GET["x_locationLevel5"]);
+		if ($this->locationLevel5->AdvancedSearch->SearchValue <> "") $this->Command = "search";
+		$this->locationLevel5->AdvancedSearch->SearchOperator = @$_GET["z_locationLevel5"];
+
+		// locationLevel6
+		$this->locationLevel6->AdvancedSearch->SearchValue = ew_StripSlashes(@$_GET["x_locationLevel6"]);
+		if ($this->locationLevel6->AdvancedSearch->SearchValue <> "") $this->Command = "search";
+		$this->locationLevel6->AdvancedSearch->SearchOperator = @$_GET["z_locationLevel6"];
+
+		// address
+		$this->address->AdvancedSearch->SearchValue = ew_StripSlashes(@$_GET["x_address"]);
+		if ($this->address->AdvancedSearch->SearchValue <> "") $this->Command = "search";
+		$this->address->AdvancedSearch->SearchOperator = @$_GET["z_address"];
+
+		// convoy
+		$this->convoy->AdvancedSearch->SearchValue = ew_StripSlashes(@$_GET["x_convoy"]);
+		if ($this->convoy->AdvancedSearch->SearchValue <> "") $this->Command = "search";
+		$this->convoy->AdvancedSearch->SearchOperator = @$_GET["z_convoy"];
+
+		// convoyManager
+		$this->convoyManager->AdvancedSearch->SearchValue = ew_StripSlashes(@$_GET["x_convoyManager"]);
+		if ($this->convoyManager->AdvancedSearch->SearchValue <> "") $this->Command = "search";
+		$this->convoyManager->AdvancedSearch->SearchOperator = @$_GET["z_convoyManager"];
+
+		// followersName
+		$this->followersName->AdvancedSearch->SearchValue = ew_StripSlashes(@$_GET["x_followersName"]);
+		if ($this->followersName->AdvancedSearch->SearchValue <> "") $this->Command = "search";
+		$this->followersName->AdvancedSearch->SearchOperator = @$_GET["z_followersName"];
+
+		// status
+		$this->status->AdvancedSearch->SearchValue = ew_StripSlashes(@$_GET["x_status"]);
+		if ($this->status->AdvancedSearch->SearchValue <> "") $this->Command = "search";
+		$this->status->AdvancedSearch->SearchOperator = @$_GET["z_status"];
+
+		// isolatedLocation
+		$this->isolatedLocation->AdvancedSearch->SearchValue = ew_StripSlashes(@$_GET["x_isolatedLocation"]);
+		if ($this->isolatedLocation->AdvancedSearch->SearchValue <> "") $this->Command = "search";
+		$this->isolatedLocation->AdvancedSearch->SearchOperator = @$_GET["z_isolatedLocation"];
+
+		// birthDate
+		$this->birthDate->AdvancedSearch->SearchValue = ew_StripSlashes(@$_GET["x_birthDate"]);
+		if ($this->birthDate->AdvancedSearch->SearchValue <> "") $this->Command = "search";
+		$this->birthDate->AdvancedSearch->SearchOperator = @$_GET["z_birthDate"];
+
+		// ageRange
+		$this->ageRange->AdvancedSearch->SearchValue = ew_StripSlashes(@$_GET["x_ageRange"]);
+		if ($this->ageRange->AdvancedSearch->SearchValue <> "") $this->Command = "search";
+		$this->ageRange->AdvancedSearch->SearchOperator = @$_GET["z_ageRange"];
+
+		// dress1
+		$this->dress1->AdvancedSearch->SearchValue = ew_StripSlashes(@$_GET["x_dress1"]);
+		if ($this->dress1->AdvancedSearch->SearchValue <> "") $this->Command = "search";
+		$this->dress1->AdvancedSearch->SearchOperator = @$_GET["z_dress1"];
+
+		// dress2
+		$this->dress2->AdvancedSearch->SearchValue = ew_StripSlashes(@$_GET["x_dress2"]);
+		if ($this->dress2->AdvancedSearch->SearchValue <> "") $this->Command = "search";
+		$this->dress2->AdvancedSearch->SearchOperator = @$_GET["z_dress2"];
+
+		// signTags
+		$this->signTags->AdvancedSearch->SearchValue = ew_StripSlashes(@$_GET["x_signTags"]);
+		if ($this->signTags->AdvancedSearch->SearchValue <> "") $this->Command = "search";
+		$this->signTags->AdvancedSearch->SearchOperator = @$_GET["z_signTags"];
+
+		// phone
+		$this->phone->AdvancedSearch->SearchValue = ew_StripSlashes(@$_GET["x_phone"]);
+		if ($this->phone->AdvancedSearch->SearchValue <> "") $this->Command = "search";
+		$this->phone->AdvancedSearch->SearchOperator = @$_GET["z_phone"];
+
+		// mobilePhone
+		$this->mobilePhone->AdvancedSearch->SearchValue = ew_StripSlashes(@$_GET["x_mobilePhone"]);
+		if ($this->mobilePhone->AdvancedSearch->SearchValue <> "") $this->Command = "search";
+		$this->mobilePhone->AdvancedSearch->SearchOperator = @$_GET["z_mobilePhone"];
+
+		// email
+		$this->_email->AdvancedSearch->SearchValue = ew_StripSlashes(@$_GET["x__email"]);
+		if ($this->_email->AdvancedSearch->SearchValue <> "") $this->Command = "search";
+		$this->_email->AdvancedSearch->SearchOperator = @$_GET["z__email"];
+
+		// temporaryResidence
+		$this->temporaryResidence->AdvancedSearch->SearchValue = ew_StripSlashes(@$_GET["x_temporaryResidence"]);
+		if ($this->temporaryResidence->AdvancedSearch->SearchValue <> "") $this->Command = "search";
+		$this->temporaryResidence->AdvancedSearch->SearchOperator = @$_GET["z_temporaryResidence"];
+
+		// visitsCount
+		$this->visitsCount->AdvancedSearch->SearchValue = ew_StripSlashes(@$_GET["x_visitsCount"]);
+		if ($this->visitsCount->AdvancedSearch->SearchValue <> "") $this->Command = "search";
+		$this->visitsCount->AdvancedSearch->SearchOperator = @$_GET["z_visitsCount"];
+
+		// picture
+		$this->picture->AdvancedSearch->SearchValue = ew_StripSlashes(@$_GET["x_picture"]);
+		if ($this->picture->AdvancedSearch->SearchValue <> "") $this->Command = "search";
+		$this->picture->AdvancedSearch->SearchOperator = @$_GET["z_picture"];
+
+		// registrationUser
+		$this->registrationUser->AdvancedSearch->SearchValue = ew_StripSlashes(@$_GET["x_registrationUser"]);
+		if ($this->registrationUser->AdvancedSearch->SearchValue <> "") $this->Command = "search";
+		$this->registrationUser->AdvancedSearch->SearchOperator = @$_GET["z_registrationUser"];
+
+		// registrationDateTime
+		$this->registrationDateTime->AdvancedSearch->SearchValue = ew_StripSlashes(@$_GET["x_registrationDateTime"]);
+		if ($this->registrationDateTime->AdvancedSearch->SearchValue <> "") $this->Command = "search";
+		$this->registrationDateTime->AdvancedSearch->SearchOperator = @$_GET["z_registrationDateTime"];
+
+		// registrationStation
+		$this->registrationStation->AdvancedSearch->SearchValue = ew_StripSlashes(@$_GET["x_registrationStation"]);
+		if ($this->registrationStation->AdvancedSearch->SearchValue <> "") $this->Command = "search";
+		$this->registrationStation->AdvancedSearch->SearchOperator = @$_GET["z_registrationStation"];
+
+		// isolatedDateTime
+		$this->isolatedDateTime->AdvancedSearch->SearchValue = ew_StripSlashes(@$_GET["x_isolatedDateTime"]);
+		if ($this->isolatedDateTime->AdvancedSearch->SearchValue <> "") $this->Command = "search";
+		$this->isolatedDateTime->AdvancedSearch->SearchOperator = @$_GET["z_isolatedDateTime"];
+
+		// description
+		$this->description->AdvancedSearch->SearchValue = ew_StripSlashes(@$_GET["x_description"]);
+		if ($this->description->AdvancedSearch->SearchValue <> "") $this->Command = "search";
+		$this->description->AdvancedSearch->SearchOperator = @$_GET["z_description"];
 	}
 
 	// Load recordset
@@ -1750,14 +2180,15 @@ class csana_person_list extends csana_person {
 		$this->lastName->setDbValue($rs->fields('lastName'));
 		$this->nationalID->setDbValue($rs->fields('nationalID'));
 		$this->nationalNumber->setDbValue($rs->fields('nationalNumber'));
+		$this->passportNumber->setDbValue($rs->fields('passportNumber'));
 		$this->fatherName->setDbValue($rs->fields('fatherName'));
 		$this->gender->setDbValue($rs->fields('gender'));
-		$this->country->setDbValue($rs->fields('country'));
-		$this->province->setDbValue($rs->fields('province'));
-		$this->county->setDbValue($rs->fields('county'));
-		$this->district->setDbValue($rs->fields('district'));
-		$this->city_ruralDistrict->setDbValue($rs->fields('city_ruralDistrict'));
-		$this->region_village->setDbValue($rs->fields('region_village'));
+		$this->locationLevel1->setDbValue($rs->fields('locationLevel1'));
+		$this->locationLevel2->setDbValue($rs->fields('locationLevel2'));
+		$this->locationLevel3->setDbValue($rs->fields('locationLevel3'));
+		$this->locationLevel4->setDbValue($rs->fields('locationLevel4'));
+		$this->locationLevel5->setDbValue($rs->fields('locationLevel5'));
+		$this->locationLevel6->setDbValue($rs->fields('locationLevel6'));
 		$this->address->setDbValue($rs->fields('address'));
 		$this->convoy->setDbValue($rs->fields('convoy'));
 		$this->convoyManager->setDbValue($rs->fields('convoyManager'));
@@ -1774,7 +2205,8 @@ class csana_person_list extends csana_person {
 		$this->_email->setDbValue($rs->fields('email'));
 		$this->temporaryResidence->setDbValue($rs->fields('temporaryResidence'));
 		$this->visitsCount->setDbValue($rs->fields('visitsCount'));
-		$this->picture->setDbValue($rs->fields('picture'));
+		$this->picture->Upload->DbValue = $rs->fields('picture');
+		$this->picture->CurrentValue = $this->picture->Upload->DbValue;
 		$this->registrationUser->setDbValue($rs->fields('registrationUser'));
 		$this->registrationDateTime->setDbValue($rs->fields('registrationDateTime'));
 		$this->registrationStation->setDbValue($rs->fields('registrationStation'));
@@ -1791,14 +2223,15 @@ class csana_person_list extends csana_person {
 		$this->lastName->DbValue = $row['lastName'];
 		$this->nationalID->DbValue = $row['nationalID'];
 		$this->nationalNumber->DbValue = $row['nationalNumber'];
+		$this->passportNumber->DbValue = $row['passportNumber'];
 		$this->fatherName->DbValue = $row['fatherName'];
 		$this->gender->DbValue = $row['gender'];
-		$this->country->DbValue = $row['country'];
-		$this->province->DbValue = $row['province'];
-		$this->county->DbValue = $row['county'];
-		$this->district->DbValue = $row['district'];
-		$this->city_ruralDistrict->DbValue = $row['city_ruralDistrict'];
-		$this->region_village->DbValue = $row['region_village'];
+		$this->locationLevel1->DbValue = $row['locationLevel1'];
+		$this->locationLevel2->DbValue = $row['locationLevel2'];
+		$this->locationLevel3->DbValue = $row['locationLevel3'];
+		$this->locationLevel4->DbValue = $row['locationLevel4'];
+		$this->locationLevel5->DbValue = $row['locationLevel5'];
+		$this->locationLevel6->DbValue = $row['locationLevel6'];
 		$this->address->DbValue = $row['address'];
 		$this->convoy->DbValue = $row['convoy'];
 		$this->convoyManager->DbValue = $row['convoyManager'];
@@ -1815,7 +2248,7 @@ class csana_person_list extends csana_person {
 		$this->_email->DbValue = $row['email'];
 		$this->temporaryResidence->DbValue = $row['temporaryResidence'];
 		$this->visitsCount->DbValue = $row['visitsCount'];
-		$this->picture->DbValue = $row['picture'];
+		$this->picture->Upload->DbValue = $row['picture'];
 		$this->registrationUser->DbValue = $row['registrationUser'];
 		$this->registrationDateTime->DbValue = $row['registrationDateTime'];
 		$this->registrationStation->DbValue = $row['registrationStation'];
@@ -1867,14 +2300,15 @@ class csana_person_list extends csana_person {
 		// lastName
 		// nationalID
 		// nationalNumber
+		// passportNumber
 		// fatherName
 		// gender
-		// country
-		// province
-		// county
-		// district
-		// city_ruralDistrict
-		// region_village
+		// locationLevel1
+		// locationLevel2
+		// locationLevel3
+		// locationLevel4
+		// locationLevel5
+		// locationLevel6
 		// address
 		// convoy
 		// convoyManager
@@ -1920,37 +2354,163 @@ class csana_person_list extends csana_person {
 		$this->nationalNumber->ViewValue = $this->nationalNumber->CurrentValue;
 		$this->nationalNumber->ViewCustomAttributes = "";
 
+		// passportNumber
+		$this->passportNumber->ViewValue = $this->passportNumber->CurrentValue;
+		$this->passportNumber->ViewCustomAttributes = "";
+
 		// fatherName
 		$this->fatherName->ViewValue = $this->fatherName->CurrentValue;
 		$this->fatherName->ViewCustomAttributes = "";
 
 		// gender
-		$this->gender->ViewValue = $this->gender->CurrentValue;
+		if (strval($this->gender->CurrentValue) <> "") {
+			$sFilterWrk = "`stateName`" . ew_SearchString("=", $this->gender->CurrentValue, EW_DATATYPE_STRING, "");
+		switch (@$gsLanguage) {
+			case "en":
+				$sSqlWrk = "SELECT `stateName`, `stateName` AS `DispFld`, '' AS `Disp2Fld`, '' AS `Disp3Fld`, '' AS `Disp4Fld` FROM `sana_state`";
+				$sWhereWrk = "";
+				break;
+			case "fa":
+				$sSqlWrk = "SELECT `stateName`, `stateName` AS `DispFld`, '' AS `Disp2Fld`, '' AS `Disp3Fld`, '' AS `Disp4Fld` FROM `sana_state`";
+				$sWhereWrk = "";
+				break;
+			default:
+				$sSqlWrk = "SELECT `stateName`, `stateName` AS `DispFld`, '' AS `Disp2Fld`, '' AS `Disp3Fld`, '' AS `Disp4Fld` FROM `sana_state`";
+				$sWhereWrk = "";
+				break;
+		}
+		$lookuptblfilter = "`stateLanguage` = '" . CurrentLanguageID() . "' AND `stateClass` = 'gender'";
+		ew_AddFilter($sWhereWrk, $lookuptblfilter);
+		ew_AddFilter($sWhereWrk, $sFilterWrk);
+		$this->Lookup_Selecting($this->gender, $sWhereWrk); // Call Lookup selecting
+		if ($sWhereWrk <> "") $sSqlWrk .= " WHERE " . $sWhereWrk;
+			$rswrk = Conn()->Execute($sSqlWrk);
+			if ($rswrk && !$rswrk->EOF) { // Lookup values found
+				$arwrk = array();
+				$arwrk[1] = $rswrk->fields('DispFld');
+				$this->gender->ViewValue = $this->gender->DisplayValue($arwrk);
+				$rswrk->Close();
+			} else {
+				$this->gender->ViewValue = $this->gender->CurrentValue;
+			}
+		} else {
+			$this->gender->ViewValue = NULL;
+		}
 		$this->gender->ViewCustomAttributes = "";
 
-		// country
-		$this->country->ViewValue = $this->country->CurrentValue;
-		$this->country->ViewCustomAttributes = "";
+		// locationLevel1
+		if (strval($this->locationLevel1->CurrentValue) <> "") {
+			$sFilterWrk = "`locationName`" . ew_SearchString("=", $this->locationLevel1->CurrentValue, EW_DATATYPE_STRING, "");
+		switch (@$gsLanguage) {
+			case "en":
+				$sSqlWrk = "SELECT `locationName`, `locationName` AS `DispFld`, '' AS `Disp2Fld`, '' AS `Disp3Fld`, '' AS `Disp4Fld` FROM `sana_location_level1`";
+				$sWhereWrk = "";
+				break;
+			case "fa":
+				$sSqlWrk = "SELECT `locationName`, `locationName` AS `DispFld`, '' AS `Disp2Fld`, '' AS `Disp3Fld`, '' AS `Disp4Fld` FROM `sana_location_level1`";
+				$sWhereWrk = "";
+				break;
+			default:
+				$sSqlWrk = "SELECT `locationName`, `locationName` AS `DispFld`, '' AS `Disp2Fld`, '' AS `Disp3Fld`, '' AS `Disp4Fld` FROM `sana_location_level1`";
+				$sWhereWrk = "";
+				break;
+		}
+		ew_AddFilter($sWhereWrk, $sFilterWrk);
+		$this->Lookup_Selecting($this->locationLevel1, $sWhereWrk); // Call Lookup selecting
+		if ($sWhereWrk <> "") $sSqlWrk .= " WHERE " . $sWhereWrk;
+			$rswrk = Conn()->Execute($sSqlWrk);
+			if ($rswrk && !$rswrk->EOF) { // Lookup values found
+				$arwrk = array();
+				$arwrk[1] = $rswrk->fields('DispFld');
+				$this->locationLevel1->ViewValue = $this->locationLevel1->DisplayValue($arwrk);
+				$rswrk->Close();
+			} else {
+				$this->locationLevel1->ViewValue = $this->locationLevel1->CurrentValue;
+			}
+		} else {
+			$this->locationLevel1->ViewValue = NULL;
+		}
+		$this->locationLevel1->ViewCustomAttributes = "";
 
-		// province
-		$this->province->ViewValue = $this->province->CurrentValue;
-		$this->province->ViewCustomAttributes = "";
+		// locationLevel2
+		if (strval($this->locationLevel2->CurrentValue) <> "") {
+			$sFilterWrk = "`locationName`" . ew_SearchString("=", $this->locationLevel2->CurrentValue, EW_DATATYPE_STRING, "");
+		switch (@$gsLanguage) {
+			case "en":
+				$sSqlWrk = "SELECT `locationName`, `locationName` AS `DispFld`, '' AS `Disp2Fld`, '' AS `Disp3Fld`, '' AS `Disp4Fld` FROM `sana_location_level2`";
+				$sWhereWrk = "";
+				break;
+			case "fa":
+				$sSqlWrk = "SELECT `locationName`, `locationName` AS `DispFld`, '' AS `Disp2Fld`, '' AS `Disp3Fld`, '' AS `Disp4Fld` FROM `sana_location_level2`";
+				$sWhereWrk = "";
+				break;
+			default:
+				$sSqlWrk = "SELECT `locationName`, `locationName` AS `DispFld`, '' AS `Disp2Fld`, '' AS `Disp3Fld`, '' AS `Disp4Fld` FROM `sana_location_level2`";
+				$sWhereWrk = "";
+				break;
+		}
+		ew_AddFilter($sWhereWrk, $sFilterWrk);
+		$this->Lookup_Selecting($this->locationLevel2, $sWhereWrk); // Call Lookup selecting
+		if ($sWhereWrk <> "") $sSqlWrk .= " WHERE " . $sWhereWrk;
+			$rswrk = Conn()->Execute($sSqlWrk);
+			if ($rswrk && !$rswrk->EOF) { // Lookup values found
+				$arwrk = array();
+				$arwrk[1] = $rswrk->fields('DispFld');
+				$this->locationLevel2->ViewValue = $this->locationLevel2->DisplayValue($arwrk);
+				$rswrk->Close();
+			} else {
+				$this->locationLevel2->ViewValue = $this->locationLevel2->CurrentValue;
+			}
+		} else {
+			$this->locationLevel2->ViewValue = NULL;
+		}
+		$this->locationLevel2->ViewCustomAttributes = "";
 
-		// county
-		$this->county->ViewValue = $this->county->CurrentValue;
-		$this->county->ViewCustomAttributes = "";
+		// locationLevel3
+		if (strval($this->locationLevel3->CurrentValue) <> "") {
+			$sFilterWrk = "`locationName`" . ew_SearchString("=", $this->locationLevel3->CurrentValue, EW_DATATYPE_STRING, "");
+		switch (@$gsLanguage) {
+			case "en":
+				$sSqlWrk = "SELECT `locationName`, `locationName` AS `DispFld`, '' AS `Disp2Fld`, '' AS `Disp3Fld`, '' AS `Disp4Fld` FROM `sana_location_level3`";
+				$sWhereWrk = "";
+				break;
+			case "fa":
+				$sSqlWrk = "SELECT `locationName`, `locationName` AS `DispFld`, '' AS `Disp2Fld`, '' AS `Disp3Fld`, '' AS `Disp4Fld` FROM `sana_location_level3`";
+				$sWhereWrk = "";
+				break;
+			default:
+				$sSqlWrk = "SELECT `locationName`, `locationName` AS `DispFld`, '' AS `Disp2Fld`, '' AS `Disp3Fld`, '' AS `Disp4Fld` FROM `sana_location_level3`";
+				$sWhereWrk = "";
+				break;
+		}
+		ew_AddFilter($sWhereWrk, $sFilterWrk);
+		$this->Lookup_Selecting($this->locationLevel3, $sWhereWrk); // Call Lookup selecting
+		if ($sWhereWrk <> "") $sSqlWrk .= " WHERE " . $sWhereWrk;
+			$rswrk = Conn()->Execute($sSqlWrk);
+			if ($rswrk && !$rswrk->EOF) { // Lookup values found
+				$arwrk = array();
+				$arwrk[1] = $rswrk->fields('DispFld');
+				$this->locationLevel3->ViewValue = $this->locationLevel3->DisplayValue($arwrk);
+				$rswrk->Close();
+			} else {
+				$this->locationLevel3->ViewValue = $this->locationLevel3->CurrentValue;
+			}
+		} else {
+			$this->locationLevel3->ViewValue = NULL;
+		}
+		$this->locationLevel3->ViewCustomAttributes = "";
 
-		// district
-		$this->district->ViewValue = $this->district->CurrentValue;
-		$this->district->ViewCustomAttributes = "";
+		// locationLevel4
+		$this->locationLevel4->ViewValue = $this->locationLevel4->CurrentValue;
+		$this->locationLevel4->ViewCustomAttributes = "";
 
-		// city_ruralDistrict
-		$this->city_ruralDistrict->ViewValue = $this->city_ruralDistrict->CurrentValue;
-		$this->city_ruralDistrict->ViewCustomAttributes = "";
+		// locationLevel5
+		$this->locationLevel5->ViewValue = $this->locationLevel5->CurrentValue;
+		$this->locationLevel5->ViewCustomAttributes = "";
 
-		// region_village
-		$this->region_village->ViewValue = $this->region_village->CurrentValue;
-		$this->region_village->ViewCustomAttributes = "";
+		// locationLevel6
+		$this->locationLevel6->ViewValue = $this->locationLevel6->CurrentValue;
+		$this->locationLevel6->ViewCustomAttributes = "";
 
 		// address
 		$this->address->ViewValue = $this->address->CurrentValue;
@@ -1969,7 +2529,39 @@ class csana_person_list extends csana_person {
 		$this->followersName->ViewCustomAttributes = "";
 
 		// status
-		$this->status->ViewValue = $this->status->CurrentValue;
+		if (strval($this->status->CurrentValue) <> "") {
+			$sFilterWrk = "`stateName`" . ew_SearchString("=", $this->status->CurrentValue, EW_DATATYPE_STRING, "");
+		switch (@$gsLanguage) {
+			case "en":
+				$sSqlWrk = "SELECT `stateName`, `stateName` AS `DispFld`, '' AS `Disp2Fld`, '' AS `Disp3Fld`, '' AS `Disp4Fld` FROM `sana_state`";
+				$sWhereWrk = "";
+				break;
+			case "fa":
+				$sSqlWrk = "SELECT `stateName`, `stateName` AS `DispFld`, '' AS `Disp2Fld`, '' AS `Disp3Fld`, '' AS `Disp4Fld` FROM `sana_state`";
+				$sWhereWrk = "";
+				break;
+			default:
+				$sSqlWrk = "SELECT `stateName`, `stateName` AS `DispFld`, '' AS `Disp2Fld`, '' AS `Disp3Fld`, '' AS `Disp4Fld` FROM `sana_state`";
+				$sWhereWrk = "";
+				break;
+		}
+		$lookuptblfilter = "`stateLanguage` = '" . CurrentLanguageID() . "' AND `stateClass` = 'person'";
+		ew_AddFilter($sWhereWrk, $lookuptblfilter);
+		ew_AddFilter($sWhereWrk, $sFilterWrk);
+		$this->Lookup_Selecting($this->status, $sWhereWrk); // Call Lookup selecting
+		if ($sWhereWrk <> "") $sSqlWrk .= " WHERE " . $sWhereWrk;
+			$rswrk = Conn()->Execute($sSqlWrk);
+			if ($rswrk && !$rswrk->EOF) { // Lookup values found
+				$arwrk = array();
+				$arwrk[1] = $rswrk->fields('DispFld');
+				$this->status->ViewValue = $this->status->DisplayValue($arwrk);
+				$rswrk->Close();
+			} else {
+				$this->status->ViewValue = $this->status->CurrentValue;
+			}
+		} else {
+			$this->status->ViewValue = NULL;
+		}
 		$this->status->ViewCustomAttributes = "";
 
 		// isolatedLocation
@@ -1981,7 +2573,39 @@ class csana_person_list extends csana_person {
 		$this->birthDate->ViewCustomAttributes = "";
 
 		// ageRange
-		$this->ageRange->ViewValue = $this->ageRange->CurrentValue;
+		if (strval($this->ageRange->CurrentValue) <> "") {
+			$sFilterWrk = "`stateName`" . ew_SearchString("=", $this->ageRange->CurrentValue, EW_DATATYPE_STRING, "");
+		switch (@$gsLanguage) {
+			case "en":
+				$sSqlWrk = "SELECT `stateName`, `stateName` AS `DispFld`, '' AS `Disp2Fld`, '' AS `Disp3Fld`, '' AS `Disp4Fld` FROM `sana_state`";
+				$sWhereWrk = "";
+				break;
+			case "fa":
+				$sSqlWrk = "SELECT `stateName`, `stateName` AS `DispFld`, '' AS `Disp2Fld`, '' AS `Disp3Fld`, '' AS `Disp4Fld` FROM `sana_state`";
+				$sWhereWrk = "";
+				break;
+			default:
+				$sSqlWrk = "SELECT `stateName`, `stateName` AS `DispFld`, '' AS `Disp2Fld`, '' AS `Disp3Fld`, '' AS `Disp4Fld` FROM `sana_state`";
+				$sWhereWrk = "";
+				break;
+		}
+		$lookuptblfilter = " `stateClass` = 'age' ";
+		ew_AddFilter($sWhereWrk, $lookuptblfilter);
+		ew_AddFilter($sWhereWrk, $sFilterWrk);
+		$this->Lookup_Selecting($this->ageRange, $sWhereWrk); // Call Lookup selecting
+		if ($sWhereWrk <> "") $sSqlWrk .= " WHERE " . $sWhereWrk;
+			$rswrk = Conn()->Execute($sSqlWrk);
+			if ($rswrk && !$rswrk->EOF) { // Lookup values found
+				$arwrk = array();
+				$arwrk[1] = $rswrk->fields('DispFld');
+				$this->ageRange->ViewValue = $this->ageRange->DisplayValue($arwrk);
+				$rswrk->Close();
+			} else {
+				$this->ageRange->ViewValue = $this->ageRange->CurrentValue;
+			}
+		} else {
+			$this->ageRange->ViewValue = NULL;
+		}
 		$this->ageRange->ViewCustomAttributes = "";
 
 		// dress1
@@ -2017,7 +2641,14 @@ class csana_person_list extends csana_person {
 		$this->visitsCount->ViewCustomAttributes = "";
 
 		// picture
-		$this->picture->ViewValue = $this->picture->CurrentValue;
+		if (!ew_Empty($this->picture->Upload->DbValue)) {
+			$this->picture->ImageWidth = 70;
+			$this->picture->ImageHeight = 70;
+			$this->picture->ImageAlt = $this->picture->FldAlt();
+			$this->picture->ViewValue = $this->picture->Upload->DbValue;
+		} else {
+			$this->picture->ViewValue = "";
+		}
 		$this->picture->ViewCustomAttributes = "";
 
 		// registrationUser
@@ -2063,6 +2694,11 @@ class csana_person_list extends csana_person {
 			$this->nationalNumber->HrefValue = "";
 			$this->nationalNumber->TooltipValue = "";
 
+			// passportNumber
+			$this->passportNumber->LinkCustomAttributes = "";
+			$this->passportNumber->HrefValue = "";
+			$this->passportNumber->TooltipValue = "";
+
 			// fatherName
 			$this->fatherName->LinkCustomAttributes = "";
 			$this->fatherName->HrefValue = "";
@@ -2073,145 +2709,185 @@ class csana_person_list extends csana_person {
 			$this->gender->HrefValue = "";
 			$this->gender->TooltipValue = "";
 
-			// country
-			$this->country->LinkCustomAttributes = "";
-			$this->country->HrefValue = "";
-			$this->country->TooltipValue = "";
+			// locationLevel1
+			$this->locationLevel1->LinkCustomAttributes = "";
+			$this->locationLevel1->HrefValue = "";
+			$this->locationLevel1->TooltipValue = "";
 
-			// province
-			$this->province->LinkCustomAttributes = "";
-			$this->province->HrefValue = "";
-			$this->province->TooltipValue = "";
-
-			// county
-			$this->county->LinkCustomAttributes = "";
-			$this->county->HrefValue = "";
-			$this->county->TooltipValue = "";
-
-			// district
-			$this->district->LinkCustomAttributes = "";
-			$this->district->HrefValue = "";
-			$this->district->TooltipValue = "";
-
-			// city_ruralDistrict
-			$this->city_ruralDistrict->LinkCustomAttributes = "";
-			$this->city_ruralDistrict->HrefValue = "";
-			$this->city_ruralDistrict->TooltipValue = "";
-
-			// region_village
-			$this->region_village->LinkCustomAttributes = "";
-			$this->region_village->HrefValue = "";
-			$this->region_village->TooltipValue = "";
-
-			// address
-			$this->address->LinkCustomAttributes = "";
-			$this->address->HrefValue = "";
-			$this->address->TooltipValue = "";
-
-			// convoy
-			$this->convoy->LinkCustomAttributes = "";
-			$this->convoy->HrefValue = "";
-			$this->convoy->TooltipValue = "";
-
-			// convoyManager
-			$this->convoyManager->LinkCustomAttributes = "";
-			$this->convoyManager->HrefValue = "";
-			$this->convoyManager->TooltipValue = "";
-
-			// followersName
-			$this->followersName->LinkCustomAttributes = "";
-			$this->followersName->HrefValue = "";
-			$this->followersName->TooltipValue = "";
-
-			// status
-			$this->status->LinkCustomAttributes = "";
-			$this->status->HrefValue = "";
-			$this->status->TooltipValue = "";
-
-			// isolatedLocation
-			$this->isolatedLocation->LinkCustomAttributes = "";
-			$this->isolatedLocation->HrefValue = "";
-			$this->isolatedLocation->TooltipValue = "";
-
-			// birthDate
-			$this->birthDate->LinkCustomAttributes = "";
-			$this->birthDate->HrefValue = "";
-			$this->birthDate->TooltipValue = "";
-
-			// ageRange
-			$this->ageRange->LinkCustomAttributes = "";
-			$this->ageRange->HrefValue = "";
-			$this->ageRange->TooltipValue = "";
-
-			// dress1
-			$this->dress1->LinkCustomAttributes = "";
-			$this->dress1->HrefValue = "";
-			$this->dress1->TooltipValue = "";
-
-			// dress2
-			$this->dress2->LinkCustomAttributes = "";
-			$this->dress2->HrefValue = "";
-			$this->dress2->TooltipValue = "";
-
-			// signTags
-			$this->signTags->LinkCustomAttributes = "";
-			$this->signTags->HrefValue = "";
-			$this->signTags->TooltipValue = "";
-
-			// phone
-			$this->phone->LinkCustomAttributes = "";
-			$this->phone->HrefValue = "";
-			$this->phone->TooltipValue = "";
+			// locationLevel2
+			$this->locationLevel2->LinkCustomAttributes = "";
+			$this->locationLevel2->HrefValue = "";
+			$this->locationLevel2->TooltipValue = "";
 
 			// mobilePhone
 			$this->mobilePhone->LinkCustomAttributes = "";
 			$this->mobilePhone->HrefValue = "";
 			$this->mobilePhone->TooltipValue = "";
 
-			// email
-			$this->_email->LinkCustomAttributes = "";
-			$this->_email->HrefValue = "";
-			$this->_email->TooltipValue = "";
-
-			// temporaryResidence
-			$this->temporaryResidence->LinkCustomAttributes = "";
-			$this->temporaryResidence->HrefValue = "";
-			$this->temporaryResidence->TooltipValue = "";
-
-			// visitsCount
-			$this->visitsCount->LinkCustomAttributes = "";
-			$this->visitsCount->HrefValue = "";
-			$this->visitsCount->TooltipValue = "";
-
 			// picture
 			$this->picture->LinkCustomAttributes = "";
-			$this->picture->HrefValue = "";
+			if (!ew_Empty($this->picture->Upload->DbValue)) {
+				$this->picture->HrefValue = ew_GetFileUploadUrl($this->picture, $this->picture->Upload->DbValue); // Add prefix/suffix
+				$this->picture->LinkAttrs["target"] = ""; // Add target
+				if ($this->Export <> "") $this->picture->HrefValue = ew_ConvertFullUrl($this->picture->HrefValue);
+			} else {
+				$this->picture->HrefValue = "";
+			}
+			$this->picture->HrefValue2 = $this->picture->UploadPath . $this->picture->Upload->DbValue;
 			$this->picture->TooltipValue = "";
+			if ($this->picture->UseColorbox) {
+				$this->picture->LinkAttrs["title"] = $Language->Phrase("ViewImageGallery");
+				$this->picture->LinkAttrs["data-rel"] = "sana_person_x" . $this->RowCnt . "_picture";
 
-			// registrationUser
-			$this->registrationUser->LinkCustomAttributes = "";
-			$this->registrationUser->HrefValue = "";
-			$this->registrationUser->TooltipValue = "";
+				//$this->picture->LinkAttrs["class"] = "ewLightbox ewTooltip img-thumbnail";
+				//$this->picture->LinkAttrs["data-placement"] = "bottom";
+				//$this->picture->LinkAttrs["data-container"] = "body";
 
-			// registrationDateTime
-			$this->registrationDateTime->LinkCustomAttributes = "";
-			$this->registrationDateTime->HrefValue = "";
-			$this->registrationDateTime->TooltipValue = "";
+				$this->picture->LinkAttrs["class"] = "ewLightbox img-thumbnail";
+			}
+		} elseif ($this->RowType == EW_ROWTYPE_SEARCH) { // Search row
 
-			// registrationStation
-			$this->registrationStation->LinkCustomAttributes = "";
-			$this->registrationStation->HrefValue = "";
-			$this->registrationStation->TooltipValue = "";
+			// personID
+			$this->personID->EditAttrs["class"] = "form-control";
+			$this->personID->EditCustomAttributes = "";
+			$this->personID->EditValue = ew_HtmlEncode($this->personID->AdvancedSearch->SearchValue);
+			$this->personID->PlaceHolder = ew_RemoveHtml($this->personID->FldCaption());
 
-			// isolatedDateTime
-			$this->isolatedDateTime->LinkCustomAttributes = "";
-			$this->isolatedDateTime->HrefValue = "";
-			$this->isolatedDateTime->TooltipValue = "";
+			// personName
+			$this->personName->EditAttrs["class"] = "form-control";
+			$this->personName->EditCustomAttributes = "";
+			$this->personName->EditValue = ew_HtmlEncode($this->personName->AdvancedSearch->SearchValue);
+			$this->personName->PlaceHolder = ew_RemoveHtml($this->personName->FldCaption());
+
+			// lastName
+			$this->lastName->EditAttrs["class"] = "form-control";
+			$this->lastName->EditCustomAttributes = "";
+			$this->lastName->EditValue = ew_HtmlEncode($this->lastName->AdvancedSearch->SearchValue);
+			$this->lastName->PlaceHolder = ew_RemoveHtml($this->lastName->FldCaption());
+
+			// nationalID
+			$this->nationalID->EditAttrs["class"] = "form-control";
+			$this->nationalID->EditCustomAttributes = "";
+			$this->nationalID->EditValue = ew_HtmlEncode($this->nationalID->AdvancedSearch->SearchValue);
+			$this->nationalID->PlaceHolder = ew_RemoveHtml($this->nationalID->FldCaption());
+
+			// nationalNumber
+			$this->nationalNumber->EditAttrs["class"] = "form-control";
+			$this->nationalNumber->EditCustomAttributes = "";
+			$this->nationalNumber->EditValue = ew_HtmlEncode($this->nationalNumber->AdvancedSearch->SearchValue);
+			$this->nationalNumber->PlaceHolder = ew_RemoveHtml($this->nationalNumber->FldCaption());
+
+			// passportNumber
+			$this->passportNumber->EditAttrs["class"] = "form-control";
+			$this->passportNumber->EditCustomAttributes = "";
+			$this->passportNumber->EditValue = ew_HtmlEncode($this->passportNumber->AdvancedSearch->SearchValue);
+			$this->passportNumber->PlaceHolder = ew_RemoveHtml($this->passportNumber->FldCaption());
+
+			// fatherName
+			$this->fatherName->EditAttrs["class"] = "form-control";
+			$this->fatherName->EditCustomAttributes = "";
+			$this->fatherName->EditValue = ew_HtmlEncode($this->fatherName->AdvancedSearch->SearchValue);
+			$this->fatherName->PlaceHolder = ew_RemoveHtml($this->fatherName->FldCaption());
+
+			// gender
+			$this->gender->EditAttrs["class"] = "form-control";
+			$this->gender->EditCustomAttributes = "";
+
+			// locationLevel1
+			$this->locationLevel1->EditAttrs["class"] = "form-control";
+			$this->locationLevel1->EditCustomAttributes = "";
+
+			// locationLevel2
+			$this->locationLevel2->EditAttrs["class"] = "form-control";
+			$this->locationLevel2->EditCustomAttributes = "";
+
+			// mobilePhone
+			$this->mobilePhone->EditAttrs["class"] = "form-control";
+			$this->mobilePhone->EditCustomAttributes = "";
+			$this->mobilePhone->EditValue = ew_HtmlEncode($this->mobilePhone->AdvancedSearch->SearchValue);
+			$this->mobilePhone->PlaceHolder = ew_RemoveHtml($this->mobilePhone->FldCaption());
+
+			// picture
+			$this->picture->EditAttrs["class"] = "form-control";
+			$this->picture->EditCustomAttributes = "";
+			$this->picture->EditValue = ew_HtmlEncode($this->picture->AdvancedSearch->SearchValue);
+			$this->picture->PlaceHolder = ew_RemoveHtml($this->picture->FldCaption());
+		}
+		if ($this->RowType == EW_ROWTYPE_ADD ||
+			$this->RowType == EW_ROWTYPE_EDIT ||
+			$this->RowType == EW_ROWTYPE_SEARCH) { // Add / Edit / Search row
+			$this->SetupFieldTitles();
 		}
 
 		// Call Row Rendered event
 		if ($this->RowType <> EW_ROWTYPE_AGGREGATEINIT)
 			$this->Row_Rendered();
+	}
+
+	// Validate search
+	function ValidateSearch() {
+		global $gsSearchError;
+
+		// Initialize
+		$gsSearchError = "";
+
+		// Check if validation required
+		if (!EW_SERVER_VALIDATE)
+			return TRUE;
+		if (!ew_CheckInteger($this->personID->AdvancedSearch->SearchValue)) {
+			ew_AddMessage($gsSearchError, $this->personID->FldErrMsg());
+		}
+
+		// Return validate result
+		$ValidateSearch = ($gsSearchError == "");
+
+		// Call Form_CustomValidate event
+		$sFormCustomError = "";
+		$ValidateSearch = $ValidateSearch && $this->Form_CustomValidate($sFormCustomError);
+		if ($sFormCustomError <> "") {
+			ew_AddMessage($gsSearchError, $sFormCustomError);
+		}
+		return $ValidateSearch;
+	}
+
+	// Load advanced search
+	function LoadAdvancedSearch() {
+		$this->personID->AdvancedSearch->Load();
+		$this->personName->AdvancedSearch->Load();
+		$this->lastName->AdvancedSearch->Load();
+		$this->nationalID->AdvancedSearch->Load();
+		$this->nationalNumber->AdvancedSearch->Load();
+		$this->passportNumber->AdvancedSearch->Load();
+		$this->fatherName->AdvancedSearch->Load();
+		$this->gender->AdvancedSearch->Load();
+		$this->locationLevel1->AdvancedSearch->Load();
+		$this->locationLevel2->AdvancedSearch->Load();
+		$this->locationLevel3->AdvancedSearch->Load();
+		$this->locationLevel4->AdvancedSearch->Load();
+		$this->locationLevel5->AdvancedSearch->Load();
+		$this->locationLevel6->AdvancedSearch->Load();
+		$this->address->AdvancedSearch->Load();
+		$this->convoy->AdvancedSearch->Load();
+		$this->convoyManager->AdvancedSearch->Load();
+		$this->followersName->AdvancedSearch->Load();
+		$this->status->AdvancedSearch->Load();
+		$this->isolatedLocation->AdvancedSearch->Load();
+		$this->birthDate->AdvancedSearch->Load();
+		$this->ageRange->AdvancedSearch->Load();
+		$this->dress1->AdvancedSearch->Load();
+		$this->dress2->AdvancedSearch->Load();
+		$this->signTags->AdvancedSearch->Load();
+		$this->phone->AdvancedSearch->Load();
+		$this->mobilePhone->AdvancedSearch->Load();
+		$this->_email->AdvancedSearch->Load();
+		$this->temporaryResidence->AdvancedSearch->Load();
+		$this->visitsCount->AdvancedSearch->Load();
+		$this->picture->AdvancedSearch->Load();
+		$this->registrationUser->AdvancedSearch->Load();
+		$this->registrationDateTime->AdvancedSearch->Load();
+		$this->registrationStation->AdvancedSearch->Load();
+		$this->isolatedDateTime->AdvancedSearch->Load();
+		$this->description->AdvancedSearch->Load();
 	}
 
 	// Set up Breadcrumb
@@ -2385,9 +3061,45 @@ fsana_personlist.ValidateRequired = false;
 <?php } ?>
 
 // Dynamic selection lists
-// Form object for search
+fsana_personlist.Lists["x_gender"] = {"LinkField":"x_stateName","Ajax":true,"AutoFill":false,"DisplayFields":["x_stateName","","",""],"ParentFields":[],"ChildFields":[],"FilterFields":[],"Options":[],"Template":""};
+fsana_personlist.Lists["x_locationLevel1"] = {"LinkField":"x_locationName","Ajax":true,"AutoFill":false,"DisplayFields":["x_locationName","","",""],"ParentFields":[],"ChildFields":["x_locationLevel2"],"FilterFields":[],"Options":[],"Template":""};
+fsana_personlist.Lists["x_locationLevel2"] = {"LinkField":"x_locationName","Ajax":true,"AutoFill":false,"DisplayFields":["x_locationName","","",""],"ParentFields":[],"ChildFields":["x_locationLevel3"],"FilterFields":[],"Options":[],"Template":""};
 
+// Form object for search
 var CurrentSearchForm = fsana_personlistsrch = new ew_Form("fsana_personlistsrch");
+
+// Validate function for search
+fsana_personlistsrch.Validate = function(fobj) {
+	if (!this.ValidateRequired)
+		return true; // Ignore validation
+	fobj = fobj || this.Form;
+	var infix = "";
+	elm = this.GetElements("x" + infix + "_personID");
+	if (elm && !ew_CheckInteger(elm.value))
+		return this.OnError(elm, "<?php echo ew_JsEncode2($sana_person->personID->FldErrMsg()) ?>");
+
+	// Fire Form_CustomValidate event
+	if (!this.Form_CustomValidate(fobj))
+		return false;
+	return true;
+}
+
+// Form_CustomValidate event
+fsana_personlistsrch.Form_CustomValidate = 
+ function(fobj) { // DO NOT CHANGE THIS LINE!
+
+ 	// Your custom validation code here, return false if invalid. 
+ 	return true;
+ }
+
+// Use JavaScript validation or not
+<?php if (EW_CLIENT_VALIDATE) { ?>
+fsana_personlistsrch.ValidateRequired = true; // Use JavaScript validation
+<?php } else { ?>
+fsana_personlistsrch.ValidateRequired = false; // No JavaScript validation
+<?php } ?>
+
+// Dynamic selection lists
 </script>
 <script type="text/javascript">
 
@@ -2426,8 +3138,6 @@ var CurrentSearchForm = fsana_personlistsrch = new ew_Form("fsana_personlistsrch
 
 	// Set no record found message
 	if ($sana_person->CurrentAction == "" && $sana_person_list->TotalRecs == 0) {
-		if (!$Security->CanList())
-			$sana_person_list->setWarningMessage($Language->Phrase("NoPermission"));
 		if ($sana_person_list->SearchWhere == "0=101")
 			$sana_person_list->setWarningMessage($Language->Phrase("EnterSearchCriteria"));
 		else
@@ -2435,7 +3145,6 @@ var CurrentSearchForm = fsana_personlistsrch = new ew_Form("fsana_personlistsrch
 	}
 $sana_person_list->RenderOtherOptions();
 ?>
-<?php if ($Security->CanSearch()) { ?>
 <?php if ($sana_person->Export == "" && $sana_person->CurrentAction == "") { ?>
 <form name="fsana_personlistsrch" id="fsana_personlistsrch" class="form-inline ewForm" action="<?php echo ew_CurrentPage() ?>">
 <?php $SearchPanelClass = ($sana_person_list->SearchWhere <> "") ? " in" : " in"; ?>
@@ -2443,7 +3152,62 @@ $sana_person_list->RenderOtherOptions();
 <input type="hidden" name="cmd" value="search">
 <input type="hidden" name="t" value="sana_person">
 	<div class="ewBasicSearch">
+<?php
+if ($gsSearchError == "")
+	$sana_person_list->LoadAdvancedSearch(); // Load advanced search
+
+// Render for search
+$sana_person->RowType = EW_ROWTYPE_SEARCH;
+
+// Render row
+$sana_person->ResetAttrs();
+$sana_person_list->RenderRow();
+?>
 <div id="xsr_1" class="ewRow">
+<?php if ($sana_person->personID->Visible) { // personID ?>
+	<div id="xsc_personID" class="ewCell form-group">
+		<label for="x_personID" class="ewSearchCaption ewLabel"><?php echo $sana_person->personID->FldCaption() ?></label>
+		<span class="ewSearchOperator"><?php echo $Language->Phrase("=") ?><input type="hidden" name="z_personID" id="z_personID" value="="></span>
+		<span class="ewSearchField">
+<input type="text" data-table="sana_person" data-field="x_personID" name="x_personID" id="x_personID" placeholder="<?php echo ew_HtmlEncode($sana_person->personID->getPlaceHolder()) ?>" value="<?php echo $sana_person->personID->EditValue ?>"<?php echo $sana_person->personID->EditAttributes() ?>>
+</span>
+	</div>
+<?php } ?>
+</div>
+<div id="xsr_2" class="ewRow">
+<?php if ($sana_person->personName->Visible) { // personName ?>
+	<div id="xsc_personName" class="ewCell form-group">
+		<label for="x_personName" class="ewSearchCaption ewLabel"><?php echo $sana_person->personName->FldCaption() ?></label>
+		<span class="ewSearchOperator"><?php echo $Language->Phrase("LIKE") ?><input type="hidden" name="z_personName" id="z_personName" value="LIKE"></span>
+		<span class="ewSearchField">
+<input type="text" data-table="sana_person" data-field="x_personName" name="x_personName" id="x_personName" size="30" maxlength="100" placeholder="<?php echo ew_HtmlEncode($sana_person->personName->getPlaceHolder()) ?>" value="<?php echo $sana_person->personName->EditValue ?>"<?php echo $sana_person->personName->EditAttributes() ?>>
+</span>
+	</div>
+<?php } ?>
+</div>
+<div id="xsr_3" class="ewRow">
+<?php if ($sana_person->lastName->Visible) { // lastName ?>
+	<div id="xsc_lastName" class="ewCell form-group">
+		<label for="x_lastName" class="ewSearchCaption ewLabel"><?php echo $sana_person->lastName->FldCaption() ?></label>
+		<span class="ewSearchOperator"><?php echo $Language->Phrase("LIKE") ?><input type="hidden" name="z_lastName" id="z_lastName" value="LIKE"></span>
+		<span class="ewSearchField">
+<input type="text" data-table="sana_person" data-field="x_lastName" name="x_lastName" id="x_lastName" size="30" maxlength="200" placeholder="<?php echo ew_HtmlEncode($sana_person->lastName->getPlaceHolder()) ?>" value="<?php echo $sana_person->lastName->EditValue ?>"<?php echo $sana_person->lastName->EditAttributes() ?>>
+</span>
+	</div>
+<?php } ?>
+</div>
+<div id="xsr_4" class="ewRow">
+<?php if ($sana_person->mobilePhone->Visible) { // mobilePhone ?>
+	<div id="xsc_mobilePhone" class="ewCell form-group">
+		<label for="x_mobilePhone" class="ewSearchCaption ewLabel"><?php echo $sana_person->mobilePhone->FldCaption() ?></label>
+		<span class="ewSearchOperator"><?php echo $Language->Phrase("LIKE") ?><input type="hidden" name="z_mobilePhone" id="z_mobilePhone" value="LIKE"></span>
+		<span class="ewSearchField">
+<input type="text" data-table="sana_person" data-field="x_mobilePhone" name="x_mobilePhone" id="x_mobilePhone" size="30" maxlength="15" placeholder="<?php echo ew_HtmlEncode($sana_person->mobilePhone->getPlaceHolder()) ?>" value="<?php echo $sana_person->mobilePhone->EditValue ?>"<?php echo $sana_person->mobilePhone->EditAttributes() ?>>
+</span>
+	</div>
+<?php } ?>
+</div>
+<div id="xsr_5" class="ewRow">
 	<div class="ewQuickSearch input-group">
 	<input type="text" name="<?php echo EW_TABLE_BASIC_SEARCH ?>" id="<?php echo EW_TABLE_BASIC_SEARCH ?>" class="form-control" value="<?php echo ew_HtmlEncode($sana_person_list->BasicSearch->getKeyword()) ?>" placeholder="<?php echo ew_HtmlEncode($Language->Phrase("Search")) ?>">
 	<input type="hidden" name="<?php echo EW_TABLE_BASIC_SEARCH_TYPE ?>" id="<?php echo EW_TABLE_BASIC_SEARCH_TYPE ?>" value="<?php echo ew_HtmlEncode($sana_person_list->BasicSearch->getType()) ?>">
@@ -2462,7 +3226,6 @@ $sana_person_list->RenderOtherOptions();
 	</div>
 </div>
 </form>
-<?php } ?>
 <?php } ?>
 <?php $sana_person_list->ShowPageHeader(); ?>
 <?php
@@ -2497,7 +3260,7 @@ $sana_person_list->ListOptions->Render("header", "left");
 		<th data-name="personID"><div id="elh_sana_person_personID" class="sana_person_personID"><div class="ewTableHeaderCaption"><?php echo $sana_person->personID->FldCaption() ?></div></div></th>
 	<?php } else { ?>
 		<th data-name="personID"><div class="ewPointer" onclick="ew_Sort(event,'<?php echo $sana_person->SortUrl($sana_person->personID) ?>',1);"><div id="elh_sana_person_personID" class="sana_person_personID">
-			<div class="ewTableHeaderBtn"><span class="ewTableHeaderCaption"><?php echo $sana_person->personID->FldCaption() ?></span><span class="ewTableHeaderSort"><?php if ($sana_person->personID->getSort() == "ASC") { ?><span class="caret ewSortUp"></span><?php } elseif ($sana_person->personID->getSort() == "DESC") { ?><span class="caret"></span><?php } ?></span></div>
+			<div class="ewTableHeaderBtn"><span class="ewTableHeaderCaption"><?php echo $sana_person->personID->FldCaption() ?><?php echo $Language->Phrase("SrchLegend") ?></span><span class="ewTableHeaderSort"><?php if ($sana_person->personID->getSort() == "ASC") { ?><span class="caret ewSortUp"></span><?php } elseif ($sana_person->personID->getSort() == "DESC") { ?><span class="caret"></span><?php } ?></span></div>
         </div></div></th>
 	<?php } ?>
 <?php } ?>		
@@ -2537,6 +3300,15 @@ $sana_person_list->ListOptions->Render("header", "left");
         </div></div></th>
 	<?php } ?>
 <?php } ?>		
+<?php if ($sana_person->passportNumber->Visible) { // passportNumber ?>
+	<?php if ($sana_person->SortUrl($sana_person->passportNumber) == "") { ?>
+		<th data-name="passportNumber"><div id="elh_sana_person_passportNumber" class="sana_person_passportNumber"><div class="ewTableHeaderCaption"><?php echo $sana_person->passportNumber->FldCaption() ?></div></div></th>
+	<?php } else { ?>
+		<th data-name="passportNumber"><div class="ewPointer" onclick="ew_Sort(event,'<?php echo $sana_person->SortUrl($sana_person->passportNumber) ?>',1);"><div id="elh_sana_person_passportNumber" class="sana_person_passportNumber">
+			<div class="ewTableHeaderBtn"><span class="ewTableHeaderCaption"><?php echo $sana_person->passportNumber->FldCaption() ?><?php echo $Language->Phrase("SrchLegend") ?></span><span class="ewTableHeaderSort"><?php if ($sana_person->passportNumber->getSort() == "ASC") { ?><span class="caret ewSortUp"></span><?php } elseif ($sana_person->passportNumber->getSort() == "DESC") { ?><span class="caret"></span><?php } ?></span></div>
+        </div></div></th>
+	<?php } ?>
+<?php } ?>		
 <?php if ($sana_person->fatherName->Visible) { // fatherName ?>
 	<?php if ($sana_person->SortUrl($sana_person->fatherName) == "") { ?>
 		<th data-name="fatherName"><div id="elh_sana_person_fatherName" class="sana_person_fatherName"><div class="ewTableHeaderCaption"><?php echo $sana_person->fatherName->FldCaption() ?></div></div></th>
@@ -2551,169 +3323,25 @@ $sana_person_list->ListOptions->Render("header", "left");
 		<th data-name="gender"><div id="elh_sana_person_gender" class="sana_person_gender"><div class="ewTableHeaderCaption"><?php echo $sana_person->gender->FldCaption() ?></div></div></th>
 	<?php } else { ?>
 		<th data-name="gender"><div class="ewPointer" onclick="ew_Sort(event,'<?php echo $sana_person->SortUrl($sana_person->gender) ?>',1);"><div id="elh_sana_person_gender" class="sana_person_gender">
-			<div class="ewTableHeaderBtn"><span class="ewTableHeaderCaption"><?php echo $sana_person->gender->FldCaption() ?><?php echo $Language->Phrase("SrchLegend") ?></span><span class="ewTableHeaderSort"><?php if ($sana_person->gender->getSort() == "ASC") { ?><span class="caret ewSortUp"></span><?php } elseif ($sana_person->gender->getSort() == "DESC") { ?><span class="caret"></span><?php } ?></span></div>
+			<div class="ewTableHeaderBtn"><span class="ewTableHeaderCaption"><?php echo $sana_person->gender->FldCaption() ?></span><span class="ewTableHeaderSort"><?php if ($sana_person->gender->getSort() == "ASC") { ?><span class="caret ewSortUp"></span><?php } elseif ($sana_person->gender->getSort() == "DESC") { ?><span class="caret"></span><?php } ?></span></div>
         </div></div></th>
 	<?php } ?>
 <?php } ?>		
-<?php if ($sana_person->country->Visible) { // country ?>
-	<?php if ($sana_person->SortUrl($sana_person->country) == "") { ?>
-		<th data-name="country"><div id="elh_sana_person_country" class="sana_person_country"><div class="ewTableHeaderCaption"><?php echo $sana_person->country->FldCaption() ?></div></div></th>
+<?php if ($sana_person->locationLevel1->Visible) { // locationLevel1 ?>
+	<?php if ($sana_person->SortUrl($sana_person->locationLevel1) == "") { ?>
+		<th data-name="locationLevel1"><div id="elh_sana_person_locationLevel1" class="sana_person_locationLevel1"><div class="ewTableHeaderCaption"><?php echo $sana_person->locationLevel1->FldCaption() ?></div></div></th>
 	<?php } else { ?>
-		<th data-name="country"><div class="ewPointer" onclick="ew_Sort(event,'<?php echo $sana_person->SortUrl($sana_person->country) ?>',1);"><div id="elh_sana_person_country" class="sana_person_country">
-			<div class="ewTableHeaderBtn"><span class="ewTableHeaderCaption"><?php echo $sana_person->country->FldCaption() ?><?php echo $Language->Phrase("SrchLegend") ?></span><span class="ewTableHeaderSort"><?php if ($sana_person->country->getSort() == "ASC") { ?><span class="caret ewSortUp"></span><?php } elseif ($sana_person->country->getSort() == "DESC") { ?><span class="caret"></span><?php } ?></span></div>
+		<th data-name="locationLevel1"><div class="ewPointer" onclick="ew_Sort(event,'<?php echo $sana_person->SortUrl($sana_person->locationLevel1) ?>',1);"><div id="elh_sana_person_locationLevel1" class="sana_person_locationLevel1">
+			<div class="ewTableHeaderBtn"><span class="ewTableHeaderCaption"><?php echo $sana_person->locationLevel1->FldCaption() ?></span><span class="ewTableHeaderSort"><?php if ($sana_person->locationLevel1->getSort() == "ASC") { ?><span class="caret ewSortUp"></span><?php } elseif ($sana_person->locationLevel1->getSort() == "DESC") { ?><span class="caret"></span><?php } ?></span></div>
         </div></div></th>
 	<?php } ?>
 <?php } ?>		
-<?php if ($sana_person->province->Visible) { // province ?>
-	<?php if ($sana_person->SortUrl($sana_person->province) == "") { ?>
-		<th data-name="province"><div id="elh_sana_person_province" class="sana_person_province"><div class="ewTableHeaderCaption"><?php echo $sana_person->province->FldCaption() ?></div></div></th>
+<?php if ($sana_person->locationLevel2->Visible) { // locationLevel2 ?>
+	<?php if ($sana_person->SortUrl($sana_person->locationLevel2) == "") { ?>
+		<th data-name="locationLevel2"><div id="elh_sana_person_locationLevel2" class="sana_person_locationLevel2"><div class="ewTableHeaderCaption"><?php echo $sana_person->locationLevel2->FldCaption() ?></div></div></th>
 	<?php } else { ?>
-		<th data-name="province"><div class="ewPointer" onclick="ew_Sort(event,'<?php echo $sana_person->SortUrl($sana_person->province) ?>',1);"><div id="elh_sana_person_province" class="sana_person_province">
-			<div class="ewTableHeaderBtn"><span class="ewTableHeaderCaption"><?php echo $sana_person->province->FldCaption() ?><?php echo $Language->Phrase("SrchLegend") ?></span><span class="ewTableHeaderSort"><?php if ($sana_person->province->getSort() == "ASC") { ?><span class="caret ewSortUp"></span><?php } elseif ($sana_person->province->getSort() == "DESC") { ?><span class="caret"></span><?php } ?></span></div>
-        </div></div></th>
-	<?php } ?>
-<?php } ?>		
-<?php if ($sana_person->county->Visible) { // county ?>
-	<?php if ($sana_person->SortUrl($sana_person->county) == "") { ?>
-		<th data-name="county"><div id="elh_sana_person_county" class="sana_person_county"><div class="ewTableHeaderCaption"><?php echo $sana_person->county->FldCaption() ?></div></div></th>
-	<?php } else { ?>
-		<th data-name="county"><div class="ewPointer" onclick="ew_Sort(event,'<?php echo $sana_person->SortUrl($sana_person->county) ?>',1);"><div id="elh_sana_person_county" class="sana_person_county">
-			<div class="ewTableHeaderBtn"><span class="ewTableHeaderCaption"><?php echo $sana_person->county->FldCaption() ?><?php echo $Language->Phrase("SrchLegend") ?></span><span class="ewTableHeaderSort"><?php if ($sana_person->county->getSort() == "ASC") { ?><span class="caret ewSortUp"></span><?php } elseif ($sana_person->county->getSort() == "DESC") { ?><span class="caret"></span><?php } ?></span></div>
-        </div></div></th>
-	<?php } ?>
-<?php } ?>		
-<?php if ($sana_person->district->Visible) { // district ?>
-	<?php if ($sana_person->SortUrl($sana_person->district) == "") { ?>
-		<th data-name="district"><div id="elh_sana_person_district" class="sana_person_district"><div class="ewTableHeaderCaption"><?php echo $sana_person->district->FldCaption() ?></div></div></th>
-	<?php } else { ?>
-		<th data-name="district"><div class="ewPointer" onclick="ew_Sort(event,'<?php echo $sana_person->SortUrl($sana_person->district) ?>',1);"><div id="elh_sana_person_district" class="sana_person_district">
-			<div class="ewTableHeaderBtn"><span class="ewTableHeaderCaption"><?php echo $sana_person->district->FldCaption() ?><?php echo $Language->Phrase("SrchLegend") ?></span><span class="ewTableHeaderSort"><?php if ($sana_person->district->getSort() == "ASC") { ?><span class="caret ewSortUp"></span><?php } elseif ($sana_person->district->getSort() == "DESC") { ?><span class="caret"></span><?php } ?></span></div>
-        </div></div></th>
-	<?php } ?>
-<?php } ?>		
-<?php if ($sana_person->city_ruralDistrict->Visible) { // city_ruralDistrict ?>
-	<?php if ($sana_person->SortUrl($sana_person->city_ruralDistrict) == "") { ?>
-		<th data-name="city_ruralDistrict"><div id="elh_sana_person_city_ruralDistrict" class="sana_person_city_ruralDistrict"><div class="ewTableHeaderCaption"><?php echo $sana_person->city_ruralDistrict->FldCaption() ?></div></div></th>
-	<?php } else { ?>
-		<th data-name="city_ruralDistrict"><div class="ewPointer" onclick="ew_Sort(event,'<?php echo $sana_person->SortUrl($sana_person->city_ruralDistrict) ?>',1);"><div id="elh_sana_person_city_ruralDistrict" class="sana_person_city_ruralDistrict">
-			<div class="ewTableHeaderBtn"><span class="ewTableHeaderCaption"><?php echo $sana_person->city_ruralDistrict->FldCaption() ?><?php echo $Language->Phrase("SrchLegend") ?></span><span class="ewTableHeaderSort"><?php if ($sana_person->city_ruralDistrict->getSort() == "ASC") { ?><span class="caret ewSortUp"></span><?php } elseif ($sana_person->city_ruralDistrict->getSort() == "DESC") { ?><span class="caret"></span><?php } ?></span></div>
-        </div></div></th>
-	<?php } ?>
-<?php } ?>		
-<?php if ($sana_person->region_village->Visible) { // region_village ?>
-	<?php if ($sana_person->SortUrl($sana_person->region_village) == "") { ?>
-		<th data-name="region_village"><div id="elh_sana_person_region_village" class="sana_person_region_village"><div class="ewTableHeaderCaption"><?php echo $sana_person->region_village->FldCaption() ?></div></div></th>
-	<?php } else { ?>
-		<th data-name="region_village"><div class="ewPointer" onclick="ew_Sort(event,'<?php echo $sana_person->SortUrl($sana_person->region_village) ?>',1);"><div id="elh_sana_person_region_village" class="sana_person_region_village">
-			<div class="ewTableHeaderBtn"><span class="ewTableHeaderCaption"><?php echo $sana_person->region_village->FldCaption() ?><?php echo $Language->Phrase("SrchLegend") ?></span><span class="ewTableHeaderSort"><?php if ($sana_person->region_village->getSort() == "ASC") { ?><span class="caret ewSortUp"></span><?php } elseif ($sana_person->region_village->getSort() == "DESC") { ?><span class="caret"></span><?php } ?></span></div>
-        </div></div></th>
-	<?php } ?>
-<?php } ?>		
-<?php if ($sana_person->address->Visible) { // address ?>
-	<?php if ($sana_person->SortUrl($sana_person->address) == "") { ?>
-		<th data-name="address"><div id="elh_sana_person_address" class="sana_person_address"><div class="ewTableHeaderCaption"><?php echo $sana_person->address->FldCaption() ?></div></div></th>
-	<?php } else { ?>
-		<th data-name="address"><div class="ewPointer" onclick="ew_Sort(event,'<?php echo $sana_person->SortUrl($sana_person->address) ?>',1);"><div id="elh_sana_person_address" class="sana_person_address">
-			<div class="ewTableHeaderBtn"><span class="ewTableHeaderCaption"><?php echo $sana_person->address->FldCaption() ?><?php echo $Language->Phrase("SrchLegend") ?></span><span class="ewTableHeaderSort"><?php if ($sana_person->address->getSort() == "ASC") { ?><span class="caret ewSortUp"></span><?php } elseif ($sana_person->address->getSort() == "DESC") { ?><span class="caret"></span><?php } ?></span></div>
-        </div></div></th>
-	<?php } ?>
-<?php } ?>		
-<?php if ($sana_person->convoy->Visible) { // convoy ?>
-	<?php if ($sana_person->SortUrl($sana_person->convoy) == "") { ?>
-		<th data-name="convoy"><div id="elh_sana_person_convoy" class="sana_person_convoy"><div class="ewTableHeaderCaption"><?php echo $sana_person->convoy->FldCaption() ?></div></div></th>
-	<?php } else { ?>
-		<th data-name="convoy"><div class="ewPointer" onclick="ew_Sort(event,'<?php echo $sana_person->SortUrl($sana_person->convoy) ?>',1);"><div id="elh_sana_person_convoy" class="sana_person_convoy">
-			<div class="ewTableHeaderBtn"><span class="ewTableHeaderCaption"><?php echo $sana_person->convoy->FldCaption() ?><?php echo $Language->Phrase("SrchLegend") ?></span><span class="ewTableHeaderSort"><?php if ($sana_person->convoy->getSort() == "ASC") { ?><span class="caret ewSortUp"></span><?php } elseif ($sana_person->convoy->getSort() == "DESC") { ?><span class="caret"></span><?php } ?></span></div>
-        </div></div></th>
-	<?php } ?>
-<?php } ?>		
-<?php if ($sana_person->convoyManager->Visible) { // convoyManager ?>
-	<?php if ($sana_person->SortUrl($sana_person->convoyManager) == "") { ?>
-		<th data-name="convoyManager"><div id="elh_sana_person_convoyManager" class="sana_person_convoyManager"><div class="ewTableHeaderCaption"><?php echo $sana_person->convoyManager->FldCaption() ?></div></div></th>
-	<?php } else { ?>
-		<th data-name="convoyManager"><div class="ewPointer" onclick="ew_Sort(event,'<?php echo $sana_person->SortUrl($sana_person->convoyManager) ?>',1);"><div id="elh_sana_person_convoyManager" class="sana_person_convoyManager">
-			<div class="ewTableHeaderBtn"><span class="ewTableHeaderCaption"><?php echo $sana_person->convoyManager->FldCaption() ?><?php echo $Language->Phrase("SrchLegend") ?></span><span class="ewTableHeaderSort"><?php if ($sana_person->convoyManager->getSort() == "ASC") { ?><span class="caret ewSortUp"></span><?php } elseif ($sana_person->convoyManager->getSort() == "DESC") { ?><span class="caret"></span><?php } ?></span></div>
-        </div></div></th>
-	<?php } ?>
-<?php } ?>		
-<?php if ($sana_person->followersName->Visible) { // followersName ?>
-	<?php if ($sana_person->SortUrl($sana_person->followersName) == "") { ?>
-		<th data-name="followersName"><div id="elh_sana_person_followersName" class="sana_person_followersName"><div class="ewTableHeaderCaption"><?php echo $sana_person->followersName->FldCaption() ?></div></div></th>
-	<?php } else { ?>
-		<th data-name="followersName"><div class="ewPointer" onclick="ew_Sort(event,'<?php echo $sana_person->SortUrl($sana_person->followersName) ?>',1);"><div id="elh_sana_person_followersName" class="sana_person_followersName">
-			<div class="ewTableHeaderBtn"><span class="ewTableHeaderCaption"><?php echo $sana_person->followersName->FldCaption() ?><?php echo $Language->Phrase("SrchLegend") ?></span><span class="ewTableHeaderSort"><?php if ($sana_person->followersName->getSort() == "ASC") { ?><span class="caret ewSortUp"></span><?php } elseif ($sana_person->followersName->getSort() == "DESC") { ?><span class="caret"></span><?php } ?></span></div>
-        </div></div></th>
-	<?php } ?>
-<?php } ?>		
-<?php if ($sana_person->status->Visible) { // status ?>
-	<?php if ($sana_person->SortUrl($sana_person->status) == "") { ?>
-		<th data-name="status"><div id="elh_sana_person_status" class="sana_person_status"><div class="ewTableHeaderCaption"><?php echo $sana_person->status->FldCaption() ?></div></div></th>
-	<?php } else { ?>
-		<th data-name="status"><div class="ewPointer" onclick="ew_Sort(event,'<?php echo $sana_person->SortUrl($sana_person->status) ?>',1);"><div id="elh_sana_person_status" class="sana_person_status">
-			<div class="ewTableHeaderBtn"><span class="ewTableHeaderCaption"><?php echo $sana_person->status->FldCaption() ?><?php echo $Language->Phrase("SrchLegend") ?></span><span class="ewTableHeaderSort"><?php if ($sana_person->status->getSort() == "ASC") { ?><span class="caret ewSortUp"></span><?php } elseif ($sana_person->status->getSort() == "DESC") { ?><span class="caret"></span><?php } ?></span></div>
-        </div></div></th>
-	<?php } ?>
-<?php } ?>		
-<?php if ($sana_person->isolatedLocation->Visible) { // isolatedLocation ?>
-	<?php if ($sana_person->SortUrl($sana_person->isolatedLocation) == "") { ?>
-		<th data-name="isolatedLocation"><div id="elh_sana_person_isolatedLocation" class="sana_person_isolatedLocation"><div class="ewTableHeaderCaption"><?php echo $sana_person->isolatedLocation->FldCaption() ?></div></div></th>
-	<?php } else { ?>
-		<th data-name="isolatedLocation"><div class="ewPointer" onclick="ew_Sort(event,'<?php echo $sana_person->SortUrl($sana_person->isolatedLocation) ?>',1);"><div id="elh_sana_person_isolatedLocation" class="sana_person_isolatedLocation">
-			<div class="ewTableHeaderBtn"><span class="ewTableHeaderCaption"><?php echo $sana_person->isolatedLocation->FldCaption() ?><?php echo $Language->Phrase("SrchLegend") ?></span><span class="ewTableHeaderSort"><?php if ($sana_person->isolatedLocation->getSort() == "ASC") { ?><span class="caret ewSortUp"></span><?php } elseif ($sana_person->isolatedLocation->getSort() == "DESC") { ?><span class="caret"></span><?php } ?></span></div>
-        </div></div></th>
-	<?php } ?>
-<?php } ?>		
-<?php if ($sana_person->birthDate->Visible) { // birthDate ?>
-	<?php if ($sana_person->SortUrl($sana_person->birthDate) == "") { ?>
-		<th data-name="birthDate"><div id="elh_sana_person_birthDate" class="sana_person_birthDate"><div class="ewTableHeaderCaption"><?php echo $sana_person->birthDate->FldCaption() ?></div></div></th>
-	<?php } else { ?>
-		<th data-name="birthDate"><div class="ewPointer" onclick="ew_Sort(event,'<?php echo $sana_person->SortUrl($sana_person->birthDate) ?>',1);"><div id="elh_sana_person_birthDate" class="sana_person_birthDate">
-			<div class="ewTableHeaderBtn"><span class="ewTableHeaderCaption"><?php echo $sana_person->birthDate->FldCaption() ?></span><span class="ewTableHeaderSort"><?php if ($sana_person->birthDate->getSort() == "ASC") { ?><span class="caret ewSortUp"></span><?php } elseif ($sana_person->birthDate->getSort() == "DESC") { ?><span class="caret"></span><?php } ?></span></div>
-        </div></div></th>
-	<?php } ?>
-<?php } ?>		
-<?php if ($sana_person->ageRange->Visible) { // ageRange ?>
-	<?php if ($sana_person->SortUrl($sana_person->ageRange) == "") { ?>
-		<th data-name="ageRange"><div id="elh_sana_person_ageRange" class="sana_person_ageRange"><div class="ewTableHeaderCaption"><?php echo $sana_person->ageRange->FldCaption() ?></div></div></th>
-	<?php } else { ?>
-		<th data-name="ageRange"><div class="ewPointer" onclick="ew_Sort(event,'<?php echo $sana_person->SortUrl($sana_person->ageRange) ?>',1);"><div id="elh_sana_person_ageRange" class="sana_person_ageRange">
-			<div class="ewTableHeaderBtn"><span class="ewTableHeaderCaption"><?php echo $sana_person->ageRange->FldCaption() ?><?php echo $Language->Phrase("SrchLegend") ?></span><span class="ewTableHeaderSort"><?php if ($sana_person->ageRange->getSort() == "ASC") { ?><span class="caret ewSortUp"></span><?php } elseif ($sana_person->ageRange->getSort() == "DESC") { ?><span class="caret"></span><?php } ?></span></div>
-        </div></div></th>
-	<?php } ?>
-<?php } ?>		
-<?php if ($sana_person->dress1->Visible) { // dress1 ?>
-	<?php if ($sana_person->SortUrl($sana_person->dress1) == "") { ?>
-		<th data-name="dress1"><div id="elh_sana_person_dress1" class="sana_person_dress1"><div class="ewTableHeaderCaption"><?php echo $sana_person->dress1->FldCaption() ?></div></div></th>
-	<?php } else { ?>
-		<th data-name="dress1"><div class="ewPointer" onclick="ew_Sort(event,'<?php echo $sana_person->SortUrl($sana_person->dress1) ?>',1);"><div id="elh_sana_person_dress1" class="sana_person_dress1">
-			<div class="ewTableHeaderBtn"><span class="ewTableHeaderCaption"><?php echo $sana_person->dress1->FldCaption() ?><?php echo $Language->Phrase("SrchLegend") ?></span><span class="ewTableHeaderSort"><?php if ($sana_person->dress1->getSort() == "ASC") { ?><span class="caret ewSortUp"></span><?php } elseif ($sana_person->dress1->getSort() == "DESC") { ?><span class="caret"></span><?php } ?></span></div>
-        </div></div></th>
-	<?php } ?>
-<?php } ?>		
-<?php if ($sana_person->dress2->Visible) { // dress2 ?>
-	<?php if ($sana_person->SortUrl($sana_person->dress2) == "") { ?>
-		<th data-name="dress2"><div id="elh_sana_person_dress2" class="sana_person_dress2"><div class="ewTableHeaderCaption"><?php echo $sana_person->dress2->FldCaption() ?></div></div></th>
-	<?php } else { ?>
-		<th data-name="dress2"><div class="ewPointer" onclick="ew_Sort(event,'<?php echo $sana_person->SortUrl($sana_person->dress2) ?>',1);"><div id="elh_sana_person_dress2" class="sana_person_dress2">
-			<div class="ewTableHeaderBtn"><span class="ewTableHeaderCaption"><?php echo $sana_person->dress2->FldCaption() ?><?php echo $Language->Phrase("SrchLegend") ?></span><span class="ewTableHeaderSort"><?php if ($sana_person->dress2->getSort() == "ASC") { ?><span class="caret ewSortUp"></span><?php } elseif ($sana_person->dress2->getSort() == "DESC") { ?><span class="caret"></span><?php } ?></span></div>
-        </div></div></th>
-	<?php } ?>
-<?php } ?>		
-<?php if ($sana_person->signTags->Visible) { // signTags ?>
-	<?php if ($sana_person->SortUrl($sana_person->signTags) == "") { ?>
-		<th data-name="signTags"><div id="elh_sana_person_signTags" class="sana_person_signTags"><div class="ewTableHeaderCaption"><?php echo $sana_person->signTags->FldCaption() ?></div></div></th>
-	<?php } else { ?>
-		<th data-name="signTags"><div class="ewPointer" onclick="ew_Sort(event,'<?php echo $sana_person->SortUrl($sana_person->signTags) ?>',1);"><div id="elh_sana_person_signTags" class="sana_person_signTags">
-			<div class="ewTableHeaderBtn"><span class="ewTableHeaderCaption"><?php echo $sana_person->signTags->FldCaption() ?><?php echo $Language->Phrase("SrchLegend") ?></span><span class="ewTableHeaderSort"><?php if ($sana_person->signTags->getSort() == "ASC") { ?><span class="caret ewSortUp"></span><?php } elseif ($sana_person->signTags->getSort() == "DESC") { ?><span class="caret"></span><?php } ?></span></div>
-        </div></div></th>
-	<?php } ?>
-<?php } ?>		
-<?php if ($sana_person->phone->Visible) { // phone ?>
-	<?php if ($sana_person->SortUrl($sana_person->phone) == "") { ?>
-		<th data-name="phone"><div id="elh_sana_person_phone" class="sana_person_phone"><div class="ewTableHeaderCaption"><?php echo $sana_person->phone->FldCaption() ?></div></div></th>
-	<?php } else { ?>
-		<th data-name="phone"><div class="ewPointer" onclick="ew_Sort(event,'<?php echo $sana_person->SortUrl($sana_person->phone) ?>',1);"><div id="elh_sana_person_phone" class="sana_person_phone">
-			<div class="ewTableHeaderBtn"><span class="ewTableHeaderCaption"><?php echo $sana_person->phone->FldCaption() ?><?php echo $Language->Phrase("SrchLegend") ?></span><span class="ewTableHeaderSort"><?php if ($sana_person->phone->getSort() == "ASC") { ?><span class="caret ewSortUp"></span><?php } elseif ($sana_person->phone->getSort() == "DESC") { ?><span class="caret"></span><?php } ?></span></div>
+		<th data-name="locationLevel2"><div class="ewPointer" onclick="ew_Sort(event,'<?php echo $sana_person->SortUrl($sana_person->locationLevel2) ?>',1);"><div id="elh_sana_person_locationLevel2" class="sana_person_locationLevel2">
+			<div class="ewTableHeaderBtn"><span class="ewTableHeaderCaption"><?php echo $sana_person->locationLevel2->FldCaption() ?></span><span class="ewTableHeaderSort"><?php if ($sana_person->locationLevel2->getSort() == "ASC") { ?><span class="caret ewSortUp"></span><?php } elseif ($sana_person->locationLevel2->getSort() == "DESC") { ?><span class="caret"></span><?php } ?></span></div>
         </div></div></th>
 	<?php } ?>
 <?php } ?>		
@@ -2726,75 +3354,12 @@ $sana_person_list->ListOptions->Render("header", "left");
         </div></div></th>
 	<?php } ?>
 <?php } ?>		
-<?php if ($sana_person->_email->Visible) { // email ?>
-	<?php if ($sana_person->SortUrl($sana_person->_email) == "") { ?>
-		<th data-name="_email"><div id="elh_sana_person__email" class="sana_person__email"><div class="ewTableHeaderCaption"><?php echo $sana_person->_email->FldCaption() ?></div></div></th>
-	<?php } else { ?>
-		<th data-name="_email"><div class="ewPointer" onclick="ew_Sort(event,'<?php echo $sana_person->SortUrl($sana_person->_email) ?>',1);"><div id="elh_sana_person__email" class="sana_person__email">
-			<div class="ewTableHeaderBtn"><span class="ewTableHeaderCaption"><?php echo $sana_person->_email->FldCaption() ?><?php echo $Language->Phrase("SrchLegend") ?></span><span class="ewTableHeaderSort"><?php if ($sana_person->_email->getSort() == "ASC") { ?><span class="caret ewSortUp"></span><?php } elseif ($sana_person->_email->getSort() == "DESC") { ?><span class="caret"></span><?php } ?></span></div>
-        </div></div></th>
-	<?php } ?>
-<?php } ?>		
-<?php if ($sana_person->temporaryResidence->Visible) { // temporaryResidence ?>
-	<?php if ($sana_person->SortUrl($sana_person->temporaryResidence) == "") { ?>
-		<th data-name="temporaryResidence"><div id="elh_sana_person_temporaryResidence" class="sana_person_temporaryResidence"><div class="ewTableHeaderCaption"><?php echo $sana_person->temporaryResidence->FldCaption() ?></div></div></th>
-	<?php } else { ?>
-		<th data-name="temporaryResidence"><div class="ewPointer" onclick="ew_Sort(event,'<?php echo $sana_person->SortUrl($sana_person->temporaryResidence) ?>',1);"><div id="elh_sana_person_temporaryResidence" class="sana_person_temporaryResidence">
-			<div class="ewTableHeaderBtn"><span class="ewTableHeaderCaption"><?php echo $sana_person->temporaryResidence->FldCaption() ?><?php echo $Language->Phrase("SrchLegend") ?></span><span class="ewTableHeaderSort"><?php if ($sana_person->temporaryResidence->getSort() == "ASC") { ?><span class="caret ewSortUp"></span><?php } elseif ($sana_person->temporaryResidence->getSort() == "DESC") { ?><span class="caret"></span><?php } ?></span></div>
-        </div></div></th>
-	<?php } ?>
-<?php } ?>		
-<?php if ($sana_person->visitsCount->Visible) { // visitsCount ?>
-	<?php if ($sana_person->SortUrl($sana_person->visitsCount) == "") { ?>
-		<th data-name="visitsCount"><div id="elh_sana_person_visitsCount" class="sana_person_visitsCount"><div class="ewTableHeaderCaption"><?php echo $sana_person->visitsCount->FldCaption() ?></div></div></th>
-	<?php } else { ?>
-		<th data-name="visitsCount"><div class="ewPointer" onclick="ew_Sort(event,'<?php echo $sana_person->SortUrl($sana_person->visitsCount) ?>',1);"><div id="elh_sana_person_visitsCount" class="sana_person_visitsCount">
-			<div class="ewTableHeaderBtn"><span class="ewTableHeaderCaption"><?php echo $sana_person->visitsCount->FldCaption() ?></span><span class="ewTableHeaderSort"><?php if ($sana_person->visitsCount->getSort() == "ASC") { ?><span class="caret ewSortUp"></span><?php } elseif ($sana_person->visitsCount->getSort() == "DESC") { ?><span class="caret"></span><?php } ?></span></div>
-        </div></div></th>
-	<?php } ?>
-<?php } ?>		
 <?php if ($sana_person->picture->Visible) { // picture ?>
 	<?php if ($sana_person->SortUrl($sana_person->picture) == "") { ?>
 		<th data-name="picture"><div id="elh_sana_person_picture" class="sana_person_picture"><div class="ewTableHeaderCaption"><?php echo $sana_person->picture->FldCaption() ?></div></div></th>
 	<?php } else { ?>
 		<th data-name="picture"><div class="ewPointer" onclick="ew_Sort(event,'<?php echo $sana_person->SortUrl($sana_person->picture) ?>',1);"><div id="elh_sana_person_picture" class="sana_person_picture">
 			<div class="ewTableHeaderBtn"><span class="ewTableHeaderCaption"><?php echo $sana_person->picture->FldCaption() ?><?php echo $Language->Phrase("SrchLegend") ?></span><span class="ewTableHeaderSort"><?php if ($sana_person->picture->getSort() == "ASC") { ?><span class="caret ewSortUp"></span><?php } elseif ($sana_person->picture->getSort() == "DESC") { ?><span class="caret"></span><?php } ?></span></div>
-        </div></div></th>
-	<?php } ?>
-<?php } ?>		
-<?php if ($sana_person->registrationUser->Visible) { // registrationUser ?>
-	<?php if ($sana_person->SortUrl($sana_person->registrationUser) == "") { ?>
-		<th data-name="registrationUser"><div id="elh_sana_person_registrationUser" class="sana_person_registrationUser"><div class="ewTableHeaderCaption"><?php echo $sana_person->registrationUser->FldCaption() ?></div></div></th>
-	<?php } else { ?>
-		<th data-name="registrationUser"><div class="ewPointer" onclick="ew_Sort(event,'<?php echo $sana_person->SortUrl($sana_person->registrationUser) ?>',1);"><div id="elh_sana_person_registrationUser" class="sana_person_registrationUser">
-			<div class="ewTableHeaderBtn"><span class="ewTableHeaderCaption"><?php echo $sana_person->registrationUser->FldCaption() ?></span><span class="ewTableHeaderSort"><?php if ($sana_person->registrationUser->getSort() == "ASC") { ?><span class="caret ewSortUp"></span><?php } elseif ($sana_person->registrationUser->getSort() == "DESC") { ?><span class="caret"></span><?php } ?></span></div>
-        </div></div></th>
-	<?php } ?>
-<?php } ?>		
-<?php if ($sana_person->registrationDateTime->Visible) { // registrationDateTime ?>
-	<?php if ($sana_person->SortUrl($sana_person->registrationDateTime) == "") { ?>
-		<th data-name="registrationDateTime"><div id="elh_sana_person_registrationDateTime" class="sana_person_registrationDateTime"><div class="ewTableHeaderCaption"><?php echo $sana_person->registrationDateTime->FldCaption() ?></div></div></th>
-	<?php } else { ?>
-		<th data-name="registrationDateTime"><div class="ewPointer" onclick="ew_Sort(event,'<?php echo $sana_person->SortUrl($sana_person->registrationDateTime) ?>',1);"><div id="elh_sana_person_registrationDateTime" class="sana_person_registrationDateTime">
-			<div class="ewTableHeaderBtn"><span class="ewTableHeaderCaption"><?php echo $sana_person->registrationDateTime->FldCaption() ?></span><span class="ewTableHeaderSort"><?php if ($sana_person->registrationDateTime->getSort() == "ASC") { ?><span class="caret ewSortUp"></span><?php } elseif ($sana_person->registrationDateTime->getSort() == "DESC") { ?><span class="caret"></span><?php } ?></span></div>
-        </div></div></th>
-	<?php } ?>
-<?php } ?>		
-<?php if ($sana_person->registrationStation->Visible) { // registrationStation ?>
-	<?php if ($sana_person->SortUrl($sana_person->registrationStation) == "") { ?>
-		<th data-name="registrationStation"><div id="elh_sana_person_registrationStation" class="sana_person_registrationStation"><div class="ewTableHeaderCaption"><?php echo $sana_person->registrationStation->FldCaption() ?></div></div></th>
-	<?php } else { ?>
-		<th data-name="registrationStation"><div class="ewPointer" onclick="ew_Sort(event,'<?php echo $sana_person->SortUrl($sana_person->registrationStation) ?>',1);"><div id="elh_sana_person_registrationStation" class="sana_person_registrationStation">
-			<div class="ewTableHeaderBtn"><span class="ewTableHeaderCaption"><?php echo $sana_person->registrationStation->FldCaption() ?></span><span class="ewTableHeaderSort"><?php if ($sana_person->registrationStation->getSort() == "ASC") { ?><span class="caret ewSortUp"></span><?php } elseif ($sana_person->registrationStation->getSort() == "DESC") { ?><span class="caret"></span><?php } ?></span></div>
-        </div></div></th>
-	<?php } ?>
-<?php } ?>		
-<?php if ($sana_person->isolatedDateTime->Visible) { // isolatedDateTime ?>
-	<?php if ($sana_person->SortUrl($sana_person->isolatedDateTime) == "") { ?>
-		<th data-name="isolatedDateTime"><div id="elh_sana_person_isolatedDateTime" class="sana_person_isolatedDateTime"><div class="ewTableHeaderCaption"><?php echo $sana_person->isolatedDateTime->FldCaption() ?></div></div></th>
-	<?php } else { ?>
-		<th data-name="isolatedDateTime"><div class="ewPointer" onclick="ew_Sort(event,'<?php echo $sana_person->SortUrl($sana_person->isolatedDateTime) ?>',1);"><div id="elh_sana_person_isolatedDateTime" class="sana_person_isolatedDateTime">
-			<div class="ewTableHeaderBtn"><span class="ewTableHeaderCaption"><?php echo $sana_person->isolatedDateTime->FldCaption() ?></span><span class="ewTableHeaderSort"><?php if ($sana_person->isolatedDateTime->getSort() == "ASC") { ?><span class="caret ewSortUp"></span><?php } elseif ($sana_person->isolatedDateTime->getSort() == "DESC") { ?><span class="caret"></span><?php } ?></span></div>
         </div></div></th>
 	<?php } ?>
 <?php } ?>		
@@ -2903,6 +3468,14 @@ $sana_person_list->ListOptions->Render("body", "left", $sana_person_list->RowCnt
 </span>
 </td>
 	<?php } ?>
+	<?php if ($sana_person->passportNumber->Visible) { // passportNumber ?>
+		<td data-name="passportNumber"<?php echo $sana_person->passportNumber->CellAttributes() ?>>
+<span id="el<?php echo $sana_person_list->RowCnt ?>_sana_person_passportNumber" class="sana_person_passportNumber">
+<span<?php echo $sana_person->passportNumber->ViewAttributes() ?>>
+<?php echo $sana_person->passportNumber->ListViewValue() ?></span>
+</span>
+</td>
+	<?php } ?>
 	<?php if ($sana_person->fatherName->Visible) { // fatherName ?>
 		<td data-name="fatherName"<?php echo $sana_person->fatherName->CellAttributes() ?>>
 <span id="el<?php echo $sana_person_list->RowCnt ?>_sana_person_fatherName" class="sana_person_fatherName">
@@ -2919,147 +3492,19 @@ $sana_person_list->ListOptions->Render("body", "left", $sana_person_list->RowCnt
 </span>
 </td>
 	<?php } ?>
-	<?php if ($sana_person->country->Visible) { // country ?>
-		<td data-name="country"<?php echo $sana_person->country->CellAttributes() ?>>
-<span id="el<?php echo $sana_person_list->RowCnt ?>_sana_person_country" class="sana_person_country">
-<span<?php echo $sana_person->country->ViewAttributes() ?>>
-<?php echo $sana_person->country->ListViewValue() ?></span>
+	<?php if ($sana_person->locationLevel1->Visible) { // locationLevel1 ?>
+		<td data-name="locationLevel1"<?php echo $sana_person->locationLevel1->CellAttributes() ?>>
+<span id="el<?php echo $sana_person_list->RowCnt ?>_sana_person_locationLevel1" class="sana_person_locationLevel1">
+<span<?php echo $sana_person->locationLevel1->ViewAttributes() ?>>
+<?php echo $sana_person->locationLevel1->ListViewValue() ?></span>
 </span>
 </td>
 	<?php } ?>
-	<?php if ($sana_person->province->Visible) { // province ?>
-		<td data-name="province"<?php echo $sana_person->province->CellAttributes() ?>>
-<span id="el<?php echo $sana_person_list->RowCnt ?>_sana_person_province" class="sana_person_province">
-<span<?php echo $sana_person->province->ViewAttributes() ?>>
-<?php echo $sana_person->province->ListViewValue() ?></span>
-</span>
-</td>
-	<?php } ?>
-	<?php if ($sana_person->county->Visible) { // county ?>
-		<td data-name="county"<?php echo $sana_person->county->CellAttributes() ?>>
-<span id="el<?php echo $sana_person_list->RowCnt ?>_sana_person_county" class="sana_person_county">
-<span<?php echo $sana_person->county->ViewAttributes() ?>>
-<?php echo $sana_person->county->ListViewValue() ?></span>
-</span>
-</td>
-	<?php } ?>
-	<?php if ($sana_person->district->Visible) { // district ?>
-		<td data-name="district"<?php echo $sana_person->district->CellAttributes() ?>>
-<span id="el<?php echo $sana_person_list->RowCnt ?>_sana_person_district" class="sana_person_district">
-<span<?php echo $sana_person->district->ViewAttributes() ?>>
-<?php echo $sana_person->district->ListViewValue() ?></span>
-</span>
-</td>
-	<?php } ?>
-	<?php if ($sana_person->city_ruralDistrict->Visible) { // city_ruralDistrict ?>
-		<td data-name="city_ruralDistrict"<?php echo $sana_person->city_ruralDistrict->CellAttributes() ?>>
-<span id="el<?php echo $sana_person_list->RowCnt ?>_sana_person_city_ruralDistrict" class="sana_person_city_ruralDistrict">
-<span<?php echo $sana_person->city_ruralDistrict->ViewAttributes() ?>>
-<?php echo $sana_person->city_ruralDistrict->ListViewValue() ?></span>
-</span>
-</td>
-	<?php } ?>
-	<?php if ($sana_person->region_village->Visible) { // region_village ?>
-		<td data-name="region_village"<?php echo $sana_person->region_village->CellAttributes() ?>>
-<span id="el<?php echo $sana_person_list->RowCnt ?>_sana_person_region_village" class="sana_person_region_village">
-<span<?php echo $sana_person->region_village->ViewAttributes() ?>>
-<?php echo $sana_person->region_village->ListViewValue() ?></span>
-</span>
-</td>
-	<?php } ?>
-	<?php if ($sana_person->address->Visible) { // address ?>
-		<td data-name="address"<?php echo $sana_person->address->CellAttributes() ?>>
-<span id="el<?php echo $sana_person_list->RowCnt ?>_sana_person_address" class="sana_person_address">
-<span<?php echo $sana_person->address->ViewAttributes() ?>>
-<?php echo $sana_person->address->ListViewValue() ?></span>
-</span>
-</td>
-	<?php } ?>
-	<?php if ($sana_person->convoy->Visible) { // convoy ?>
-		<td data-name="convoy"<?php echo $sana_person->convoy->CellAttributes() ?>>
-<span id="el<?php echo $sana_person_list->RowCnt ?>_sana_person_convoy" class="sana_person_convoy">
-<span<?php echo $sana_person->convoy->ViewAttributes() ?>>
-<?php echo $sana_person->convoy->ListViewValue() ?></span>
-</span>
-</td>
-	<?php } ?>
-	<?php if ($sana_person->convoyManager->Visible) { // convoyManager ?>
-		<td data-name="convoyManager"<?php echo $sana_person->convoyManager->CellAttributes() ?>>
-<span id="el<?php echo $sana_person_list->RowCnt ?>_sana_person_convoyManager" class="sana_person_convoyManager">
-<span<?php echo $sana_person->convoyManager->ViewAttributes() ?>>
-<?php echo $sana_person->convoyManager->ListViewValue() ?></span>
-</span>
-</td>
-	<?php } ?>
-	<?php if ($sana_person->followersName->Visible) { // followersName ?>
-		<td data-name="followersName"<?php echo $sana_person->followersName->CellAttributes() ?>>
-<span id="el<?php echo $sana_person_list->RowCnt ?>_sana_person_followersName" class="sana_person_followersName">
-<span<?php echo $sana_person->followersName->ViewAttributes() ?>>
-<?php echo $sana_person->followersName->ListViewValue() ?></span>
-</span>
-</td>
-	<?php } ?>
-	<?php if ($sana_person->status->Visible) { // status ?>
-		<td data-name="status"<?php echo $sana_person->status->CellAttributes() ?>>
-<span id="el<?php echo $sana_person_list->RowCnt ?>_sana_person_status" class="sana_person_status">
-<span<?php echo $sana_person->status->ViewAttributes() ?>>
-<?php echo $sana_person->status->ListViewValue() ?></span>
-</span>
-</td>
-	<?php } ?>
-	<?php if ($sana_person->isolatedLocation->Visible) { // isolatedLocation ?>
-		<td data-name="isolatedLocation"<?php echo $sana_person->isolatedLocation->CellAttributes() ?>>
-<span id="el<?php echo $sana_person_list->RowCnt ?>_sana_person_isolatedLocation" class="sana_person_isolatedLocation">
-<span<?php echo $sana_person->isolatedLocation->ViewAttributes() ?>>
-<?php echo $sana_person->isolatedLocation->ListViewValue() ?></span>
-</span>
-</td>
-	<?php } ?>
-	<?php if ($sana_person->birthDate->Visible) { // birthDate ?>
-		<td data-name="birthDate"<?php echo $sana_person->birthDate->CellAttributes() ?>>
-<span id="el<?php echo $sana_person_list->RowCnt ?>_sana_person_birthDate" class="sana_person_birthDate">
-<span<?php echo $sana_person->birthDate->ViewAttributes() ?>>
-<?php echo $sana_person->birthDate->ListViewValue() ?></span>
-</span>
-</td>
-	<?php } ?>
-	<?php if ($sana_person->ageRange->Visible) { // ageRange ?>
-		<td data-name="ageRange"<?php echo $sana_person->ageRange->CellAttributes() ?>>
-<span id="el<?php echo $sana_person_list->RowCnt ?>_sana_person_ageRange" class="sana_person_ageRange">
-<span<?php echo $sana_person->ageRange->ViewAttributes() ?>>
-<?php echo $sana_person->ageRange->ListViewValue() ?></span>
-</span>
-</td>
-	<?php } ?>
-	<?php if ($sana_person->dress1->Visible) { // dress1 ?>
-		<td data-name="dress1"<?php echo $sana_person->dress1->CellAttributes() ?>>
-<span id="el<?php echo $sana_person_list->RowCnt ?>_sana_person_dress1" class="sana_person_dress1">
-<span<?php echo $sana_person->dress1->ViewAttributes() ?>>
-<?php echo $sana_person->dress1->ListViewValue() ?></span>
-</span>
-</td>
-	<?php } ?>
-	<?php if ($sana_person->dress2->Visible) { // dress2 ?>
-		<td data-name="dress2"<?php echo $sana_person->dress2->CellAttributes() ?>>
-<span id="el<?php echo $sana_person_list->RowCnt ?>_sana_person_dress2" class="sana_person_dress2">
-<span<?php echo $sana_person->dress2->ViewAttributes() ?>>
-<?php echo $sana_person->dress2->ListViewValue() ?></span>
-</span>
-</td>
-	<?php } ?>
-	<?php if ($sana_person->signTags->Visible) { // signTags ?>
-		<td data-name="signTags"<?php echo $sana_person->signTags->CellAttributes() ?>>
-<span id="el<?php echo $sana_person_list->RowCnt ?>_sana_person_signTags" class="sana_person_signTags">
-<span<?php echo $sana_person->signTags->ViewAttributes() ?>>
-<?php echo $sana_person->signTags->ListViewValue() ?></span>
-</span>
-</td>
-	<?php } ?>
-	<?php if ($sana_person->phone->Visible) { // phone ?>
-		<td data-name="phone"<?php echo $sana_person->phone->CellAttributes() ?>>
-<span id="el<?php echo $sana_person_list->RowCnt ?>_sana_person_phone" class="sana_person_phone">
-<span<?php echo $sana_person->phone->ViewAttributes() ?>>
-<?php echo $sana_person->phone->ListViewValue() ?></span>
+	<?php if ($sana_person->locationLevel2->Visible) { // locationLevel2 ?>
+		<td data-name="locationLevel2"<?php echo $sana_person->locationLevel2->CellAttributes() ?>>
+<span id="el<?php echo $sana_person_list->RowCnt ?>_sana_person_locationLevel2" class="sana_person_locationLevel2">
+<span<?php echo $sana_person->locationLevel2->ViewAttributes() ?>>
+<?php echo $sana_person->locationLevel2->ListViewValue() ?></span>
 </span>
 </td>
 	<?php } ?>
@@ -3071,67 +3516,12 @@ $sana_person_list->ListOptions->Render("body", "left", $sana_person_list->RowCnt
 </span>
 </td>
 	<?php } ?>
-	<?php if ($sana_person->_email->Visible) { // email ?>
-		<td data-name="_email"<?php echo $sana_person->_email->CellAttributes() ?>>
-<span id="el<?php echo $sana_person_list->RowCnt ?>_sana_person__email" class="sana_person__email">
-<span<?php echo $sana_person->_email->ViewAttributes() ?>>
-<?php echo $sana_person->_email->ListViewValue() ?></span>
-</span>
-</td>
-	<?php } ?>
-	<?php if ($sana_person->temporaryResidence->Visible) { // temporaryResidence ?>
-		<td data-name="temporaryResidence"<?php echo $sana_person->temporaryResidence->CellAttributes() ?>>
-<span id="el<?php echo $sana_person_list->RowCnt ?>_sana_person_temporaryResidence" class="sana_person_temporaryResidence">
-<span<?php echo $sana_person->temporaryResidence->ViewAttributes() ?>>
-<?php echo $sana_person->temporaryResidence->ListViewValue() ?></span>
-</span>
-</td>
-	<?php } ?>
-	<?php if ($sana_person->visitsCount->Visible) { // visitsCount ?>
-		<td data-name="visitsCount"<?php echo $sana_person->visitsCount->CellAttributes() ?>>
-<span id="el<?php echo $sana_person_list->RowCnt ?>_sana_person_visitsCount" class="sana_person_visitsCount">
-<span<?php echo $sana_person->visitsCount->ViewAttributes() ?>>
-<?php echo $sana_person->visitsCount->ListViewValue() ?></span>
-</span>
-</td>
-	<?php } ?>
 	<?php if ($sana_person->picture->Visible) { // picture ?>
 		<td data-name="picture"<?php echo $sana_person->picture->CellAttributes() ?>>
 <span id="el<?php echo $sana_person_list->RowCnt ?>_sana_person_picture" class="sana_person_picture">
-<span<?php echo $sana_person->picture->ViewAttributes() ?>>
-<?php echo $sana_person->picture->ListViewValue() ?></span>
+<span>
+<?php echo ew_GetFileViewTag($sana_person->picture, $sana_person->picture->ListViewValue()) ?>
 </span>
-</td>
-	<?php } ?>
-	<?php if ($sana_person->registrationUser->Visible) { // registrationUser ?>
-		<td data-name="registrationUser"<?php echo $sana_person->registrationUser->CellAttributes() ?>>
-<span id="el<?php echo $sana_person_list->RowCnt ?>_sana_person_registrationUser" class="sana_person_registrationUser">
-<span<?php echo $sana_person->registrationUser->ViewAttributes() ?>>
-<?php echo $sana_person->registrationUser->ListViewValue() ?></span>
-</span>
-</td>
-	<?php } ?>
-	<?php if ($sana_person->registrationDateTime->Visible) { // registrationDateTime ?>
-		<td data-name="registrationDateTime"<?php echo $sana_person->registrationDateTime->CellAttributes() ?>>
-<span id="el<?php echo $sana_person_list->RowCnt ?>_sana_person_registrationDateTime" class="sana_person_registrationDateTime">
-<span<?php echo $sana_person->registrationDateTime->ViewAttributes() ?>>
-<?php echo $sana_person->registrationDateTime->ListViewValue() ?></span>
-</span>
-</td>
-	<?php } ?>
-	<?php if ($sana_person->registrationStation->Visible) { // registrationStation ?>
-		<td data-name="registrationStation"<?php echo $sana_person->registrationStation->CellAttributes() ?>>
-<span id="el<?php echo $sana_person_list->RowCnt ?>_sana_person_registrationStation" class="sana_person_registrationStation">
-<span<?php echo $sana_person->registrationStation->ViewAttributes() ?>>
-<?php echo $sana_person->registrationStation->ListViewValue() ?></span>
-</span>
-</td>
-	<?php } ?>
-	<?php if ($sana_person->isolatedDateTime->Visible) { // isolatedDateTime ?>
-		<td data-name="isolatedDateTime"<?php echo $sana_person->isolatedDateTime->CellAttributes() ?>>
-<span id="el<?php echo $sana_person_list->RowCnt ?>_sana_person_isolatedDateTime" class="sana_person_isolatedDateTime">
-<span<?php echo $sana_person->isolatedDateTime->ViewAttributes() ?>>
-<?php echo $sana_person->isolatedDateTime->ListViewValue() ?></span>
 </span>
 </td>
 	<?php } ?>

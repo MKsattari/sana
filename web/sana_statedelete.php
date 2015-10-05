@@ -6,7 +6,6 @@ ob_start(); // Turn on output buffering
 <?php include_once ((EW_USE_ADODB) ? "adodb5/adodb.inc.php" : "ewmysql12.php") ?>
 <?php include_once "phpfn12.php" ?>
 <?php include_once "sana_stateinfo.php" ?>
-<?php include_once "sana_userinfo.php" ?>
 <?php include_once "userfn12.php" ?>
 <?php
 
@@ -212,7 +211,6 @@ class csana_state_delete extends csana_state {
 	//
 	function __construct() {
 		global $conn, $Language;
-		global $UserTable, $UserTableConn;
 		$GLOBALS["Page"] = &$this;
 		$this->TokenTimeout = ew_SessionTimeoutTime();
 
@@ -228,9 +226,6 @@ class csana_state_delete extends csana_state {
 			$GLOBALS["Table"] = &$GLOBALS["sana_state"];
 		}
 
-		// Table object (sana_user)
-		if (!isset($GLOBALS['sana_user'])) $GLOBALS['sana_user'] = new csana_user();
-
 		// Page ID
 		if (!defined("EW_PAGE_ID"))
 			define("EW_PAGE_ID", 'delete', TRUE);
@@ -244,12 +239,6 @@ class csana_state_delete extends csana_state {
 
 		// Open connection
 		if (!isset($conn)) $conn = ew_Connect($this->DBID);
-
-		// User table object (sana_user)
-		if (!isset($UserTable)) {
-			$UserTable = new csana_user();
-			$UserTableConn = Conn($UserTable->DBID);
-		}
 	}
 
 	// 
@@ -257,19 +246,6 @@ class csana_state_delete extends csana_state {
 	//
 	function Page_Init() {
 		global $gsExport, $gsCustomExport, $gsExportFile, $UserProfile, $Language, $Security, $objForm;
-
-		// Security
-		$Security = new cAdvancedSecurity();
-		if (!$Security->IsLoggedIn()) $Security->AutoLogin();
-		if ($Security->IsLoggedIn()) $Security->TablePermission_Loading();
-		$Security->LoadCurrentUserLevel($this->ProjectID . $this->TableName);
-		if ($Security->IsLoggedIn()) $Security->TablePermission_Loaded();
-		if (!$Security->IsLoggedIn()) $this->Page_Terminate(ew_GetUrl("login.php"));
-		if ($Security->IsLoggedIn()) {
-			$Security->UserID_Loading();
-			$Security->LoadUserID();
-			$Security->UserID_Loaded();
-		}
 		$this->CurrentAction = (@$_GET["a"] <> "") ? $_GET["a"] : @$_POST["a_list"]; // Set up current action
 		$this->stateID->Visible = !$this->IsAdd() && !$this->IsCopy() && !$this->IsGridAdd();
 
@@ -437,6 +413,7 @@ class csana_state_delete extends csana_state {
 		$this->stateID->setDbValue($rs->fields('stateID'));
 		$this->stateClass->setDbValue($rs->fields('stateClass'));
 		$this->stateName->setDbValue($rs->fields('stateName'));
+		$this->stateLanguage->setDbValue($rs->fields('stateLanguage'));
 		$this->description->setDbValue($rs->fields('description'));
 	}
 
@@ -447,6 +424,7 @@ class csana_state_delete extends csana_state {
 		$this->stateID->DbValue = $row['stateID'];
 		$this->stateClass->DbValue = $row['stateClass'];
 		$this->stateName->DbValue = $row['stateName'];
+		$this->stateLanguage->DbValue = $row['stateLanguage'];
 		$this->description->DbValue = $row['description'];
 	}
 
@@ -463,6 +441,7 @@ class csana_state_delete extends csana_state {
 		// stateID
 		// stateClass
 		// stateName
+		// stateLanguage
 		// description
 
 		if ($this->RowType == EW_ROWTYPE_VIEW) { // View row
@@ -479,6 +458,14 @@ class csana_state_delete extends csana_state {
 		$this->stateName->ViewValue = $this->stateName->CurrentValue;
 		$this->stateName->ViewCustomAttributes = "";
 
+		// stateLanguage
+		if (strval($this->stateLanguage->CurrentValue) <> "") {
+			$this->stateLanguage->ViewValue = $this->stateLanguage->OptionCaption($this->stateLanguage->CurrentValue);
+		} else {
+			$this->stateLanguage->ViewValue = NULL;
+		}
+		$this->stateLanguage->ViewCustomAttributes = "";
+
 			// stateID
 			$this->stateID->LinkCustomAttributes = "";
 			$this->stateID->HrefValue = "";
@@ -493,6 +480,11 @@ class csana_state_delete extends csana_state {
 			$this->stateName->LinkCustomAttributes = "";
 			$this->stateName->HrefValue = "";
 			$this->stateName->TooltipValue = "";
+
+			// stateLanguage
+			$this->stateLanguage->LinkCustomAttributes = "";
+			$this->stateLanguage->HrefValue = "";
+			$this->stateLanguage->TooltipValue = "";
 		}
 
 		// Call Row Rendered event
@@ -505,10 +497,6 @@ class csana_state_delete extends csana_state {
 	//
 	function DeleteRows() {
 		global $Language, $Security;
-		if (!$Security->CanDelete()) {
-			$this->setFailureMessage($Language->Phrase("NoDeletePermission")); // No delete permission
-			return FALSE;
-		}
 		$DeleteRows = TRUE;
 		$sSql = $this->SQL();
 		$conn = &$this->Connection();
@@ -696,8 +684,10 @@ fsana_statedelete.ValidateRequired = false;
 <?php } ?>
 
 // Dynamic selection lists
-// Form object for search
+fsana_statedelete.Lists["x_stateLanguage"] = {"LinkField":"","Ajax":null,"AutoFill":false,"DisplayFields":["","","",""],"ParentFields":[],"ChildFields":[],"FilterFields":[],"Options":[],"Template":""};
+fsana_statedelete.Lists["x_stateLanguage"].Options = <?php echo json_encode($sana_state->stateLanguage->Options()) ?>;
 
+// Form object for search
 </script>
 <script type="text/javascript">
 
@@ -748,6 +738,9 @@ $sana_state_delete->ShowMessage();
 <?php if ($sana_state->stateName->Visible) { // stateName ?>
 		<th><span id="elh_sana_state_stateName" class="sana_state_stateName"><?php echo $sana_state->stateName->FldCaption() ?></span></th>
 <?php } ?>
+<?php if ($sana_state->stateLanguage->Visible) { // stateLanguage ?>
+		<th><span id="elh_sana_state_stateLanguage" class="sana_state_stateLanguage"><?php echo $sana_state->stateLanguage->FldCaption() ?></span></th>
+<?php } ?>
 	</tr>
 	</thead>
 	<tbody>
@@ -790,6 +783,14 @@ while (!$sana_state_delete->Recordset->EOF) {
 <span id="el<?php echo $sana_state_delete->RowCnt ?>_sana_state_stateName" class="sana_state_stateName">
 <span<?php echo $sana_state->stateName->ViewAttributes() ?>>
 <?php echo $sana_state->stateName->ListViewValue() ?></span>
+</span>
+</td>
+<?php } ?>
+<?php if ($sana_state->stateLanguage->Visible) { // stateLanguage ?>
+		<td<?php echo $sana_state->stateLanguage->CellAttributes() ?>>
+<span id="el<?php echo $sana_state_delete->RowCnt ?>_sana_state_stateLanguage" class="sana_state_stateLanguage">
+<span<?php echo $sana_state->stateLanguage->ViewAttributes() ?>>
+<?php echo $sana_state->stateLanguage->ListViewValue() ?></span>
 </span>
 </td>
 <?php } ?>

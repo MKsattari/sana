@@ -3563,7 +3563,6 @@ class cAdvancedSecurity {
 	// Validate user
 	function ValidateUser(&$usr, &$pwd, $autologin, $encrypted = FALSE) {
 		global $Language;
-		global $UserTable, $UserTableConn;
 		$ValidateUser = FALSE;
 		$CustomValidateUser = FALSE;
 
@@ -3573,50 +3572,6 @@ class cAdvancedSecurity {
 			if ($CustomValidateUser) {
 				$_SESSION[EW_SESSION_STATUS] = "login";
 				$this->setCurrentUserName($usr); // Load user name
-			}
-		}
-
-		// Check hard coded admin first
-		if (!$ValidateUser) {
-			if (EW_CASE_SENSITIVE_PASSWORD) {
-				$ValidateUser = (!$CustomValidateUser && EW_ADMIN_USER_NAME == $usr && EW_ADMIN_PASSWORD == $pwd) ||
-								($CustomValidateUser && EW_ADMIN_USER_NAME == $usr);
-			} else {
-				$ValidateUser = (!$CustomValidateUser && strtolower(EW_ADMIN_USER_NAME) == strtolower($usr)
-								&& strtolower(EW_ADMIN_PASSWORD) == strtolower($pwd)) ||
-								($CustomValidateUser && strtolower(EW_ADMIN_USER_NAME) == strtolower($usr));
-			}
-			if ($ValidateUser) {
-				$_SESSION[EW_SESSION_STATUS] = "login";
-				$_SESSION[EW_SESSION_SYS_ADMIN] = 1; // System Administrator
-				$this->setCurrentUserName($Language->Phrase("UserAdministrator")); // Load user name
-				$this->setSessionUserID(-1); // System Administrator
-			}
-		}
-
-		// Check other users
-		if (!$ValidateUser) {
-			$sFilter = str_replace("%u", ew_AdjustSql($usr, EW_USER_TABLE_DBID), EW_USER_NAME_FILTER);
-
-			// Set up filter (SQL WHERE clause) and get return SQL
-			// SQL constructor in <UserTable> class, <UserTable>info.php
-
-			$sSql = $UserTable->GetSQL($sFilter, "");
-			if ($rs = $UserTableConn->Execute($sSql)) {
-				if (!$rs->EOF) {
-					$ValidateUser = $CustomValidateUser || ew_ComparePassword($rs->fields('userPassword'), $pwd, $encrypted);
-					if ($ValidateUser) {
-						$_SESSION[EW_SESSION_STATUS] = "login";
-						$_SESSION[EW_SESSION_SYS_ADMIN] = 0; // Non System Administrator
-						$this->setCurrentUserName($rs->fields('mobilePhone')); // Load user name
-						$this->setSessionUserID($rs->fields('userID')); // Load User ID
-
-						// Call User Validated event
-						$row = $rs->fields;
-						$ValidateUser = $this->User_Validated($row) !== FALSE; // For backward compatibility
-					}
-				}
-				$rs->Close();
 			}
 		}
 		if ($CustomValidateUser)
@@ -3695,7 +3650,6 @@ class cAdvancedSecurity {
 	// Get current user privilege
 	function CurrentUserLevelPriv($TableName) {
 		if ($this->IsLoggedIn()) {
-			return 127;
 		} else { // Anonymous
 			return $this->GetUserLevelPrivEx($TableName, -2);
 		}
@@ -3895,8 +3849,6 @@ class cAdvancedSecurity {
 	// Check if user is administrator
 	function IsAdmin() {
 		$IsAdmin = $this->IsSysAdmin();
-		if (!$IsAdmin)
-    		$IsAdmin = $this->CurrentUserID == -1 || in_array(-1, $this->UserID);
 		return $IsAdmin;
 	}
 
@@ -3926,108 +3878,13 @@ class cAdvancedSecurity {
 	function CurrentUserInfo($fldname) {
 		global $UserTableConn;
 		$info = NULL;
-		$info = $this->GetUserInfo($fldname, $this->CurrentUserID);
+		if (defined("EW_USER_TABLE") && !$this->IsSysAdmin()) {
+			$user = $this->CurrentUserName();
+			if (strval($user) <> "")
+				return ew_ExecuteScalar("SELECT " . ew_QuotedName($fldname, EW_USER_TABLE_DBID) . " FROM " . EW_USER_TABLE . " WHERE " .
+					str_replace("%u", ew_AdjustSql($user, EW_USER_TABLE_DBID), EW_USER_NAME_FILTER), $UserTableConn);
+		}
 		return $info;
-	}
-
-	// Get user info
-	function GetUserInfo($FieldName, $UserID) {
-		global $UserTable, $UserTableConn;
-		if (strval($UserID) <> "") {
-
-			// Get SQL from GetSQL method in <UserTable> class, <UserTable>info.php
-			$sFilter = str_replace("%u", ew_AdjustSql($UserID, EW_USER_TABLE_DBID), EW_USER_ID_FILTER);
-			$sSql = $UserTable->GetSQL($sFilter, '');
-			if (($RsUser = $UserTableConn->Execute($sSql)) && !$RsUser->EOF) {
-				$info = $RsUser->fields($FieldName);
-				$RsUser->Close();
-				return $info;
-			}
-		}
-		return NULL;
-  }
-
-	// Get User ID by user name
-	function GetUserIDByUserName($UserName) {
-		global $UserTable, $UserTableConn;
-		if (strval($UserName) <> "") {
-			$sFilter = str_replace("%u", ew_AdjustSql($UserName, EW_USER_TABLE_DBID), EW_USER_NAME_FILTER);
-			$sSql = $UserTable->GetSQL($sFilter, '');
-			if (($RsUser = $UserTableConn->Execute($sSql)) && !$RsUser->EOF) {
-				$UserID = $RsUser->fields('userID');
-				$RsUser->Close();
-				return $UserID;
-			}
-		}
-		return "";
-	}
-
-	// Load User ID
-	function LoadUserID() {
-		global $UserTable, $UserTableConn;
-		$this->UserID = array();
-		if (strval($this->CurrentUserID) == "") {
-
-			// Add codes to handle empty user id here
-		} elseif ($this->CurrentUserID <> "-1") {
-
-			// Get first level
-			$this->AddUserID($this->CurrentUserID);
-			$sFilter = $UserTable->UserIDFilter($this->CurrentUserID);
-			$sSql = $UserTable->GetSQL($sFilter, '');
-			if ($RsUser = $UserTableConn->Execute($sSql)) {
-				while (!$RsUser->EOF) {
-					$this->AddUserID($RsUser->fields('userID'));
-					$RsUser->MoveNext();
-				}
-				$RsUser->Close();
-			}
-		}
-	}
-
-	// Add user name
-	function AddUserName($UserName) {
-		$this->AddUserID($this->GetUserIDByUserName($UserName));
-	}
-
-	// Add User ID
-	function AddUserID($userid) {
-		if (strval($userid) == "") return;
-		if (!is_numeric($userid)) return;
-		if (!in_array(trim(strval($userid)), $this->UserID))
-			$this->UserID[] = trim(strval($userid));
-	}
-
-	// Delete user name
-	function DeleteUserName($UserName) {
-		$this->DeleteUserID($this->GetUserIDByUserName($UserName));
-	}
-
-	// Delete User ID
-	function DeleteUserID($userid) {
-		if (strval($userid) == "") return;
-		if (!is_numeric($userid)) return;
-		$cnt = count($this->UserID);
-		for ($i = 0; $i < $cnt; $i++) {
-			if ($this->UserID[$i] == trim(strval($userid))) {
-				unset($this->UserID[$i]);
-				break;
-			}
-		}
-	}
-
-	// User ID list
-	function UserIDList() {
-		$ar = $this->UserID;
-		$len = count($ar);
-		for ($i = 0; $i < $len; $i++)
-			$ar[$i] =  ew_QuotedValue($ar[$i], EW_DATATYPE_NUMBER, EW_USER_TABLE_DBID);
-		return implode(", ", $ar);
-	}
-
-	// List of allowed User IDs for this user
-	function IsValidUserID($userid) {
-		return in_array(trim(strval($userid)), $this->UserID);
 	}
 
 	// UserID Loading event

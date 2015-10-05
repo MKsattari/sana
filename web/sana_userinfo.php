@@ -30,7 +30,7 @@ class csana_user extends cTable {
 	var $picture;
 	var $registrationUser;
 	var $registrationDateTime;
-	var $registrationStation;
+	var $stationID;
 	var $isolatedDateTime;
 	var $acl;
 	var $description;
@@ -148,7 +148,7 @@ class csana_user extends cTable {
 		$this->fields['email'] = &$this->_email;
 
 		// picture
-		$this->picture = new cField('sana_user', 'sana_user', 'x_picture', 'picture', '`picture`', '`picture`', 200, -1, FALSE, '`picture`', FALSE, FALSE, FALSE, 'FORMATTED TEXT', 'TEXT');
+		$this->picture = new cField('sana_user', 'sana_user', 'x_picture', 'picture', '`picture`', '`picture`', 200, -1, TRUE, '`picture`', FALSE, FALSE, FALSE, 'FORMATTED TEXT', 'FILE');
 		$this->fields['picture'] = &$this->picture;
 
 		// registrationUser
@@ -161,10 +161,10 @@ class csana_user extends cTable {
 		$this->registrationDateTime->FldDefaultErrMsg = str_replace("%s", "/", $Language->Phrase("IncorrectDateYMD"));
 		$this->fields['registrationDateTime'] = &$this->registrationDateTime;
 
-		// registrationStation
-		$this->registrationStation = new cField('sana_user', 'sana_user', 'x_registrationStation', 'registrationStation', '`registrationStation`', '`registrationStation`', 3, -1, FALSE, '`registrationStation`', FALSE, FALSE, FALSE, 'FORMATTED TEXT', 'TEXT');
-		$this->registrationStation->FldDefaultErrMsg = $Language->Phrase("IncorrectInteger");
-		$this->fields['registrationStation'] = &$this->registrationStation;
+		// stationID
+		$this->stationID = new cField('sana_user', 'sana_user', 'x_stationID', 'stationID', '`stationID`', '`stationID`', 3, -1, FALSE, '`stationID`', FALSE, FALSE, FALSE, 'FORMATTED TEXT', 'TEXT');
+		$this->stationID->FldDefaultErrMsg = $Language->Phrase("IncorrectInteger");
+		$this->fields['stationID'] = &$this->stationID;
 
 		// isolatedDateTime
 		$this->isolatedDateTime = new cField('sana_user', 'sana_user', 'x_isolatedDateTime', 'isolatedDateTime', '`isolatedDateTime`', 'DATE_FORMAT(`isolatedDateTime`, \'%Y/%m/%d\')', 135, 5, FALSE, '`isolatedDateTime`', FALSE, FALSE, FALSE, 'FORMATTED TEXT', 'TEXT');
@@ -282,18 +282,12 @@ class csana_user extends cTable {
 
 	// Apply User ID filters
 	function ApplyUserIDFilters($sFilter) {
-		global $Security;
-
-		// Add User ID filter
-		if ($Security->CurrentUserID() <> "" && !$Security->IsAdmin()) { // Non system admin
-			$sFilter = $this->AddUserIDFilter($sFilter);
-		}
 		return $sFilter;
 	}
 
 	// Check if User ID security allows view all
 	function UserIDAllow($id = "") {
-		$allow = $this->UserIDAllowSecurity;
+		$allow = EW_USER_ID_ALLOW;
 		switch ($id) {
 			case "add":
 			case "copy":
@@ -413,8 +407,6 @@ class csana_user extends cTable {
 		foreach ($rs as $name => $value) {
 			if (!isset($this->fields[$name]) || $this->fields[$name]->FldIsCustom)
 				continue;
-			if (EW_ENCRYPTED_PASSWORD && $name == 'userPassword')
-				$value = (EW_CASE_SENSITIVE_PASSWORD) ? ew_EncryptPassword($value) : ew_EncryptPassword(strtolower($value));
 			$names .= $this->fields[$name]->FldExpression . ",";
 			$values .= ew_QuotedValue($value, $this->fields[$name]->FldDataType, $this->DBID) . ",";
 		}
@@ -437,9 +429,6 @@ class csana_user extends cTable {
 		foreach ($rs as $name => $value) {
 			if (!isset($this->fields[$name]) || $this->fields[$name]->FldIsCustom)
 				continue;
-			if (EW_ENCRYPTED_PASSWORD && $name == 'userPassword') {
-				$value = (EW_CASE_SENSITIVE_PASSWORD) ? ew_EncryptPassword($value) : ew_EncryptPassword(strtolower($value));
-			}
 			$sql .= $this->fields[$name]->FldExpression . "=";
 			$sql .= ew_QuotedValue($value, $this->fields[$name]->FldDataType, $this->DBID) . ",";
 		}
@@ -685,10 +674,10 @@ class csana_user extends cTable {
 		$this->mobilePhone->setDbValue($rs->fields('mobilePhone'));
 		$this->userPassword->setDbValue($rs->fields('userPassword'));
 		$this->_email->setDbValue($rs->fields('email'));
-		$this->picture->setDbValue($rs->fields('picture'));
+		$this->picture->Upload->DbValue = $rs->fields('picture');
 		$this->registrationUser->setDbValue($rs->fields('registrationUser'));
 		$this->registrationDateTime->setDbValue($rs->fields('registrationDateTime'));
-		$this->registrationStation->setDbValue($rs->fields('registrationStation'));
+		$this->stationID->setDbValue($rs->fields('stationID'));
 		$this->isolatedDateTime->setDbValue($rs->fields('isolatedDateTime'));
 		$this->acl->setDbValue($rs->fields('acl'));
 		$this->description->setDbValue($rs->fields('description'));
@@ -725,7 +714,7 @@ class csana_user extends cTable {
 		// picture
 		// registrationUser
 		// registrationDateTime
-		// registrationStation
+		// stationID
 		// isolatedDateTime
 		// acl
 		// description
@@ -811,7 +800,11 @@ class csana_user extends cTable {
 		$this->_email->ViewCustomAttributes = "";
 
 		// picture
-		$this->picture->ViewValue = $this->picture->CurrentValue;
+		if (!ew_Empty($this->picture->Upload->DbValue)) {
+			$this->picture->ViewValue = $this->picture->Upload->DbValue;
+		} else {
+			$this->picture->ViewValue = "";
+		}
 		$this->picture->ViewCustomAttributes = "";
 
 		// registrationUser
@@ -823,9 +816,9 @@ class csana_user extends cTable {
 		$this->registrationDateTime->ViewValue = ew_FormatDateTime($this->registrationDateTime->ViewValue, 5);
 		$this->registrationDateTime->ViewCustomAttributes = "";
 
-		// registrationStation
-		$this->registrationStation->ViewValue = $this->registrationStation->CurrentValue;
-		$this->registrationStation->ViewCustomAttributes = "";
+		// stationID
+		$this->stationID->ViewValue = $this->stationID->CurrentValue;
+		$this->stationID->ViewCustomAttributes = "";
 
 		// isolatedDateTime
 		$this->isolatedDateTime->ViewValue = $this->isolatedDateTime->CurrentValue;
@@ -943,6 +936,7 @@ class csana_user extends cTable {
 		// picture
 		$this->picture->LinkCustomAttributes = "";
 		$this->picture->HrefValue = "";
+		$this->picture->HrefValue2 = $this->picture->UploadPath . $this->picture->Upload->DbValue;
 		$this->picture->TooltipValue = "";
 
 		// registrationUser
@@ -955,10 +949,10 @@ class csana_user extends cTable {
 		$this->registrationDateTime->HrefValue = "";
 		$this->registrationDateTime->TooltipValue = "";
 
-		// registrationStation
-		$this->registrationStation->LinkCustomAttributes = "";
-		$this->registrationStation->HrefValue = "";
-		$this->registrationStation->TooltipValue = "";
+		// stationID
+		$this->stationID->LinkCustomAttributes = "";
+		$this->stationID->HrefValue = "";
+		$this->stationID->TooltipValue = "";
 
 		// isolatedDateTime
 		$this->isolatedDateTime->LinkCustomAttributes = "";
@@ -1109,8 +1103,13 @@ class csana_user extends cTable {
 		// picture
 		$this->picture->EditAttrs["class"] = "form-control";
 		$this->picture->EditCustomAttributes = "";
-		$this->picture->EditValue = $this->picture->CurrentValue;
-		$this->picture->PlaceHolder = ew_RemoveHtml($this->picture->FldCaption());
+		if (!ew_Empty($this->picture->Upload->DbValue)) {
+			$this->picture->EditValue = $this->picture->Upload->DbValue;
+		} else {
+			$this->picture->EditValue = "";
+		}
+		if (!ew_Empty($this->picture->CurrentValue))
+			$this->picture->Upload->FileName = $this->picture->CurrentValue;
 
 		// registrationUser
 		$this->registrationUser->EditAttrs["class"] = "form-control";
@@ -1124,11 +1123,11 @@ class csana_user extends cTable {
 		$this->registrationDateTime->EditValue = ew_FormatDateTime($this->registrationDateTime->CurrentValue, 5);
 		$this->registrationDateTime->PlaceHolder = ew_RemoveHtml($this->registrationDateTime->FldCaption());
 
-		// registrationStation
-		$this->registrationStation->EditAttrs["class"] = "form-control";
-		$this->registrationStation->EditCustomAttributes = "";
-		$this->registrationStation->EditValue = $this->registrationStation->CurrentValue;
-		$this->registrationStation->PlaceHolder = ew_RemoveHtml($this->registrationStation->FldCaption());
+		// stationID
+		$this->stationID->EditAttrs["class"] = "form-control";
+		$this->stationID->EditCustomAttributes = "";
+		$this->stationID->EditValue = $this->stationID->CurrentValue;
+		$this->stationID->PlaceHolder = ew_RemoveHtml($this->stationID->FldCaption());
 
 		// isolatedDateTime
 		$this->isolatedDateTime->EditAttrs["class"] = "form-control";
@@ -1198,7 +1197,7 @@ class csana_user extends cTable {
 					if ($this->picture->Exportable) $Doc->ExportCaption($this->picture);
 					if ($this->registrationUser->Exportable) $Doc->ExportCaption($this->registrationUser);
 					if ($this->registrationDateTime->Exportable) $Doc->ExportCaption($this->registrationDateTime);
-					if ($this->registrationStation->Exportable) $Doc->ExportCaption($this->registrationStation);
+					if ($this->stationID->Exportable) $Doc->ExportCaption($this->stationID);
 					if ($this->isolatedDateTime->Exportable) $Doc->ExportCaption($this->isolatedDateTime);
 					if ($this->acl->Exportable) $Doc->ExportCaption($this->acl);
 					if ($this->description->Exportable) $Doc->ExportCaption($this->description);
@@ -1226,7 +1225,7 @@ class csana_user extends cTable {
 					if ($this->picture->Exportable) $Doc->ExportCaption($this->picture);
 					if ($this->registrationUser->Exportable) $Doc->ExportCaption($this->registrationUser);
 					if ($this->registrationDateTime->Exportable) $Doc->ExportCaption($this->registrationDateTime);
-					if ($this->registrationStation->Exportable) $Doc->ExportCaption($this->registrationStation);
+					if ($this->stationID->Exportable) $Doc->ExportCaption($this->stationID);
 					if ($this->isolatedDateTime->Exportable) $Doc->ExportCaption($this->isolatedDateTime);
 					if ($this->acl->Exportable) $Doc->ExportCaption($this->acl);
 				}
@@ -1283,7 +1282,7 @@ class csana_user extends cTable {
 						if ($this->picture->Exportable) $Doc->ExportField($this->picture);
 						if ($this->registrationUser->Exportable) $Doc->ExportField($this->registrationUser);
 						if ($this->registrationDateTime->Exportable) $Doc->ExportField($this->registrationDateTime);
-						if ($this->registrationStation->Exportable) $Doc->ExportField($this->registrationStation);
+						if ($this->stationID->Exportable) $Doc->ExportField($this->stationID);
 						if ($this->isolatedDateTime->Exportable) $Doc->ExportField($this->isolatedDateTime);
 						if ($this->acl->Exportable) $Doc->ExportField($this->acl);
 						if ($this->description->Exportable) $Doc->ExportField($this->description);
@@ -1311,7 +1310,7 @@ class csana_user extends cTable {
 						if ($this->picture->Exportable) $Doc->ExportField($this->picture);
 						if ($this->registrationUser->Exportable) $Doc->ExportField($this->registrationUser);
 						if ($this->registrationDateTime->Exportable) $Doc->ExportField($this->registrationDateTime);
-						if ($this->registrationStation->Exportable) $Doc->ExportField($this->registrationStation);
+						if ($this->stationID->Exportable) $Doc->ExportField($this->stationID);
 						if ($this->isolatedDateTime->Exportable) $Doc->ExportField($this->isolatedDateTime);
 						if ($this->acl->Exportable) $Doc->ExportField($this->acl);
 					}
@@ -1327,58 +1326,6 @@ class csana_user extends cTable {
 		if (!$Doc->ExportCustom) {
 			$Doc->ExportTableFooter();
 		}
-	}
-
-	// User ID filter
-	function UserIDFilter($userid) {
-		$sUserIDFilter = '`userID` = ' . ew_QuotedValue($userid, EW_DATATYPE_NUMBER, EW_USER_TABLE_DBID);
-		return $sUserIDFilter;
-	}
-
-	// Add User ID filter
-	function AddUserIDFilter($sFilter) {
-		global $Security;
-		$sFilterWrk = "";
-		$id = (CurrentPageID() == "list") ? $this->CurrentAction : CurrentPageID();
-		if (!$this->UserIDAllow($id) && !$Security->IsAdmin()) {
-			$sFilterWrk = $Security->UserIDList();
-			if ($sFilterWrk <> "")
-				$sFilterWrk = '`userID` IN (' . $sFilterWrk . ')';
-		}
-
-		// Call User ID Filtering event
-		$this->UserID_Filtering($sFilterWrk);
-		ew_AddFilter($sFilter, $sFilterWrk);
-		return $sFilter;
-	}
-
-	// User ID subquery
-	function GetUserIDSubquery(&$fld, &$masterfld) {
-		global $UserTableConn;
-		$sWrk = "";
-		$sSql = "SELECT " . $masterfld->FldExpression . " FROM `sana_user`";
-		$sFilter = $this->AddUserIDFilter("");
-		if ($sFilter <> "") $sSql .= " WHERE " . $sFilter;
-
-		// Use subquery
-		if (EW_USE_SUBQUERY_FOR_MASTER_USER_ID) {
-			$sWrk = $sSql;
-		} else {
-
-			// List all values
-			if ($rs = $UserTableConn->Execute($sSql)) {
-				while (!$rs->EOF) {
-					if ($sWrk <> "") $sWrk .= ",";
-					$sWrk .= ew_QuotedValue($rs->fields[0], $masterfld->FldDataType, EW_USER_TABLE_DBID);
-					$rs->MoveNext();
-				}
-				$rs->Close();
-			}
-		}
-		if ($sWrk <> "") {
-			$sWrk = $fld->FldExpression . " IN (" . $sWrk . ")";
-		}
-		return $sWrk;
 	}
 
 	// Get auto fill value

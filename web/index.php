@@ -5,7 +5,6 @@ ob_start(); // Turn on output buffering
 <?php include_once "ewcfg12.php" ?>
 <?php include_once ((EW_USE_ADODB) ? "adodb5/adodb.inc.php" : "ewmysql12.php") ?>
 <?php include_once "phpfn12.php" ?>
-<?php include_once "sana_userinfo.php" ?>
 <?php include_once "userfn12.php" ?>
 <?php
 
@@ -174,7 +173,6 @@ class cdefault {
 	//
 	function __construct() {
 		global $conn, $Language;
-		global $UserTable, $UserTableConn;
 		$GLOBALS["Page"] = &$this;
 		$this->TokenTimeout = ew_SessionTimeoutTime();
 
@@ -190,12 +188,6 @@ class cdefault {
 
 		// Open connection
 		if (!isset($conn)) $conn = ew_Connect();
-
-		// User table object (sana_user)
-		if (!isset($UserTable)) {
-			$UserTable = new csana_user();
-			$UserTableConn = Conn($UserTable->DBID);
-		}
 	}
 
 	// 
@@ -203,9 +195,6 @@ class cdefault {
 	//
 	function Page_Init() {
 		global $gsExport, $gsCustomExport, $gsExportFile, $UserProfile, $Language, $Security, $objForm;
-
-		// Security
-		$Security = new cAdvancedSecurity();
 
 		// Global Page Loading event (in userfn*.php)
 		Page_Loading();
@@ -256,24 +245,7 @@ class cdefault {
 	//
 	function Page_Main() {
 		global $Security, $Language;
-		if (!$Security->IsLoggedIn()) $Security->AutoLogin();
-		if ($Security->AllowList(CurrentProjectID() . 'sana_location'))
-		$this->Page_Terminate("sana_locationlist.php"); // Exit and go to default page
-		if ($Security->AllowList(CurrentProjectID() . 'sana_object'))
-			$this->Page_Terminate("sana_objectlist.php");
-		if ($Security->AllowList(CurrentProjectID() . 'sana_person'))
-			$this->Page_Terminate("sana_personlist.php");
-		if ($Security->AllowList(CurrentProjectID() . 'sana_project'))
-			$this->Page_Terminate("sana_projectlist.php");
-		if ($Security->AllowList(CurrentProjectID() . 'sana_state'))
-			$this->Page_Terminate("sana_statelist.php");
-		if ($Security->AllowList(CurrentProjectID() . 'sana_user'))
-			$this->Page_Terminate("sana_userlist.php");
-		if ($Security->IsLoggedIn()) {
-			$this->setFailureMessage($Language->Phrase("NoPermission") . "<br><br><a href=\"logout.php\">" . $Language->Phrase("BackToLogin") . "</a>");
-		} else {
-			$this->Page_Terminate("login.php"); // Exit and go to login page
-		}
+		$this->Page_Terminate("sana_personlist.php"); // Exit and go to default page
 	}
 
 	// Page Load event

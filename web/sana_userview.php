@@ -243,7 +243,6 @@ class csana_user_view extends csana_user {
 	//
 	function __construct() {
 		global $conn, $Language;
-		global $UserTable, $UserTableConn;
 		$GLOBALS["Page"] = &$this;
 		$this->TokenTimeout = ew_SessionTimeoutTime();
 
@@ -285,12 +284,6 @@ class csana_user_view extends csana_user {
 		// Open connection
 		if (!isset($conn)) $conn = ew_Connect($this->DBID);
 
-		// User table object (sana_user)
-		if (!isset($UserTable)) {
-			$UserTable = new csana_user();
-			$UserTableConn = Conn($UserTable->DBID);
-		}
-
 		// Export options
 		$this->ExportOptions = new cListOptions();
 		$this->ExportOptions->Tag = "div";
@@ -310,23 +303,6 @@ class csana_user_view extends csana_user {
 	//
 	function Page_Init() {
 		global $gsExport, $gsCustomExport, $gsExportFile, $UserProfile, $Language, $Security, $objForm;
-
-		// Security
-		$Security = new cAdvancedSecurity();
-		if (!$Security->IsLoggedIn()) $Security->AutoLogin();
-		if ($Security->IsLoggedIn()) $Security->TablePermission_Loading();
-		$Security->LoadCurrentUserLevel($this->ProjectID . $this->TableName);
-		if ($Security->IsLoggedIn()) $Security->TablePermission_Loaded();
-		if (!$Security->IsLoggedIn()) $this->Page_Terminate(ew_GetUrl("login.php"));
-		if ($Security->IsLoggedIn()) {
-			$Security->UserID_Loading();
-			$Security->LoadUserID();
-			$Security->UserID_Loaded();
-			if (strval($Security->CurrentUserID()) == "") {
-				$this->setFailureMessage($Language->Phrase("NoPermission")); // Set no permission
-				$this->Page_Terminate(ew_GetUrl("sana_userlist.php"));
-			}
-		}
 		$this->CurrentAction = (@$_GET["a"] <> "") ? $_GET["a"] : @$_POST["a_list"]; // Set up current action
 		$this->_userID->Visible = !$this->IsAdd() && !$this->IsCopy() && !$this->IsGridAdd();
 
@@ -455,22 +431,22 @@ class csana_user_view extends csana_user {
 		// Add
 		$item = &$option->Add("add");
 		$item->Body = "<a class=\"ewAction ewAdd\" title=\"" . ew_HtmlTitle($Language->Phrase("ViewPageAddLink")) . "\" data-caption=\"" . ew_HtmlTitle($Language->Phrase("ViewPageAddLink")) . "\" href=\"" . ew_HtmlEncode($this->AddUrl) . "\">" . $Language->Phrase("ViewPageAddLink") . "</a>";
-		$item->Visible = ($this->AddUrl <> "" && $Security->CanAdd());
+		$item->Visible = ($this->AddUrl <> "");
 
 		// Edit
 		$item = &$option->Add("edit");
 		$item->Body = "<a class=\"ewAction ewEdit\" title=\"" . ew_HtmlTitle($Language->Phrase("ViewPageEditLink")) . "\" data-caption=\"" . ew_HtmlTitle($Language->Phrase("ViewPageEditLink")) . "\" href=\"" . ew_HtmlEncode($this->EditUrl) . "\">" . $Language->Phrase("ViewPageEditLink") . "</a>";
-		$item->Visible = ($this->EditUrl <> "" && $Security->CanEdit()&& $this->ShowOptionLink('edit'));
+		$item->Visible = ($this->EditUrl <> "");
 
 		// Copy
 		$item = &$option->Add("copy");
 		$item->Body = "<a class=\"ewAction ewCopy\" title=\"" . ew_HtmlTitle($Language->Phrase("ViewPageCopyLink")) . "\" data-caption=\"" . ew_HtmlTitle($Language->Phrase("ViewPageCopyLink")) . "\" href=\"" . ew_HtmlEncode($this->CopyUrl) . "\">" . $Language->Phrase("ViewPageCopyLink") . "</a>";
-		$item->Visible = ($this->CopyUrl <> "" && $Security->CanAdd() && $this->ShowOptionLink('add'));
+		$item->Visible = ($this->CopyUrl <> "");
 
 		// Delete
 		$item = &$option->Add("delete");
 		$item->Body = "<a class=\"ewAction ewDelete\" title=\"" . ew_HtmlTitle($Language->Phrase("ViewPageDeleteLink")) . "\" data-caption=\"" . ew_HtmlTitle($Language->Phrase("ViewPageDeleteLink")) . "\" href=\"" . ew_HtmlEncode($this->DeleteUrl) . "\">" . $Language->Phrase("ViewPageDeleteLink") . "</a>";
-		$item->Visible = ($this->DeleteUrl <> "" && $Security->CanDelete() && $this->ShowOptionLink('delete'));
+		$item->Visible = ($this->DeleteUrl <> "");
 
 		// Set up action default
 		$option = &$options["action"];
@@ -568,10 +544,11 @@ class csana_user_view extends csana_user {
 		$this->mobilePhone->setDbValue($rs->fields('mobilePhone'));
 		$this->userPassword->setDbValue($rs->fields('userPassword'));
 		$this->_email->setDbValue($rs->fields('email'));
-		$this->picture->setDbValue($rs->fields('picture'));
+		$this->picture->Upload->DbValue = $rs->fields('picture');
+		$this->picture->CurrentValue = $this->picture->Upload->DbValue;
 		$this->registrationUser->setDbValue($rs->fields('registrationUser'));
 		$this->registrationDateTime->setDbValue($rs->fields('registrationDateTime'));
-		$this->registrationStation->setDbValue($rs->fields('registrationStation'));
+		$this->stationID->setDbValue($rs->fields('stationID'));
 		$this->isolatedDateTime->setDbValue($rs->fields('isolatedDateTime'));
 		$this->acl->setDbValue($rs->fields('acl'));
 		$this->description->setDbValue($rs->fields('description'));
@@ -601,10 +578,10 @@ class csana_user_view extends csana_user {
 		$this->mobilePhone->DbValue = $row['mobilePhone'];
 		$this->userPassword->DbValue = $row['userPassword'];
 		$this->_email->DbValue = $row['email'];
-		$this->picture->DbValue = $row['picture'];
+		$this->picture->Upload->DbValue = $row['picture'];
 		$this->registrationUser->DbValue = $row['registrationUser'];
 		$this->registrationDateTime->DbValue = $row['registrationDateTime'];
-		$this->registrationStation->DbValue = $row['registrationStation'];
+		$this->stationID->DbValue = $row['stationID'];
 		$this->isolatedDateTime->DbValue = $row['isolatedDateTime'];
 		$this->acl->DbValue = $row['acl'];
 		$this->description->DbValue = $row['description'];
@@ -649,7 +626,7 @@ class csana_user_view extends csana_user {
 		// picture
 		// registrationUser
 		// registrationDateTime
-		// registrationStation
+		// stationID
 		// isolatedDateTime
 		// acl
 		// description
@@ -737,7 +714,11 @@ class csana_user_view extends csana_user {
 		$this->_email->ViewCustomAttributes = "";
 
 		// picture
-		$this->picture->ViewValue = $this->picture->CurrentValue;
+		if (!ew_Empty($this->picture->Upload->DbValue)) {
+			$this->picture->ViewValue = $this->picture->Upload->DbValue;
+		} else {
+			$this->picture->ViewValue = "";
+		}
 		$this->picture->ViewCustomAttributes = "";
 
 		// registrationUser
@@ -749,9 +730,9 @@ class csana_user_view extends csana_user {
 		$this->registrationDateTime->ViewValue = ew_FormatDateTime($this->registrationDateTime->ViewValue, 5);
 		$this->registrationDateTime->ViewCustomAttributes = "";
 
-		// registrationStation
-		$this->registrationStation->ViewValue = $this->registrationStation->CurrentValue;
-		$this->registrationStation->ViewCustomAttributes = "";
+		// stationID
+		$this->stationID->ViewValue = $this->stationID->CurrentValue;
+		$this->stationID->ViewCustomAttributes = "";
 
 		// isolatedDateTime
 		$this->isolatedDateTime->ViewValue = $this->isolatedDateTime->CurrentValue;
@@ -869,6 +850,7 @@ class csana_user_view extends csana_user {
 			// picture
 			$this->picture->LinkCustomAttributes = "";
 			$this->picture->HrefValue = "";
+			$this->picture->HrefValue2 = $this->picture->UploadPath . $this->picture->Upload->DbValue;
 			$this->picture->TooltipValue = "";
 
 			// registrationUser
@@ -881,10 +863,10 @@ class csana_user_view extends csana_user {
 			$this->registrationDateTime->HrefValue = "";
 			$this->registrationDateTime->TooltipValue = "";
 
-			// registrationStation
-			$this->registrationStation->LinkCustomAttributes = "";
-			$this->registrationStation->HrefValue = "";
-			$this->registrationStation->TooltipValue = "";
+			// stationID
+			$this->stationID->LinkCustomAttributes = "";
+			$this->stationID->HrefValue = "";
+			$this->stationID->TooltipValue = "";
 
 			// isolatedDateTime
 			$this->isolatedDateTime->LinkCustomAttributes = "";
@@ -905,14 +887,6 @@ class csana_user_view extends csana_user {
 		// Call Row Rendered event
 		if ($this->RowType <> EW_ROWTYPE_AGGREGATEINIT)
 			$this->Row_Rendered();
-	}
-
-	// Show link optionally based on User ID
-	function ShowOptionLink($id = "") {
-		global $Security;
-		if ($Security->IsLoggedIn() && !$Security->IsAdmin() && !$this->UserIDAllow($id))
-			return $Security->IsValidUserID($this->_userID->CurrentValue);
-		return TRUE;
 	}
 
 	// Set up Breadcrumb
@@ -1306,7 +1280,8 @@ $sana_user_view->ShowMessage();
 		<td data-name="picture"<?php echo $sana_user->picture->CellAttributes() ?>>
 <span id="el_sana_user_picture">
 <span<?php echo $sana_user->picture->ViewAttributes() ?>>
-<?php echo $sana_user->picture->ViewValue ?></span>
+<?php echo ew_GetFileViewTag($sana_user->picture, $sana_user->picture->ViewValue) ?>
+</span>
 </span>
 </td>
 	</tr>
@@ -1333,13 +1308,13 @@ $sana_user_view->ShowMessage();
 </td>
 	</tr>
 <?php } ?>
-<?php if ($sana_user->registrationStation->Visible) { // registrationStation ?>
-	<tr id="r_registrationStation">
-		<td><span id="elh_sana_user_registrationStation"><?php echo $sana_user->registrationStation->FldCaption() ?></span></td>
-		<td data-name="registrationStation"<?php echo $sana_user->registrationStation->CellAttributes() ?>>
-<span id="el_sana_user_registrationStation">
-<span<?php echo $sana_user->registrationStation->ViewAttributes() ?>>
-<?php echo $sana_user->registrationStation->ViewValue ?></span>
+<?php if ($sana_user->stationID->Visible) { // stationID ?>
+	<tr id="r_stationID">
+		<td><span id="elh_sana_user_stationID"><?php echo $sana_user->stationID->FldCaption() ?></span></td>
+		<td data-name="stationID"<?php echo $sana_user->stationID->CellAttributes() ?>>
+<span id="el_sana_user_stationID">
+<span<?php echo $sana_user->stationID->ViewAttributes() ?>>
+<?php echo $sana_user->stationID->ViewValue ?></span>
 </span>
 </td>
 	</tr>

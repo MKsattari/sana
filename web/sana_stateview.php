@@ -6,7 +6,6 @@ ob_start(); // Turn on output buffering
 <?php include_once ((EW_USE_ADODB) ? "adodb5/adodb.inc.php" : "ewmysql12.php") ?>
 <?php include_once "phpfn12.php" ?>
 <?php include_once "sana_stateinfo.php" ?>
-<?php include_once "sana_userinfo.php" ?>
 <?php include_once "userfn12.php" ?>
 <?php
 
@@ -244,7 +243,6 @@ class csana_state_view extends csana_state {
 	//
 	function __construct() {
 		global $conn, $Language;
-		global $UserTable, $UserTableConn;
 		$GLOBALS["Page"] = &$this;
 		$this->TokenTimeout = ew_SessionTimeoutTime();
 
@@ -272,9 +270,6 @@ class csana_state_view extends csana_state {
 		$this->ExportCsvUrl = $this->PageUrl() . "export=csv" . $KeyUrl;
 		$this->ExportPdfUrl = $this->PageUrl() . "export=pdf" . $KeyUrl;
 
-		// Table object (sana_user)
-		if (!isset($GLOBALS['sana_user'])) $GLOBALS['sana_user'] = new csana_user();
-
 		// Page ID
 		if (!defined("EW_PAGE_ID"))
 			define("EW_PAGE_ID", 'view', TRUE);
@@ -288,12 +283,6 @@ class csana_state_view extends csana_state {
 
 		// Open connection
 		if (!isset($conn)) $conn = ew_Connect($this->DBID);
-
-		// User table object (sana_user)
-		if (!isset($UserTable)) {
-			$UserTable = new csana_user();
-			$UserTableConn = Conn($UserTable->DBID);
-		}
 
 		// Export options
 		$this->ExportOptions = new cListOptions();
@@ -314,19 +303,6 @@ class csana_state_view extends csana_state {
 	//
 	function Page_Init() {
 		global $gsExport, $gsCustomExport, $gsExportFile, $UserProfile, $Language, $Security, $objForm;
-
-		// Security
-		$Security = new cAdvancedSecurity();
-		if (!$Security->IsLoggedIn()) $Security->AutoLogin();
-		if ($Security->IsLoggedIn()) $Security->TablePermission_Loading();
-		$Security->LoadCurrentUserLevel($this->ProjectID . $this->TableName);
-		if ($Security->IsLoggedIn()) $Security->TablePermission_Loaded();
-		if (!$Security->IsLoggedIn()) $this->Page_Terminate(ew_GetUrl("login.php"));
-		if ($Security->IsLoggedIn()) {
-			$Security->UserID_Loading();
-			$Security->LoadUserID();
-			$Security->UserID_Loaded();
-		}
 		$this->CurrentAction = (@$_GET["a"] <> "") ? $_GET["a"] : @$_POST["a_list"]; // Set up current action
 		$this->stateID->Visible = !$this->IsAdd() && !$this->IsCopy() && !$this->IsGridAdd();
 
@@ -455,22 +431,22 @@ class csana_state_view extends csana_state {
 		// Add
 		$item = &$option->Add("add");
 		$item->Body = "<a class=\"ewAction ewAdd\" title=\"" . ew_HtmlTitle($Language->Phrase("ViewPageAddLink")) . "\" data-caption=\"" . ew_HtmlTitle($Language->Phrase("ViewPageAddLink")) . "\" href=\"" . ew_HtmlEncode($this->AddUrl) . "\">" . $Language->Phrase("ViewPageAddLink") . "</a>";
-		$item->Visible = ($this->AddUrl <> "" && $Security->CanAdd());
+		$item->Visible = ($this->AddUrl <> "");
 
 		// Edit
 		$item = &$option->Add("edit");
 		$item->Body = "<a class=\"ewAction ewEdit\" title=\"" . ew_HtmlTitle($Language->Phrase("ViewPageEditLink")) . "\" data-caption=\"" . ew_HtmlTitle($Language->Phrase("ViewPageEditLink")) . "\" href=\"" . ew_HtmlEncode($this->EditUrl) . "\">" . $Language->Phrase("ViewPageEditLink") . "</a>";
-		$item->Visible = ($this->EditUrl <> "" && $Security->CanEdit());
+		$item->Visible = ($this->EditUrl <> "");
 
 		// Copy
 		$item = &$option->Add("copy");
 		$item->Body = "<a class=\"ewAction ewCopy\" title=\"" . ew_HtmlTitle($Language->Phrase("ViewPageCopyLink")) . "\" data-caption=\"" . ew_HtmlTitle($Language->Phrase("ViewPageCopyLink")) . "\" href=\"" . ew_HtmlEncode($this->CopyUrl) . "\">" . $Language->Phrase("ViewPageCopyLink") . "</a>";
-		$item->Visible = ($this->CopyUrl <> "" && $Security->CanAdd());
+		$item->Visible = ($this->CopyUrl <> "");
 
 		// Delete
 		$item = &$option->Add("delete");
 		$item->Body = "<a class=\"ewAction ewDelete\" title=\"" . ew_HtmlTitle($Language->Phrase("ViewPageDeleteLink")) . "\" data-caption=\"" . ew_HtmlTitle($Language->Phrase("ViewPageDeleteLink")) . "\" href=\"" . ew_HtmlEncode($this->DeleteUrl) . "\">" . $Language->Phrase("ViewPageDeleteLink") . "</a>";
-		$item->Visible = ($this->DeleteUrl <> "" && $Security->CanDelete());
+		$item->Visible = ($this->DeleteUrl <> "");
 
 		// Set up action default
 		$option = &$options["action"];
@@ -551,6 +527,7 @@ class csana_state_view extends csana_state {
 		$this->stateID->setDbValue($rs->fields('stateID'));
 		$this->stateClass->setDbValue($rs->fields('stateClass'));
 		$this->stateName->setDbValue($rs->fields('stateName'));
+		$this->stateLanguage->setDbValue($rs->fields('stateLanguage'));
 		$this->description->setDbValue($rs->fields('description'));
 	}
 
@@ -561,6 +538,7 @@ class csana_state_view extends csana_state {
 		$this->stateID->DbValue = $row['stateID'];
 		$this->stateClass->DbValue = $row['stateClass'];
 		$this->stateName->DbValue = $row['stateName'];
+		$this->stateLanguage->DbValue = $row['stateLanguage'];
 		$this->description->DbValue = $row['description'];
 	}
 
@@ -583,6 +561,7 @@ class csana_state_view extends csana_state {
 		// stateID
 		// stateClass
 		// stateName
+		// stateLanguage
 		// description
 
 		if ($this->RowType == EW_ROWTYPE_VIEW) { // View row
@@ -598,6 +577,14 @@ class csana_state_view extends csana_state {
 		// stateName
 		$this->stateName->ViewValue = $this->stateName->CurrentValue;
 		$this->stateName->ViewCustomAttributes = "";
+
+		// stateLanguage
+		if (strval($this->stateLanguage->CurrentValue) <> "") {
+			$this->stateLanguage->ViewValue = $this->stateLanguage->OptionCaption($this->stateLanguage->CurrentValue);
+		} else {
+			$this->stateLanguage->ViewValue = NULL;
+		}
+		$this->stateLanguage->ViewCustomAttributes = "";
 
 		// description
 		$this->description->ViewValue = $this->description->CurrentValue;
@@ -617,6 +604,11 @@ class csana_state_view extends csana_state {
 			$this->stateName->LinkCustomAttributes = "";
 			$this->stateName->HrefValue = "";
 			$this->stateName->TooltipValue = "";
+
+			// stateLanguage
+			$this->stateLanguage->LinkCustomAttributes = "";
+			$this->stateLanguage->HrefValue = "";
+			$this->stateLanguage->TooltipValue = "";
 
 			// description
 			$this->description->LinkCustomAttributes = "";
@@ -767,8 +759,10 @@ fsana_stateview.ValidateRequired = false;
 <?php } ?>
 
 // Dynamic selection lists
-// Form object for search
+fsana_stateview.Lists["x_stateLanguage"] = {"LinkField":"","Ajax":null,"AutoFill":false,"DisplayFields":["","","",""],"ParentFields":[],"ChildFields":[],"FilterFields":[],"Options":[],"Template":""};
+fsana_stateview.Lists["x_stateLanguage"].Options = <?php echo json_encode($sana_state->stateLanguage->Options()) ?>;
 
+// Form object for search
 </script>
 <script type="text/javascript">
 
@@ -823,6 +817,17 @@ $sana_state_view->ShowMessage();
 <span id="el_sana_state_stateName">
 <span<?php echo $sana_state->stateName->ViewAttributes() ?>>
 <?php echo $sana_state->stateName->ViewValue ?></span>
+</span>
+</td>
+	</tr>
+<?php } ?>
+<?php if ($sana_state->stateLanguage->Visible) { // stateLanguage ?>
+	<tr id="r_stateLanguage">
+		<td><span id="elh_sana_state_stateLanguage"><?php echo $sana_state->stateLanguage->FldCaption() ?></span></td>
+		<td data-name="stateLanguage"<?php echo $sana_state->stateLanguage->CellAttributes() ?>>
+<span id="el_sana_state_stateLanguage">
+<span<?php echo $sana_state->stateLanguage->ViewAttributes() ?>>
+<?php echo $sana_state->stateLanguage->ViewValue ?></span>
 </span>
 </td>
 	</tr>

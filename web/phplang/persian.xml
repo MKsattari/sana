@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<ew-language date="2015/10/4" version="12.0.0" id="fa" name="Persian" desc="Persian" author="e.World Technology Ltd.">
+<ew-language date="2015/10/5" version="12.0.0" id="fa" name="Persian" desc="Persian" author="e.World Technology Ltd.">
 	<locale>
 		<phrase id="locale" value=""/><!-- *** system locale for this language -->
 		<phrase id="use_system_locale" value="1"/><!-- *** change to "0" to disable system locale and use the following settings *** -->
@@ -177,7 +177,7 @@
 		<phrase id="grideditcancelled" value="شبکه ویرایش لغو"/><!-- v11 -->
 		<phrase id="grideditlink" value="شبکه ویرایش" class="icon-grid-edit ewIcon"/><!-- v11 -->
 		<phrase id="gridinsertlink" value="درج" class="glyphicon glyphicon-ok ewIcon"/><!-- v11 -->
-		<phrase id="gridsavelink" value="صرفه جویی" class="glyphicon glyphicon-ok ewIcon"/><!-- v11 -->
+		<phrase id="gridsavelink" value="ذخیره" class="glyphicon glyphicon-ok ewIcon"/><!-- v11 -->
 		<phrase id="highlight" value="برجسته"/><!-- v11 -->
 		<phrase id="highlightbtn" value="برجسته" class="icon-highlight ewIcon"/><!-- v11 -->
 		<phrase id="homepage" value="خانه" class="glyphicon glyphicon-home ewIcon"/><!-- v11 -->
@@ -333,8 +333,8 @@
 		<phrase id="rptmin" value="حداقل"/>
 		<phrase id="rptsum" value="مبلغ"/>
 		<phrase id="rptsumhead" value="خلاصه برای"/>
-		<phrase id="savebtn" value="صرفه جویی"/><!-- v11 -->
-		<phrase id="savecurrentfilter" value="صرفه جویی در فیلتر فعلی"/><!-- v12 -->
+		<phrase id="savebtn" value="ذخیره"/><!-- v11 -->
+		<phrase id="savecurrentfilter" value="ذخیره در فیلتر فعلی"/><!-- v12 -->
 		<phrase id="saveusername" value="ذخیره کلمه کاربری من"/>
 		<phrase id="search" value="جستجو کردن"/>
 		<phrase id="searchbtn" value="جستجو کردن" class="glyphicon glyphicon-search ewIcon"/><!-- v11 -->
@@ -437,68 +437,34 @@
 	</global>
 	<project><phrase id="bodytitle" value="سامانه ارتباط ناهمگام اربعین(سانا)"/>
 <phrase id="footertext" value="&amp;copy;2015 e.World Technology Ltd. All rights reserved."/>
-<menu id="1"><phrase id="menutext" value="تقسیمات کشوری"/>
-</menu>
-<menu id="2"><phrase id="menutext" value="اشیا"/>
+<menu id="15"><phrase id="menutext" value="ایستگاه"/>
 </menu>
 <menu id="3"><phrase id="menutext" value="افراد"/>
 </menu>
-<menu id="4"><phrase id="menutext" value="پروژه ها"/>
+<menu id="2"><phrase id="menutext" value="اشیا"/>
+</menu>
+<menu id="6"><phrase id="menutext" value="کاربران"/>
 </menu>
 <menu id="5"><phrase id="menutext" value="وضعیت ها"/>
 </menu>
-<menu id="6"><phrase id="menutext" value="کاربران"/>
+<menu id="4"><phrase id="menutext" value="پروژه ها"/>
+</menu>
+<menu id="9"><phrase id="menutext" value="کشور"/>
+</menu>
+<menu id="10"><phrase id="menutext" value="استان"/>
+</menu>
+<menu id="11"><phrase id="menutext" value="شهرستان"/>
+</menu>
+<menu id="12"><phrase id="menutext" value="بخش"/>
+</menu>
+<menu id="13"><phrase id="menutext" value="شهر/دهستان"/>
+</menu>
+<menu id="14"><phrase id="menutext" value="منطقه/روستا"/>
 </menu>
 <menu id="7"><phrase id="menutext" value="userlevelpermissions"/>
 </menu>
 <menu id="8"><phrase id="menutext" value="userlevels"/>
 </menu>
-<table id="sana_location"><phrase id="tblcaption" value="تقسیمات کشوری"/>
-<field id="locationid"><phrase id="fldcaption" value="شناسه"/>
-</field>
-<field id="locationclass"><phrase id="fldcaption" value="location Class"/>
-</field>
-<field id="locationname"><phrase id="fldcaption" value="location Name"/>
-</field>
-<field id="parentid"><phrase id="fldcaption" value="parent ID"/>
-</field>
-<field id="hierarchyidpath"><phrase id="fldcaption" value="hierarchy IDPath"/>
-</field>
-<field id="hierarchypath"><phrase id="fldcaption" value="hierarchy Path"/>
-</field>
-</table>
-<table id="sana_object"><phrase id="tblcaption" value="اشیا"/>
-<field id="objectid"><phrase id="fldcaption" value="object ID"/>
-</field>
-<field id="objectname"><phrase id="fldcaption" value="object Name"/>
-</field>
-<field id="ownerid"><phrase id="fldcaption" value="owner ID"/>
-</field>
-<field id="ownername"><phrase id="fldcaption" value="owner Name"/>
-</field>
-<field id="lastname"><phrase id="fldcaption" value="last Name"/>
-</field>
-<field id="mobilephone"><phrase id="fldcaption" value="mobile Phone"/>
-</field>
-<field id="color"><phrase id="fldcaption" value="color"/>
-</field>
-<field id="status"><phrase id="fldcaption" value="status"/>
-</field>
-<field id="content"><phrase id="fldcaption" value="content"/>
-</field>
-<field id="financialvalue"><phrase id="fldcaption" value="financial Value"/>
-</field>
-<field id="registrationuser"><phrase id="fldcaption" value="registration User"/>
-</field>
-<field id="registrationdatetime"><phrase id="fldcaption" value="registration Date Time"/>
-</field>
-<field id="registrationstation"><phrase id="fldcaption" value="registration Station"/>
-</field>
-<field id="isolateddatetime"><phrase id="fldcaption" value="isolated Date Time"/>
-</field>
-<field id="description"><phrase id="fldcaption" value="description"/>
-</field>
-</table>
 <table id="sana_person"><phrase id="tblcaption" value="افراد"/>
 <field id="personid"><phrase id="fldcaption" value="شناسه"/>
 </field>
@@ -506,159 +472,287 @@
 </field>
 <field id="lastname"><phrase id="fldcaption" value="نام خانوادگی"/>
 </field>
-<field id="nationalid"><phrase id="fldcaption" value="national ID"/>
+<field id="nationalid"><phrase id="fldcaption" value="کد ملی"/>
 </field>
-<field id="nationalnumber"><phrase id="fldcaption" value="national Number"/>
+<field id="nationalnumber"><phrase id="fldcaption" value="شماره شناسنامه"/>
 </field>
-<field id="fathername"><phrase id="fldcaption" value="father Name"/>
+<field id="passportnumber"><phrase id="fldcaption" value="شماره گذرنامه"/>
 </field>
-<field id="gender"><phrase id="fldcaption" value="gender"/>
+<field id="fathername"><phrase id="fldcaption" value="نام پدر"/>
 </field>
-<field id="country"><phrase id="fldcaption" value="country"/>
+<field id="gender"><phrase id="fldcaption" value="جنسیت"/>
 </field>
-<field id="province"><phrase id="fldcaption" value="province"/>
+<field id="locationlevel1"><phrase id="fldcaption" value="کشور"/>
 </field>
-<field id="county"><phrase id="fldcaption" value="county"/>
+<field id="locationlevel2"><phrase id="fldcaption" value="استان"/>
 </field>
-<field id="district"><phrase id="fldcaption" value="district"/>
+<field id="locationlevel3"><phrase id="fldcaption" value="شهرستان"/>
 </field>
-<field id="city_ruraldistrict"><phrase id="fldcaption" value="city rural District"/>
+<field id="locationlevel4"><phrase id="fldcaption" value="بخش"/>
 </field>
-<field id="region_village"><phrase id="fldcaption" value="region village"/>
+<field id="locationlevel5"><phrase id="fldcaption" value="شهر/دهستان"/>
 </field>
-<field id="address"><phrase id="fldcaption" value="address"/>
+<field id="locationlevel6"><phrase id="fldcaption" value="منطقه/روستا"/>
 </field>
-<field id="convoy"><phrase id="fldcaption" value="convoy"/>
+<field id="address"><phrase id="fldcaption" value="آدرس"/>
 </field>
-<field id="convoymanager"><phrase id="fldcaption" value="convoy Manager"/>
+<field id="convoy"><phrase id="fldcaption" value="کاروان"/>
 </field>
-<field id="followersname"><phrase id="fldcaption" value="followers Name"/>
+<field id="convoymanager"><phrase id="fldcaption" value="مدیر کاروان"/>
 </field>
-<field id="status"><phrase id="fldcaption" value="status"/>
+<field id="followersname"><phrase id="fldcaption" value="همراهان"/>
 </field>
-<field id="isolatedlocation"><phrase id="fldcaption" value="isolated Location"/>
+<field id="status"><phrase id="fldcaption" value="وضعیت"/>
 </field>
-<field id="birthdate"><phrase id="fldcaption" value="birth Date"/>
+<field id="isolatedlocation"><phrase id="fldcaption" value="محل جدا شدن"/>
 </field>
-<field id="agerange"><phrase id="fldcaption" value="age Range"/>
+<field id="birthdate"><phrase id="fldcaption" value="تاریخ تولد"/>
 </field>
-<field id="dress1"><phrase id="fldcaption" value="dress 1"/>
+<field id="agerange"><phrase id="fldcaption" value="رده سنی"/>
 </field>
-<field id="dress2"><phrase id="fldcaption" value="dress 2"/>
+<field id="dress1"><phrase id="fldcaption" value="پوشش (رنگ ...)"/>
 </field>
-<field id="signtags"><phrase id="fldcaption" value="sign Tags"/>
+<field id="dress2"><phrase id="fldcaption" value="پوشش 2(رنگ ...)"/>
 </field>
-<field id="phone"><phrase id="fldcaption" value="phone"/>
+<field id="signtags"><phrase id="fldcaption" value="مشخصات ویژه"/>
 </field>
-<field id="mobilephone"><phrase id="fldcaption" value="mobile Phone"/>
+<field id="phone"><phrase id="fldcaption" value="تلفن"/>
 </field>
-<field id="_email"><phrase id="fldcaption" value="email"/>
+<field id="mobilephone"><phrase id="fldcaption" value="تلفن همراه"/>
 </field>
-<field id="temporaryresidence"><phrase id="fldcaption" value="temporary Residence"/>
+<field id="_email"><phrase id="fldcaption" value="ایمیل"/>
 </field>
-<field id="visitscount"><phrase id="fldcaption" value="visits Count"/>
+<field id="temporaryresidence"><phrase id="fldcaption" value="محل اسکان موقت"/>
 </field>
-<field id="picture"><phrase id="fldcaption" value="picture"/>
+<field id="visitscount"><phrase id="fldcaption" value="تعداد مراجعه"/>
 </field>
-<field id="registrationuser"><phrase id="fldcaption" value="registration User"/>
+<field id="picture"><phrase id="fldcaption" value="تصویر"/>
 </field>
-<field id="registrationdatetime"><phrase id="fldcaption" value="registration Date Time"/>
+<field id="registrationuser"><phrase id="fldcaption" value="اپراتور ثبت"/>
 </field>
-<field id="registrationstation"><phrase id="fldcaption" value="registration Station"/>
+<field id="registrationdatetime"><phrase id="fldcaption" value="زمان ثبت"/>
 </field>
-<field id="isolateddatetime"><phrase id="fldcaption" value="isolated Date Time"/>
+<field id="registrationstation"><phrase id="fldcaption" value="ایستگاه ثبت"/>
 </field>
-<field id="description"><phrase id="fldcaption" value="description"/>
+<field id="isolateddatetime"><phrase id="fldcaption" value="تاریخ جدا شدن"/>
 </field>
-</table>
-<table id="sana_project"><phrase id="tblcaption" value="پروژه ها"/>
-<field id="projectid"><phrase id="fldcaption" value="project ID"/>
-</field>
-<field id="projectname"><phrase id="fldcaption" value="project Name"/>
-</field>
-<field id="description"><phrase id="fldcaption" value="description"/>
+<field id="description"><phrase id="fldcaption" value="توضیحات"/>
 </field>
 </table>
-<table id="sana_state"><phrase id="tblcaption" value="وضعیت ها"/>
-<field id="stateid"><phrase id="fldcaption" value="state ID"/>
+<table id="sana_object"><phrase id="tblcaption" value="اشیا"/>
+<field id="objectid"><phrase id="fldcaption" value="شناسه"/>
 </field>
-<field id="stateclass"><phrase id="fldcaption" value="state Class"/>
+<field id="objectname"><phrase id="fldcaption" value="نام وسیله"/>
 </field>
-<field id="statename"><phrase id="fldcaption" value="state Name"/>
+<field id="ownerid"><phrase id="fldcaption" value="شناسه مالک"/>
 </field>
-<field id="description"><phrase id="fldcaption" value="description"/>
+<field id="ownername"><phrase id="fldcaption" value="نام"/>
+</field>
+<field id="lastname"><phrase id="fldcaption" value="نام خانوادگی"/>
+</field>
+<field id="mobilephone"><phrase id="fldcaption" value="تلفن همراه"/>
+</field>
+<field id="color"><phrase id="fldcaption" value="رنگ وسیله"/>
+</field>
+<field id="status"><phrase id="fldcaption" value="وضعیت"/>
+</field>
+<field id="content"><phrase id="fldcaption" value="محتوی و ویژگی"/>
+</field>
+<field id="financialvalue"><phrase id="fldcaption" value="ارزش مالی"/>
+</field>
+<field id="registrationuser"><phrase id="fldcaption" value="اپراتور"/>
+</field>
+<field id="registrationdatetime"><phrase id="fldcaption" value="زمان ثبت"/>
+</field>
+<field id="registrationstation"><phrase id="fldcaption" value="ایستگاه"/>
+</field>
+<field id="isolateddatetime"><phrase id="fldcaption" value="زمان مفقودی"/>
+</field>
+<field id="description"><phrase id="fldcaption" value="توضیحات"/>
 </field>
 </table>
 <table id="sana_user"><phrase id="tblcaption" value="کاربران"/>
-<field id="_userid"><phrase id="fldcaption" value="user ID"/>
+<field id="_userid"><phrase id="fldcaption" value="شناسه"/>
 </field>
-<field id="username"><phrase id="fldcaption" value="username"/>
+<field id="username"><phrase id="fldcaption" value="نام کاربری"/>
 </field>
-<field id="personname"><phrase id="fldcaption" value="person Name"/>
+<field id="personname"><phrase id="fldcaption" value="نام"/>
 </field>
-<field id="lastname"><phrase id="fldcaption" value="last Name"/>
+<field id="lastname"><phrase id="fldcaption" value="نام خانوادگی"/>
 </field>
-<field id="nationalid"><phrase id="fldcaption" value="national ID"/>
+<field id="nationalid"><phrase id="fldcaption" value="کد ملی"/>
 </field>
-<field id="nationalnumber"><phrase id="fldcaption" value="national Number"/>
+<field id="nationalnumber"><phrase id="fldcaption" value="شماره شناسنامه"/>
 </field>
-<field id="fathername"><phrase id="fldcaption" value="father Name"/>
+<field id="fathername"><phrase id="fldcaption" value="نام پدر"/>
 </field>
-<field id="gender"><phrase id="fldcaption" value="gender"/>
+<field id="gender"><phrase id="fldcaption" value="جنسیت"/>
 </field>
-<field id="country"><phrase id="fldcaption" value="country"/>
+<field id="country"><phrase id="fldcaption" value="کشور"/>
 </field>
-<field id="province"><phrase id="fldcaption" value="province"/>
+<field id="province"><phrase id="fldcaption" value="استان"/>
 </field>
-<field id="county"><phrase id="fldcaption" value="county"/>
+<field id="county"><phrase id="fldcaption" value="شهرستان"/>
 </field>
-<field id="district"><phrase id="fldcaption" value="district"/>
+<field id="district"><phrase id="fldcaption" value="بخش"/>
 </field>
-<field id="city_ruraldistrict"><phrase id="fldcaption" value="city rural District"/>
+<field id="city_ruraldistrict"><phrase id="fldcaption" value="دهستان/شهر"/>
 </field>
-<field id="region_village"><phrase id="fldcaption" value="region village"/>
+<field id="region_village"><phrase id="fldcaption" value="منطقه/روستا"/>
 </field>
-<field id="address"><phrase id="fldcaption" value="address"/>
+<field id="address"><phrase id="fldcaption" value="آدرس"/>
 </field>
-<field id="birthdate"><phrase id="fldcaption" value="birth Date"/>
+<field id="birthdate"><phrase id="fldcaption" value="تاریخ تولد"/>
 </field>
-<field id="agerange"><phrase id="fldcaption" value="age Range"/>
+<field id="agerange"><phrase id="fldcaption" value="رده سنی"/>
 </field>
-<field id="phone"><phrase id="fldcaption" value="phone"/>
+<field id="phone"><phrase id="fldcaption" value="تلفن"/>
 </field>
-<field id="mobilephone"><phrase id="fldcaption" value="mobile Phone"/>
+<field id="mobilephone"><phrase id="fldcaption" value="تلفن همراه"/>
 </field>
-<field id="userpassword"><phrase id="fldcaption" value="user Password"/>
+<field id="userpassword"><phrase id="fldcaption" value="رمز"/>
 </field>
-<field id="_email"><phrase id="fldcaption" value="email"/>
+<field id="_email"><phrase id="fldcaption" value="ایمیل"/>
 </field>
-<field id="picture"><phrase id="fldcaption" value="picture"/>
+<field id="picture"><phrase id="fldcaption" value="تصویر"/>
 </field>
-<field id="registrationuser"><phrase id="fldcaption" value="registration User"/>
+<field id="registrationuser"><phrase id="fldcaption" value="اپراتور ثبت"/>
 </field>
-<field id="registrationdatetime"><phrase id="fldcaption" value="registration Date Time"/>
+<field id="registrationdatetime"><phrase id="fldcaption" value="تاریخ ثبت"/>
 </field>
-<field id="registrationstation"><phrase id="fldcaption" value="registration Station"/>
+<field id="stationid"><phrase id="fldcaption" value="ایستگاه"/>
 </field>
-<field id="isolateddatetime"><phrase id="fldcaption" value="isolated Date Time"/>
+<field id="isolateddatetime"><phrase id="fldcaption" value="زمان جدا شدن"/>
 </field>
-<field id="acl"><phrase id="fldcaption" value="acl"/>
+<field id="acl"><phrase id="fldcaption" value="سطح دسترسی"/>
 </field>
-<field id="description"><phrase id="fldcaption" value="description"/>
-</field>
-</table>
-<table id="userlevelpermissions"><phrase id="tblcaption" value="userlevelpermissions"/>
-<field id="userlevelid"><phrase id="fldcaption" value="userlevelid"/>
-</field>
-<field id="_tablename"><phrase id="fldcaption" value="tablename"/>
-</field>
-<field id="permission"><phrase id="fldcaption" value="permission"/>
+<field id="description"><phrase id="fldcaption" value="توضیحات"/>
 </field>
 </table>
 <table id="userlevels"><phrase id="tblcaption" value="userlevels"/>
-<field id="userlevelid"><phrase id="fldcaption" value="userlevelid"/>
+<field id="userlevelid"><phrase id="fldcaption" value="شناسه"/>
 </field>
-<field id="userlevelname"><phrase id="fldcaption" value="userlevelname"/>
+<field id="userlevelname"><phrase id="fldcaption" value="سطح دسترسی"/>
+</field>
+</table>
+<table id="sana_project"><phrase id="tblcaption" value="پروژه ها"/>
+<field id="projectid"><phrase id="fldcaption" value="شناسه"/>
+</field>
+<field id="projectname"><phrase id="fldcaption" value="نام پروژه"/>
+</field>
+<field id="description"><phrase id="fldcaption" value="توضیحات"/>
+</field>
+</table>
+<table id="sana_state"><phrase id="tblcaption" value="وضعیت ها"/>
+<field id="stateid"><phrase id="fldcaption" value="شناسه"/>
+</field>
+<field id="stateclass"><phrase id="fldcaption" value="دسته"/>
+</field>
+<field id="statename"><phrase id="fldcaption" value="نام وضعیت"/>
+</field>
+<field id="statelanguage"><phrase id="fldcaption" value="زبان"/>
+<phrase id="fldtagvalue1" value="fa"/>
+<phrase id="fldtagcaption1" value="fa"/>
+<phrase id="fldtagvalue2" value="ar"/>
+<phrase id="fldtagcaption2" value="ar"/>
+<phrase id="fldtagvalue3" value="en"/>
+<phrase id="fldtagcaption3" value="en"/>
+</field>
+<field id="description"><phrase id="fldcaption" value="توضیحات"/>
+</field>
+</table>
+<table id="userlevelpermissions"><phrase id="tblcaption" value="userlevelpermissions"/>
+<field id="userlevelid"><phrase id="fldcaption" value="شناسه"/>
+</field>
+<field id="_tablename"><phrase id="fldcaption" value="بخش"/>
+</field>
+<field id="permission"><phrase id="fldcaption" value="مجوز"/>
+</field>
+</table>
+<table id="sana_location_level1"><phrase id="tblcaption" value="کشور"/>
+<field id="locationlevel1id"><phrase id="fldcaption" value="شناسه"/>
+</field>
+<field id="locationname"><phrase id="fldcaption" value="نام"/>
+</field>
+</table>
+<table id="sana_location_level2"><phrase id="tblcaption" value="استان"/>
+<field id="locationlevel2id"><phrase id="fldcaption" value="شناسه"/>
+</field>
+<field id="locationname"><phrase id="fldcaption" value="نام"/>
+</field>
+<field id="locationlevel1id"><phrase id="fldcaption" value="کشور"/>
+</field>
+<field id="locationlevel1name"><phrase id="fldcaption" value="نام کشور"/>
+</field>
+</table>
+<table id="sana_location_level3"><phrase id="tblcaption" value="شهرستان"/>
+<field id="locationlevel3id"><phrase id="fldcaption" value="شناسه"/>
+</field>
+<field id="locationname"><phrase id="fldcaption" value="نام"/>
+</field>
+<field id="locationlevel2id"><phrase id="fldcaption" value="استان"/>
+</field>
+<field id="locationlevel2name"><phrase id="fldcaption" value="نام استان"/>
+</field>
+<field id="locationlevel1id"><phrase id="fldcaption" value="کشور"/>
+</field>
+</table>
+<table id="sana_location_level4"><phrase id="tblcaption" value="بخش"/>
+<field id="locationlevel4id"><phrase id="fldcaption" value="شناسه"/>
+</field>
+<field id="locationname"><phrase id="fldcaption" value="نام"/>
+</field>
+<field id="locationlevel3id"><phrase id="fldcaption" value="سطح بالاتر"/>
+</field>
+<field id="locationlevel3name"><phrase id="fldcaption" value="location Level 3Name"/>
+</field>
+<field id="locationlevel1id"><phrase id="fldcaption" value="location Level 1ID"/>
+</field>
+<field id="locationlevel2id"><phrase id="fldcaption" value="location Level 2ID"/>
+</field>
+</table>
+<table id="sana_location_level5"><phrase id="tblcaption" value="شهر/دهستان"/>
+<field id="locationlevel5id"><phrase id="fldcaption" value="شناسه"/>
+</field>
+<field id="locationname"><phrase id="fldcaption" value="نام"/>
+</field>
+<field id="locationlevel4id"><phrase id="fldcaption" value="سطح بالاتر"/>
+</field>
+<field id="locationlevel4name"><phrase id="fldcaption" value="location Level 4Name"/>
+</field>
+<field id="locationlevel1id"><phrase id="fldcaption" value="location Level 1ID"/>
+</field>
+<field id="locationlevel2id"><phrase id="fldcaption" value="location Level 2ID"/>
+</field>
+<field id="locationlevel3id"><phrase id="fldcaption" value="location Level 3ID"/>
+</field>
+</table>
+<table id="sana_location_level6"><phrase id="tblcaption" value="منطقه/روستا"/>
+<field id="locationlevel6id"><phrase id="fldcaption" value="شناسه"/>
+</field>
+<field id="locationname"><phrase id="fldcaption" value="نام"/>
+</field>
+<field id="locationlevel5id"><phrase id="fldcaption" value="سطح بالاتر"/>
+</field>
+<field id="locationlevel5name"><phrase id="fldcaption" value="location Level 5Name"/>
+</field>
+<field id="locationlevel1id"><phrase id="fldcaption" value="location Level 1ID"/>
+</field>
+<field id="locationlevel2id"><phrase id="fldcaption" value="location Level 2ID"/>
+</field>
+<field id="locationlevel3id"><phrase id="fldcaption" value="location Level 3ID"/>
+</field>
+<field id="locationlevel4id"><phrase id="fldcaption" value="location Level 4ID"/>
+</field>
+</table>
+<table id="sana_station"><phrase id="tblcaption" value="sana station"/>
+<field id="stationid"><phrase id="fldcaption" value="station ID"/>
+</field>
+<field id="stationname"><phrase id="fldcaption" value="station Name"/>
+</field>
+<field id="projectid"><phrase id="fldcaption" value="project ID"/>
+</field>
+<field id="description"><phrase id="fldcaption" value="description"/>
 </field>
 </table>
 </project>

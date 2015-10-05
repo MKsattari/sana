@@ -6,7 +6,6 @@ ob_start(); // Turn on output buffering
 <?php include_once ((EW_USE_ADODB) ? "adodb5/adodb.inc.php" : "ewmysql12.php") ?>
 <?php include_once "phpfn12.php" ?>
 <?php include_once "sana_stateinfo.php" ?>
-<?php include_once "sana_userinfo.php" ?>
 <?php include_once "userfn12.php" ?>
 <?php
 
@@ -212,7 +211,6 @@ class csana_state_edit extends csana_state {
 	//
 	function __construct() {
 		global $conn, $Language;
-		global $UserTable, $UserTableConn;
 		$GLOBALS["Page"] = &$this;
 		$this->TokenTimeout = ew_SessionTimeoutTime();
 
@@ -228,9 +226,6 @@ class csana_state_edit extends csana_state {
 			$GLOBALS["Table"] = &$GLOBALS["sana_state"];
 		}
 
-		// Table object (sana_user)
-		if (!isset($GLOBALS['sana_user'])) $GLOBALS['sana_user'] = new csana_user();
-
 		// Page ID
 		if (!defined("EW_PAGE_ID"))
 			define("EW_PAGE_ID", 'edit', TRUE);
@@ -244,12 +239,6 @@ class csana_state_edit extends csana_state {
 
 		// Open connection
 		if (!isset($conn)) $conn = ew_Connect($this->DBID);
-
-		// User table object (sana_user)
-		if (!isset($UserTable)) {
-			$UserTable = new csana_user();
-			$UserTableConn = Conn($UserTable->DBID);
-		}
 	}
 
 	// 
@@ -257,19 +246,6 @@ class csana_state_edit extends csana_state {
 	//
 	function Page_Init() {
 		global $gsExport, $gsCustomExport, $gsExportFile, $UserProfile, $Language, $Security, $objForm;
-
-		// Security
-		$Security = new cAdvancedSecurity();
-		if (!$Security->IsLoggedIn()) $Security->AutoLogin();
-		if ($Security->IsLoggedIn()) $Security->TablePermission_Loading();
-		$Security->LoadCurrentUserLevel($this->ProjectID . $this->TableName);
-		if ($Security->IsLoggedIn()) $Security->TablePermission_Loaded();
-		if (!$Security->IsLoggedIn()) $this->Page_Terminate(ew_GetUrl("login.php"));
-		if ($Security->IsLoggedIn()) {
-			$Security->UserID_Loading();
-			$Security->LoadUserID();
-			$Security->UserID_Loaded();
-		}
 
 		// Create form object
 		$objForm = new cFormObj();
@@ -474,6 +450,9 @@ class csana_state_edit extends csana_state {
 		if (!$this->stateName->FldIsDetailKey) {
 			$this->stateName->setFormValue($objForm->GetValue("x_stateName"));
 		}
+		if (!$this->stateLanguage->FldIsDetailKey) {
+			$this->stateLanguage->setFormValue($objForm->GetValue("x_stateLanguage"));
+		}
 		if (!$this->description->FldIsDetailKey) {
 			$this->description->setFormValue($objForm->GetValue("x_description"));
 		}
@@ -486,6 +465,7 @@ class csana_state_edit extends csana_state {
 		$this->stateID->CurrentValue = $this->stateID->FormValue;
 		$this->stateClass->CurrentValue = $this->stateClass->FormValue;
 		$this->stateName->CurrentValue = $this->stateName->FormValue;
+		$this->stateLanguage->CurrentValue = $this->stateLanguage->FormValue;
 		$this->description->CurrentValue = $this->description->FormValue;
 	}
 
@@ -521,6 +501,7 @@ class csana_state_edit extends csana_state {
 		$this->stateID->setDbValue($rs->fields('stateID'));
 		$this->stateClass->setDbValue($rs->fields('stateClass'));
 		$this->stateName->setDbValue($rs->fields('stateName'));
+		$this->stateLanguage->setDbValue($rs->fields('stateLanguage'));
 		$this->description->setDbValue($rs->fields('description'));
 	}
 
@@ -531,6 +512,7 @@ class csana_state_edit extends csana_state {
 		$this->stateID->DbValue = $row['stateID'];
 		$this->stateClass->DbValue = $row['stateClass'];
 		$this->stateName->DbValue = $row['stateName'];
+		$this->stateLanguage->DbValue = $row['stateLanguage'];
 		$this->description->DbValue = $row['description'];
 	}
 
@@ -547,6 +529,7 @@ class csana_state_edit extends csana_state {
 		// stateID
 		// stateClass
 		// stateName
+		// stateLanguage
 		// description
 
 		if ($this->RowType == EW_ROWTYPE_VIEW) { // View row
@@ -562,6 +545,14 @@ class csana_state_edit extends csana_state {
 		// stateName
 		$this->stateName->ViewValue = $this->stateName->CurrentValue;
 		$this->stateName->ViewCustomAttributes = "";
+
+		// stateLanguage
+		if (strval($this->stateLanguage->CurrentValue) <> "") {
+			$this->stateLanguage->ViewValue = $this->stateLanguage->OptionCaption($this->stateLanguage->CurrentValue);
+		} else {
+			$this->stateLanguage->ViewValue = NULL;
+		}
+		$this->stateLanguage->ViewCustomAttributes = "";
 
 		// description
 		$this->description->ViewValue = $this->description->CurrentValue;
@@ -581,6 +572,11 @@ class csana_state_edit extends csana_state {
 			$this->stateName->LinkCustomAttributes = "";
 			$this->stateName->HrefValue = "";
 			$this->stateName->TooltipValue = "";
+
+			// stateLanguage
+			$this->stateLanguage->LinkCustomAttributes = "";
+			$this->stateLanguage->HrefValue = "";
+			$this->stateLanguage->TooltipValue = "";
 
 			// description
 			$this->description->LinkCustomAttributes = "";
@@ -606,6 +602,11 @@ class csana_state_edit extends csana_state {
 			$this->stateName->EditValue = ew_HtmlEncode($this->stateName->CurrentValue);
 			$this->stateName->PlaceHolder = ew_RemoveHtml($this->stateName->FldCaption());
 
+			// stateLanguage
+			$this->stateLanguage->EditAttrs["class"] = "form-control";
+			$this->stateLanguage->EditCustomAttributes = "";
+			$this->stateLanguage->EditValue = $this->stateLanguage->Options(TRUE);
+
 			// description
 			$this->description->EditAttrs["class"] = "form-control";
 			$this->description->EditCustomAttributes = "";
@@ -625,6 +626,10 @@ class csana_state_edit extends csana_state {
 			// stateName
 			$this->stateName->LinkCustomAttributes = "";
 			$this->stateName->HrefValue = "";
+
+			// stateLanguage
+			$this->stateLanguage->LinkCustomAttributes = "";
+			$this->stateLanguage->HrefValue = "";
 
 			// description
 			$this->description->LinkCustomAttributes = "";
@@ -698,6 +703,9 @@ class csana_state_edit extends csana_state {
 
 			// stateName
 			$this->stateName->SetDbValueDef($rsnew, $this->stateName->CurrentValue, "", $this->stateName->ReadOnly);
+
+			// stateLanguage
+			$this->stateLanguage->SetDbValueDef($rsnew, $this->stateLanguage->CurrentValue, NULL, $this->stateLanguage->ReadOnly);
 
 			// description
 			$this->description->SetDbValueDef($rsnew, $this->description->CurrentValue, NULL, $this->description->ReadOnly);
@@ -891,8 +899,10 @@ fsana_stateedit.ValidateRequired = false;
 <?php } ?>
 
 // Dynamic selection lists
-// Form object for search
+fsana_stateedit.Lists["x_stateLanguage"] = {"LinkField":"","Ajax":null,"AutoFill":false,"DisplayFields":["","","",""],"ParentFields":[],"ChildFields":[],"FilterFields":[],"Options":[],"Template":""};
+fsana_stateedit.Lists["x_stateLanguage"].Options = <?php echo json_encode($sana_state->stateLanguage->Options()) ?>;
 
+// Form object for search
 </script>
 <script type="text/javascript">
 
@@ -944,6 +954,38 @@ $sana_state_edit->ShowMessage();
 <input type="text" data-table="sana_state" data-field="x_stateName" name="x_stateName" id="x_stateName" size="30" maxlength="255" placeholder="<?php echo ew_HtmlEncode($sana_state->stateName->getPlaceHolder()) ?>" value="<?php echo $sana_state->stateName->EditValue ?>"<?php echo $sana_state->stateName->EditAttributes() ?>>
 </span>
 <?php echo $sana_state->stateName->CustomMsg ?></div></div>
+	</div>
+<?php } ?>
+<?php if ($sana_state->stateLanguage->Visible) { // stateLanguage ?>
+	<div id="r_stateLanguage" class="form-group">
+		<label id="elh_sana_state_stateLanguage" for="x_stateLanguage" class="col-sm-2 control-label ewLabel"><?php echo $sana_state->stateLanguage->FldCaption() ?></label>
+		<div class="col-sm-10"><div<?php echo $sana_state->stateLanguage->CellAttributes() ?>>
+<span id="el_sana_state_stateLanguage">
+<select data-table="sana_state" data-field="x_stateLanguage" data-value-separator="<?php echo ew_HtmlEncode(is_array($sana_state->stateLanguage->DisplayValueSeparator) ? json_encode($sana_state->stateLanguage->DisplayValueSeparator) : $sana_state->stateLanguage->DisplayValueSeparator) ?>" id="x_stateLanguage" name="x_stateLanguage"<?php echo $sana_state->stateLanguage->EditAttributes() ?>>
+<?php
+if (is_array($sana_state->stateLanguage->EditValue)) {
+	$arwrk = $sana_state->stateLanguage->EditValue;
+	$rowswrk = count($arwrk);
+	$emptywrk = TRUE;
+	for ($rowcntwrk = 0; $rowcntwrk < $rowswrk; $rowcntwrk++) {
+		$selwrk = ew_SameStr($sana_state->stateLanguage->CurrentValue, $arwrk[$rowcntwrk][0]) ? " selected" : "";
+		if ($selwrk <> "") $emptywrk = FALSE;		
+?>
+<option value="<?php echo ew_HtmlEncode($arwrk[$rowcntwrk][0]) ?>"<?php echo $selwrk ?>>
+<?php echo $sana_state->stateLanguage->DisplayValue($arwrk[$rowcntwrk]) ?>
+</option>
+<?php
+	}
+	if ($emptywrk && strval($sana_state->stateLanguage->CurrentValue) <> "") {
+?>
+<option value="<?php echo ew_HtmlEncode($sana_state->stateLanguage->CurrentValue) ?>" selected><?php echo $sana_state->stateLanguage->CurrentValue ?></option>
+<?php
+    }
+}
+?>
+</select>
+</span>
+<?php echo $sana_state->stateLanguage->CustomMsg ?></div></div>
 	</div>
 <?php } ?>
 <?php if ($sana_state->description->Visible) { // description ?>

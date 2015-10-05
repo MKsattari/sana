@@ -251,7 +251,6 @@ class csana_user_list extends csana_user {
 	//
 	function __construct() {
 		global $conn, $Language;
-		global $UserTable, $UserTableConn;
 		$GLOBALS["Page"] = &$this;
 		$this->TokenTimeout = ew_SessionTimeoutTime();
 
@@ -296,12 +295,6 @@ class csana_user_list extends csana_user {
 		// Open connection
 		if (!isset($conn)) $conn = ew_Connect($this->DBID);
 
-		// User table object (sana_user)
-		if (!isset($UserTable)) {
-			$UserTable = new csana_user();
-			$UserTableConn = Conn($UserTable->DBID);
-		}
-
 		// List options
 		$this->ListOptions = new cListOptions();
 		$this->ListOptions->TableVar = $this->TableVar;
@@ -336,23 +329,6 @@ class csana_user_list extends csana_user {
 	//
 	function Page_Init() {
 		global $gsExport, $gsCustomExport, $gsExportFile, $UserProfile, $Language, $Security, $objForm;
-
-		// Security
-		$Security = new cAdvancedSecurity();
-		if (!$Security->IsLoggedIn()) $Security->AutoLogin();
-		if ($Security->IsLoggedIn()) $Security->TablePermission_Loading();
-		$Security->LoadCurrentUserLevel($this->ProjectID . $this->TableName);
-		if ($Security->IsLoggedIn()) $Security->TablePermission_Loaded();
-		if (!$Security->IsLoggedIn()) $this->Page_Terminate(ew_GetUrl("login.php"));
-		if ($Security->IsLoggedIn()) {
-			$Security->UserID_Loading();
-			$Security->LoadUserID();
-			$Security->UserID_Loaded();
-			if (strval($Security->CurrentUserID()) == "") {
-				$this->setFailureMessage($Language->Phrase("NoPermission")); // Set no permission
-				$this->Page_Terminate();
-			}
-		}
 		$this->CurrentAction = (@$_GET["a"] <> "") ? $_GET["a"] : @$_POST["a_list"]; // Set up current action
 
 		// Get grid add count
@@ -606,8 +582,6 @@ class csana_user_list extends csana_user {
 
 		// Build filter
 		$sFilter = "";
-		if (!$Security->CanList())
-			$sFilter = "(0=1)"; // Filter all records
 		ew_AddFilter($sFilter, $this->DbDetailFilter);
 		ew_AddFilter($sFilter, $this->SearchWhere);
 
@@ -696,7 +670,7 @@ class csana_user_list extends csana_user {
 		$sFilterList = ew_Concat($sFilterList, $this->picture->AdvancedSearch->ToJSON(), ","); // Field picture
 		$sFilterList = ew_Concat($sFilterList, $this->registrationUser->AdvancedSearch->ToJSON(), ","); // Field registrationUser
 		$sFilterList = ew_Concat($sFilterList, $this->registrationDateTime->AdvancedSearch->ToJSON(), ","); // Field registrationDateTime
-		$sFilterList = ew_Concat($sFilterList, $this->registrationStation->AdvancedSearch->ToJSON(), ","); // Field registrationStation
+		$sFilterList = ew_Concat($sFilterList, $this->stationID->AdvancedSearch->ToJSON(), ","); // Field stationID
 		$sFilterList = ew_Concat($sFilterList, $this->isolatedDateTime->AdvancedSearch->ToJSON(), ","); // Field isolatedDateTime
 		$sFilterList = ew_Concat($sFilterList, $this->acl->AdvancedSearch->ToJSON(), ","); // Field acl
 		$sFilterList = ew_Concat($sFilterList, $this->description->AdvancedSearch->ToJSON(), ","); // Field description
@@ -902,13 +876,13 @@ class csana_user_list extends csana_user {
 		$this->registrationDateTime->AdvancedSearch->SearchOperator2 = @$filter["w_registrationDateTime"];
 		$this->registrationDateTime->AdvancedSearch->Save();
 
-		// Field registrationStation
-		$this->registrationStation->AdvancedSearch->SearchValue = @$filter["x_registrationStation"];
-		$this->registrationStation->AdvancedSearch->SearchOperator = @$filter["z_registrationStation"];
-		$this->registrationStation->AdvancedSearch->SearchCondition = @$filter["v_registrationStation"];
-		$this->registrationStation->AdvancedSearch->SearchValue2 = @$filter["y_registrationStation"];
-		$this->registrationStation->AdvancedSearch->SearchOperator2 = @$filter["w_registrationStation"];
-		$this->registrationStation->AdvancedSearch->Save();
+		// Field stationID
+		$this->stationID->AdvancedSearch->SearchValue = @$filter["x_stationID"];
+		$this->stationID->AdvancedSearch->SearchOperator = @$filter["z_stationID"];
+		$this->stationID->AdvancedSearch->SearchCondition = @$filter["v_stationID"];
+		$this->stationID->AdvancedSearch->SearchValue2 = @$filter["y_stationID"];
+		$this->stationID->AdvancedSearch->SearchOperator2 = @$filter["w_stationID"];
+		$this->stationID->AdvancedSearch->Save();
 
 		// Field isolatedDateTime
 		$this->isolatedDateTime->AdvancedSearch->SearchValue = @$filter["x_isolatedDateTime"];
@@ -1033,7 +1007,6 @@ class csana_user_list extends csana_user {
 	function BasicSearchWhere($Default = FALSE) {
 		global $Security;
 		$sSearchStr = "";
-		if (!$Security->CanSearch()) return "";
 		$sSearchKeyword = ($Default) ? $this->BasicSearch->KeywordDefault : $this->BasicSearch->Keyword;
 		$sSearchType = ($Default) ? $this->BasicSearch->TypeDefault : $this->BasicSearch->Type;
 		if ($sSearchKeyword <> "") {
@@ -1130,27 +1103,9 @@ class csana_user_list extends csana_user {
 			$this->UpdateSort($this->personName); // personName
 			$this->UpdateSort($this->lastName); // lastName
 			$this->UpdateSort($this->nationalID); // nationalID
-			$this->UpdateSort($this->nationalNumber); // nationalNumber
-			$this->UpdateSort($this->fatherName); // fatherName
-			$this->UpdateSort($this->country); // country
-			$this->UpdateSort($this->province); // province
-			$this->UpdateSort($this->county); // county
-			$this->UpdateSort($this->district); // district
-			$this->UpdateSort($this->city_ruralDistrict); // city_ruralDistrict
-			$this->UpdateSort($this->region_village); // region_village
-			$this->UpdateSort($this->address); // address
-			$this->UpdateSort($this->birthDate); // birthDate
-			$this->UpdateSort($this->ageRange); // ageRange
-			$this->UpdateSort($this->phone); // phone
 			$this->UpdateSort($this->mobilePhone); // mobilePhone
-			$this->UpdateSort($this->userPassword); // userPassword
 			$this->UpdateSort($this->_email); // email
 			$this->UpdateSort($this->picture); // picture
-			$this->UpdateSort($this->registrationUser); // registrationUser
-			$this->UpdateSort($this->registrationDateTime); // registrationDateTime
-			$this->UpdateSort($this->registrationStation); // registrationStation
-			$this->UpdateSort($this->isolatedDateTime); // isolatedDateTime
-			$this->UpdateSort($this->acl); // acl
 			$this->setStartRecordNumber(1); // Reset start position
 		}
 	}
@@ -1188,27 +1143,9 @@ class csana_user_list extends csana_user {
 				$this->personName->setSort("");
 				$this->lastName->setSort("");
 				$this->nationalID->setSort("");
-				$this->nationalNumber->setSort("");
-				$this->fatherName->setSort("");
-				$this->country->setSort("");
-				$this->province->setSort("");
-				$this->county->setSort("");
-				$this->district->setSort("");
-				$this->city_ruralDistrict->setSort("");
-				$this->region_village->setSort("");
-				$this->address->setSort("");
-				$this->birthDate->setSort("");
-				$this->ageRange->setSort("");
-				$this->phone->setSort("");
 				$this->mobilePhone->setSort("");
-				$this->userPassword->setSort("");
 				$this->_email->setSort("");
 				$this->picture->setSort("");
-				$this->registrationUser->setSort("");
-				$this->registrationDateTime->setSort("");
-				$this->registrationStation->setSort("");
-				$this->isolatedDateTime->setSort("");
-				$this->acl->setSort("");
 			}
 
 			// Reset start position
@@ -1230,25 +1167,25 @@ class csana_user_list extends csana_user {
 		// "view"
 		$item = &$this->ListOptions->Add("view");
 		$item->CssStyle = "white-space: nowrap;";
-		$item->Visible = $Security->CanView();
+		$item->Visible = TRUE;
 		$item->OnLeft = FALSE;
 
 		// "edit"
 		$item = &$this->ListOptions->Add("edit");
 		$item->CssStyle = "white-space: nowrap;";
-		$item->Visible = $Security->CanEdit();
+		$item->Visible = TRUE;
 		$item->OnLeft = FALSE;
 
 		// "copy"
 		$item = &$this->ListOptions->Add("copy");
 		$item->CssStyle = "white-space: nowrap;";
-		$item->Visible = $Security->CanAdd();
+		$item->Visible = TRUE;
 		$item->OnLeft = FALSE;
 
 		// "delete"
 		$item = &$this->ListOptions->Add("delete");
 		$item->CssStyle = "white-space: nowrap;";
-		$item->Visible = $Security->CanDelete();
+		$item->Visible = TRUE;
 		$item->OnLeft = FALSE;
 
 		// List actions
@@ -1290,14 +1227,14 @@ class csana_user_list extends csana_user {
 
 		// "view"
 		$oListOpt = &$this->ListOptions->Items["view"];
-		if ($Security->CanView() && $this->ShowOptionLink('view'))
+		if (TRUE)
 			$oListOpt->Body = "<a class=\"ewRowLink ewView\" title=\"" . ew_HtmlTitle($Language->Phrase("ViewLink")) . "\" data-caption=\"" . ew_HtmlTitle($Language->Phrase("ViewLink")) . "\" href=\"" . ew_HtmlEncode($this->ViewUrl) . "\">" . $Language->Phrase("ViewLink") . "</a>";
 		else
 			$oListOpt->Body = "";
 
 		// "edit"
 		$oListOpt = &$this->ListOptions->Items["edit"];
-		if ($Security->CanEdit() && $this->ShowOptionLink('edit')) {
+		if (TRUE) {
 			$oListOpt->Body = "<a class=\"ewRowLink ewEdit\" title=\"" . ew_HtmlTitle($Language->Phrase("EditLink")) . "\" data-caption=\"" . ew_HtmlTitle($Language->Phrase("EditLink")) . "\" href=\"" . ew_HtmlEncode($this->EditUrl) . "\">" . $Language->Phrase("EditLink") . "</a>";
 		} else {
 			$oListOpt->Body = "";
@@ -1305,7 +1242,7 @@ class csana_user_list extends csana_user {
 
 		// "copy"
 		$oListOpt = &$this->ListOptions->Items["copy"];
-		if ($Security->CanAdd() && $this->ShowOptionLink('add')) {
+		if (TRUE) {
 			$oListOpt->Body = "<a class=\"ewRowLink ewCopy\" title=\"" . ew_HtmlTitle($Language->Phrase("CopyLink")) . "\" data-caption=\"" . ew_HtmlTitle($Language->Phrase("CopyLink")) . "\" href=\"" . ew_HtmlEncode($this->CopyUrl) . "\">" . $Language->Phrase("CopyLink") . "</a>";
 		} else {
 			$oListOpt->Body = "";
@@ -1313,7 +1250,7 @@ class csana_user_list extends csana_user {
 
 		// "delete"
 		$oListOpt = &$this->ListOptions->Items["delete"];
-		if ($Security->CanDelete() && $this->ShowOptionLink('delete'))
+		if (TRUE)
 			$oListOpt->Body = "<a class=\"ewRowLink ewDelete\"" . "" . " title=\"" . ew_HtmlTitle($Language->Phrase("DeleteLink")) . "\" data-caption=\"" . ew_HtmlTitle($Language->Phrase("DeleteLink")) . "\" href=\"" . ew_HtmlEncode($this->DeleteUrl) . "\">" . $Language->Phrase("DeleteLink") . "</a>";
 		else
 			$oListOpt->Body = "";
@@ -1365,7 +1302,7 @@ class csana_user_list extends csana_user {
 		// Add
 		$item = &$option->Add("add");
 		$item->Body = "<a class=\"ewAddEdit ewAdd\" title=\"" . ew_HtmlTitle($Language->Phrase("AddLink")) . "\" data-caption=\"" . ew_HtmlTitle($Language->Phrase("AddLink")) . "\" href=\"" . ew_HtmlEncode($this->AddUrl) . "\">" . $Language->Phrase("AddLink") . "</a>";
-		$item->Visible = ($this->AddUrl <> "" && $Security->CanAdd());
+		$item->Visible = ($this->AddUrl <> "");
 		$option = $options["action"];
 
 		// Set up options default
@@ -1464,19 +1401,7 @@ class csana_user_list extends csana_user {
 				while (!$rs->EOF) {
 					$this->SelectedIndex++;
 					$row = $rs->fields;
-					$user = $row['mobilePhone'];
-					if ($userlist <> "") $userlist .= ",";
-					$userlist .= $user;
-					if ($UserAction == "resendregisteremail")
-						$Processed = FALSE;
-					elseif ($UserAction == "resetconcurrentuser")
-						$Processed = FALSE;
-					elseif ($UserAction == "resetloginretry")
-						$Processed = FALSE;
-					elseif ($UserAction == "setpasswordexpired")
-						$Processed = FALSE;
-					else
-						$Processed = $this->Row_CustomAction($UserAction, $row);
+					$Processed = $this->Row_CustomAction($UserAction, $row);
 					if (!$Processed) break;
 					$rs->MoveNext();
 				}
@@ -1549,11 +1474,6 @@ class csana_user_list extends csana_user {
 		// Hide search options
 		if ($this->Export <> "" || $this->CurrentAction <> "")
 			$this->SearchOptions->HideAllOptions();
-		global $Security;
-		if (!$Security->CanSearch()) {
-			$this->SearchOptions->HideAllOptions();
-			$this->FilterOptions->HideAllOptions();
-		}
 	}
 
 	function SetupListOptionsExt() {
@@ -1682,10 +1602,11 @@ class csana_user_list extends csana_user {
 		$this->mobilePhone->setDbValue($rs->fields('mobilePhone'));
 		$this->userPassword->setDbValue($rs->fields('userPassword'));
 		$this->_email->setDbValue($rs->fields('email'));
-		$this->picture->setDbValue($rs->fields('picture'));
+		$this->picture->Upload->DbValue = $rs->fields('picture');
+		$this->picture->CurrentValue = $this->picture->Upload->DbValue;
 		$this->registrationUser->setDbValue($rs->fields('registrationUser'));
 		$this->registrationDateTime->setDbValue($rs->fields('registrationDateTime'));
-		$this->registrationStation->setDbValue($rs->fields('registrationStation'));
+		$this->stationID->setDbValue($rs->fields('stationID'));
 		$this->isolatedDateTime->setDbValue($rs->fields('isolatedDateTime'));
 		$this->acl->setDbValue($rs->fields('acl'));
 		$this->description->setDbValue($rs->fields('description'));
@@ -1715,10 +1636,10 @@ class csana_user_list extends csana_user {
 		$this->mobilePhone->DbValue = $row['mobilePhone'];
 		$this->userPassword->DbValue = $row['userPassword'];
 		$this->_email->DbValue = $row['email'];
-		$this->picture->DbValue = $row['picture'];
+		$this->picture->Upload->DbValue = $row['picture'];
 		$this->registrationUser->DbValue = $row['registrationUser'];
 		$this->registrationDateTime->DbValue = $row['registrationDateTime'];
-		$this->registrationStation->DbValue = $row['registrationStation'];
+		$this->stationID->DbValue = $row['stationID'];
 		$this->isolatedDateTime->DbValue = $row['isolatedDateTime'];
 		$this->acl->DbValue = $row['acl'];
 		$this->description->DbValue = $row['description'];
@@ -1786,7 +1707,7 @@ class csana_user_list extends csana_user {
 		// picture
 		// registrationUser
 		// registrationDateTime
-		// registrationStation
+		// stationID
 		// isolatedDateTime
 		// acl
 		// description
@@ -1874,7 +1795,11 @@ class csana_user_list extends csana_user {
 		$this->_email->ViewCustomAttributes = "";
 
 		// picture
-		$this->picture->ViewValue = $this->picture->CurrentValue;
+		if (!ew_Empty($this->picture->Upload->DbValue)) {
+			$this->picture->ViewValue = $this->picture->Upload->DbValue;
+		} else {
+			$this->picture->ViewValue = "";
+		}
 		$this->picture->ViewCustomAttributes = "";
 
 		// registrationUser
@@ -1886,9 +1811,9 @@ class csana_user_list extends csana_user {
 		$this->registrationDateTime->ViewValue = ew_FormatDateTime($this->registrationDateTime->ViewValue, 5);
 		$this->registrationDateTime->ViewCustomAttributes = "";
 
-		// registrationStation
-		$this->registrationStation->ViewValue = $this->registrationStation->CurrentValue;
-		$this->registrationStation->ViewCustomAttributes = "";
+		// stationID
+		$this->stationID->ViewValue = $this->stationID->CurrentValue;
+		$this->stationID->ViewCustomAttributes = "";
 
 		// isolatedDateTime
 		$this->isolatedDateTime->ViewValue = $this->isolatedDateTime->CurrentValue;
@@ -1924,75 +1849,10 @@ class csana_user_list extends csana_user {
 			$this->nationalID->HrefValue = "";
 			$this->nationalID->TooltipValue = "";
 
-			// nationalNumber
-			$this->nationalNumber->LinkCustomAttributes = "";
-			$this->nationalNumber->HrefValue = "";
-			$this->nationalNumber->TooltipValue = "";
-
-			// fatherName
-			$this->fatherName->LinkCustomAttributes = "";
-			$this->fatherName->HrefValue = "";
-			$this->fatherName->TooltipValue = "";
-
-			// country
-			$this->country->LinkCustomAttributes = "";
-			$this->country->HrefValue = "";
-			$this->country->TooltipValue = "";
-
-			// province
-			$this->province->LinkCustomAttributes = "";
-			$this->province->HrefValue = "";
-			$this->province->TooltipValue = "";
-
-			// county
-			$this->county->LinkCustomAttributes = "";
-			$this->county->HrefValue = "";
-			$this->county->TooltipValue = "";
-
-			// district
-			$this->district->LinkCustomAttributes = "";
-			$this->district->HrefValue = "";
-			$this->district->TooltipValue = "";
-
-			// city_ruralDistrict
-			$this->city_ruralDistrict->LinkCustomAttributes = "";
-			$this->city_ruralDistrict->HrefValue = "";
-			$this->city_ruralDistrict->TooltipValue = "";
-
-			// region_village
-			$this->region_village->LinkCustomAttributes = "";
-			$this->region_village->HrefValue = "";
-			$this->region_village->TooltipValue = "";
-
-			// address
-			$this->address->LinkCustomAttributes = "";
-			$this->address->HrefValue = "";
-			$this->address->TooltipValue = "";
-
-			// birthDate
-			$this->birthDate->LinkCustomAttributes = "";
-			$this->birthDate->HrefValue = "";
-			$this->birthDate->TooltipValue = "";
-
-			// ageRange
-			$this->ageRange->LinkCustomAttributes = "";
-			$this->ageRange->HrefValue = "";
-			$this->ageRange->TooltipValue = "";
-
-			// phone
-			$this->phone->LinkCustomAttributes = "";
-			$this->phone->HrefValue = "";
-			$this->phone->TooltipValue = "";
-
 			// mobilePhone
 			$this->mobilePhone->LinkCustomAttributes = "";
 			$this->mobilePhone->HrefValue = "";
 			$this->mobilePhone->TooltipValue = "";
-
-			// userPassword
-			$this->userPassword->LinkCustomAttributes = "";
-			$this->userPassword->HrefValue = "";
-			$this->userPassword->TooltipValue = "";
 
 			// email
 			$this->_email->LinkCustomAttributes = "";
@@ -2002,45 +1862,13 @@ class csana_user_list extends csana_user {
 			// picture
 			$this->picture->LinkCustomAttributes = "";
 			$this->picture->HrefValue = "";
+			$this->picture->HrefValue2 = $this->picture->UploadPath . $this->picture->Upload->DbValue;
 			$this->picture->TooltipValue = "";
-
-			// registrationUser
-			$this->registrationUser->LinkCustomAttributes = "";
-			$this->registrationUser->HrefValue = "";
-			$this->registrationUser->TooltipValue = "";
-
-			// registrationDateTime
-			$this->registrationDateTime->LinkCustomAttributes = "";
-			$this->registrationDateTime->HrefValue = "";
-			$this->registrationDateTime->TooltipValue = "";
-
-			// registrationStation
-			$this->registrationStation->LinkCustomAttributes = "";
-			$this->registrationStation->HrefValue = "";
-			$this->registrationStation->TooltipValue = "";
-
-			// isolatedDateTime
-			$this->isolatedDateTime->LinkCustomAttributes = "";
-			$this->isolatedDateTime->HrefValue = "";
-			$this->isolatedDateTime->TooltipValue = "";
-
-			// acl
-			$this->acl->LinkCustomAttributes = "";
-			$this->acl->HrefValue = "";
-			$this->acl->TooltipValue = "";
 		}
 
 		// Call Row Rendered event
 		if ($this->RowType <> EW_ROWTYPE_AGGREGATEINIT)
 			$this->Row_Rendered();
-	}
-
-	// Show link optionally based on User ID
-	function ShowOptionLink($id = "") {
-		global $Security;
-		if ($Security->IsLoggedIn() && !$Security->IsAdmin() && !$this->UserIDAllow($id))
-			return $Security->IsValidUserID($this->_userID->CurrentValue);
-		return TRUE;
 	}
 
 	// Set up Breadcrumb
@@ -2255,8 +2083,6 @@ var CurrentSearchForm = fsana_userlistsrch = new ew_Form("fsana_userlistsrch");
 
 	// Set no record found message
 	if ($sana_user->CurrentAction == "" && $sana_user_list->TotalRecs == 0) {
-		if (!$Security->CanList())
-			$sana_user_list->setWarningMessage($Language->Phrase("NoPermission"));
 		if ($sana_user_list->SearchWhere == "0=101")
 			$sana_user_list->setWarningMessage($Language->Phrase("EnterSearchCriteria"));
 		else
@@ -2264,7 +2090,6 @@ var CurrentSearchForm = fsana_userlistsrch = new ew_Form("fsana_userlistsrch");
 	}
 $sana_user_list->RenderOtherOptions();
 ?>
-<?php if ($Security->CanSearch()) { ?>
 <?php if ($sana_user->Export == "" && $sana_user->CurrentAction == "") { ?>
 <form name="fsana_userlistsrch" id="fsana_userlistsrch" class="form-inline ewForm" action="<?php echo ew_CurrentPage() ?>">
 <?php $SearchPanelClass = ($sana_user_list->SearchWhere <> "") ? " in" : " in"; ?>
@@ -2291,7 +2116,6 @@ $sana_user_list->RenderOtherOptions();
 	</div>
 </div>
 </form>
-<?php } ?>
 <?php } ?>
 <?php $sana_user_list->ShowPageHeader(); ?>
 <?php
@@ -2366,129 +2190,12 @@ $sana_user_list->ListOptions->Render("header", "left");
         </div></div></th>
 	<?php } ?>
 <?php } ?>		
-<?php if ($sana_user->nationalNumber->Visible) { // nationalNumber ?>
-	<?php if ($sana_user->SortUrl($sana_user->nationalNumber) == "") { ?>
-		<th data-name="nationalNumber"><div id="elh_sana_user_nationalNumber" class="sana_user_nationalNumber"><div class="ewTableHeaderCaption"><?php echo $sana_user->nationalNumber->FldCaption() ?></div></div></th>
-	<?php } else { ?>
-		<th data-name="nationalNumber"><div class="ewPointer" onclick="ew_Sort(event,'<?php echo $sana_user->SortUrl($sana_user->nationalNumber) ?>',1);"><div id="elh_sana_user_nationalNumber" class="sana_user_nationalNumber">
-			<div class="ewTableHeaderBtn"><span class="ewTableHeaderCaption"><?php echo $sana_user->nationalNumber->FldCaption() ?><?php echo $Language->Phrase("SrchLegend") ?></span><span class="ewTableHeaderSort"><?php if ($sana_user->nationalNumber->getSort() == "ASC") { ?><span class="caret ewSortUp"></span><?php } elseif ($sana_user->nationalNumber->getSort() == "DESC") { ?><span class="caret"></span><?php } ?></span></div>
-        </div></div></th>
-	<?php } ?>
-<?php } ?>		
-<?php if ($sana_user->fatherName->Visible) { // fatherName ?>
-	<?php if ($sana_user->SortUrl($sana_user->fatherName) == "") { ?>
-		<th data-name="fatherName"><div id="elh_sana_user_fatherName" class="sana_user_fatherName"><div class="ewTableHeaderCaption"><?php echo $sana_user->fatherName->FldCaption() ?></div></div></th>
-	<?php } else { ?>
-		<th data-name="fatherName"><div class="ewPointer" onclick="ew_Sort(event,'<?php echo $sana_user->SortUrl($sana_user->fatherName) ?>',1);"><div id="elh_sana_user_fatherName" class="sana_user_fatherName">
-			<div class="ewTableHeaderBtn"><span class="ewTableHeaderCaption"><?php echo $sana_user->fatherName->FldCaption() ?><?php echo $Language->Phrase("SrchLegend") ?></span><span class="ewTableHeaderSort"><?php if ($sana_user->fatherName->getSort() == "ASC") { ?><span class="caret ewSortUp"></span><?php } elseif ($sana_user->fatherName->getSort() == "DESC") { ?><span class="caret"></span><?php } ?></span></div>
-        </div></div></th>
-	<?php } ?>
-<?php } ?>		
-<?php if ($sana_user->country->Visible) { // country ?>
-	<?php if ($sana_user->SortUrl($sana_user->country) == "") { ?>
-		<th data-name="country"><div id="elh_sana_user_country" class="sana_user_country"><div class="ewTableHeaderCaption"><?php echo $sana_user->country->FldCaption() ?></div></div></th>
-	<?php } else { ?>
-		<th data-name="country"><div class="ewPointer" onclick="ew_Sort(event,'<?php echo $sana_user->SortUrl($sana_user->country) ?>',1);"><div id="elh_sana_user_country" class="sana_user_country">
-			<div class="ewTableHeaderBtn"><span class="ewTableHeaderCaption"><?php echo $sana_user->country->FldCaption() ?><?php echo $Language->Phrase("SrchLegend") ?></span><span class="ewTableHeaderSort"><?php if ($sana_user->country->getSort() == "ASC") { ?><span class="caret ewSortUp"></span><?php } elseif ($sana_user->country->getSort() == "DESC") { ?><span class="caret"></span><?php } ?></span></div>
-        </div></div></th>
-	<?php } ?>
-<?php } ?>		
-<?php if ($sana_user->province->Visible) { // province ?>
-	<?php if ($sana_user->SortUrl($sana_user->province) == "") { ?>
-		<th data-name="province"><div id="elh_sana_user_province" class="sana_user_province"><div class="ewTableHeaderCaption"><?php echo $sana_user->province->FldCaption() ?></div></div></th>
-	<?php } else { ?>
-		<th data-name="province"><div class="ewPointer" onclick="ew_Sort(event,'<?php echo $sana_user->SortUrl($sana_user->province) ?>',1);"><div id="elh_sana_user_province" class="sana_user_province">
-			<div class="ewTableHeaderBtn"><span class="ewTableHeaderCaption"><?php echo $sana_user->province->FldCaption() ?><?php echo $Language->Phrase("SrchLegend") ?></span><span class="ewTableHeaderSort"><?php if ($sana_user->province->getSort() == "ASC") { ?><span class="caret ewSortUp"></span><?php } elseif ($sana_user->province->getSort() == "DESC") { ?><span class="caret"></span><?php } ?></span></div>
-        </div></div></th>
-	<?php } ?>
-<?php } ?>		
-<?php if ($sana_user->county->Visible) { // county ?>
-	<?php if ($sana_user->SortUrl($sana_user->county) == "") { ?>
-		<th data-name="county"><div id="elh_sana_user_county" class="sana_user_county"><div class="ewTableHeaderCaption"><?php echo $sana_user->county->FldCaption() ?></div></div></th>
-	<?php } else { ?>
-		<th data-name="county"><div class="ewPointer" onclick="ew_Sort(event,'<?php echo $sana_user->SortUrl($sana_user->county) ?>',1);"><div id="elh_sana_user_county" class="sana_user_county">
-			<div class="ewTableHeaderBtn"><span class="ewTableHeaderCaption"><?php echo $sana_user->county->FldCaption() ?><?php echo $Language->Phrase("SrchLegend") ?></span><span class="ewTableHeaderSort"><?php if ($sana_user->county->getSort() == "ASC") { ?><span class="caret ewSortUp"></span><?php } elseif ($sana_user->county->getSort() == "DESC") { ?><span class="caret"></span><?php } ?></span></div>
-        </div></div></th>
-	<?php } ?>
-<?php } ?>		
-<?php if ($sana_user->district->Visible) { // district ?>
-	<?php if ($sana_user->SortUrl($sana_user->district) == "") { ?>
-		<th data-name="district"><div id="elh_sana_user_district" class="sana_user_district"><div class="ewTableHeaderCaption"><?php echo $sana_user->district->FldCaption() ?></div></div></th>
-	<?php } else { ?>
-		<th data-name="district"><div class="ewPointer" onclick="ew_Sort(event,'<?php echo $sana_user->SortUrl($sana_user->district) ?>',1);"><div id="elh_sana_user_district" class="sana_user_district">
-			<div class="ewTableHeaderBtn"><span class="ewTableHeaderCaption"><?php echo $sana_user->district->FldCaption() ?><?php echo $Language->Phrase("SrchLegend") ?></span><span class="ewTableHeaderSort"><?php if ($sana_user->district->getSort() == "ASC") { ?><span class="caret ewSortUp"></span><?php } elseif ($sana_user->district->getSort() == "DESC") { ?><span class="caret"></span><?php } ?></span></div>
-        </div></div></th>
-	<?php } ?>
-<?php } ?>		
-<?php if ($sana_user->city_ruralDistrict->Visible) { // city_ruralDistrict ?>
-	<?php if ($sana_user->SortUrl($sana_user->city_ruralDistrict) == "") { ?>
-		<th data-name="city_ruralDistrict"><div id="elh_sana_user_city_ruralDistrict" class="sana_user_city_ruralDistrict"><div class="ewTableHeaderCaption"><?php echo $sana_user->city_ruralDistrict->FldCaption() ?></div></div></th>
-	<?php } else { ?>
-		<th data-name="city_ruralDistrict"><div class="ewPointer" onclick="ew_Sort(event,'<?php echo $sana_user->SortUrl($sana_user->city_ruralDistrict) ?>',1);"><div id="elh_sana_user_city_ruralDistrict" class="sana_user_city_ruralDistrict">
-			<div class="ewTableHeaderBtn"><span class="ewTableHeaderCaption"><?php echo $sana_user->city_ruralDistrict->FldCaption() ?><?php echo $Language->Phrase("SrchLegend") ?></span><span class="ewTableHeaderSort"><?php if ($sana_user->city_ruralDistrict->getSort() == "ASC") { ?><span class="caret ewSortUp"></span><?php } elseif ($sana_user->city_ruralDistrict->getSort() == "DESC") { ?><span class="caret"></span><?php } ?></span></div>
-        </div></div></th>
-	<?php } ?>
-<?php } ?>		
-<?php if ($sana_user->region_village->Visible) { // region_village ?>
-	<?php if ($sana_user->SortUrl($sana_user->region_village) == "") { ?>
-		<th data-name="region_village"><div id="elh_sana_user_region_village" class="sana_user_region_village"><div class="ewTableHeaderCaption"><?php echo $sana_user->region_village->FldCaption() ?></div></div></th>
-	<?php } else { ?>
-		<th data-name="region_village"><div class="ewPointer" onclick="ew_Sort(event,'<?php echo $sana_user->SortUrl($sana_user->region_village) ?>',1);"><div id="elh_sana_user_region_village" class="sana_user_region_village">
-			<div class="ewTableHeaderBtn"><span class="ewTableHeaderCaption"><?php echo $sana_user->region_village->FldCaption() ?><?php echo $Language->Phrase("SrchLegend") ?></span><span class="ewTableHeaderSort"><?php if ($sana_user->region_village->getSort() == "ASC") { ?><span class="caret ewSortUp"></span><?php } elseif ($sana_user->region_village->getSort() == "DESC") { ?><span class="caret"></span><?php } ?></span></div>
-        </div></div></th>
-	<?php } ?>
-<?php } ?>		
-<?php if ($sana_user->address->Visible) { // address ?>
-	<?php if ($sana_user->SortUrl($sana_user->address) == "") { ?>
-		<th data-name="address"><div id="elh_sana_user_address" class="sana_user_address"><div class="ewTableHeaderCaption"><?php echo $sana_user->address->FldCaption() ?></div></div></th>
-	<?php } else { ?>
-		<th data-name="address"><div class="ewPointer" onclick="ew_Sort(event,'<?php echo $sana_user->SortUrl($sana_user->address) ?>',1);"><div id="elh_sana_user_address" class="sana_user_address">
-			<div class="ewTableHeaderBtn"><span class="ewTableHeaderCaption"><?php echo $sana_user->address->FldCaption() ?><?php echo $Language->Phrase("SrchLegend") ?></span><span class="ewTableHeaderSort"><?php if ($sana_user->address->getSort() == "ASC") { ?><span class="caret ewSortUp"></span><?php } elseif ($sana_user->address->getSort() == "DESC") { ?><span class="caret"></span><?php } ?></span></div>
-        </div></div></th>
-	<?php } ?>
-<?php } ?>		
-<?php if ($sana_user->birthDate->Visible) { // birthDate ?>
-	<?php if ($sana_user->SortUrl($sana_user->birthDate) == "") { ?>
-		<th data-name="birthDate"><div id="elh_sana_user_birthDate" class="sana_user_birthDate"><div class="ewTableHeaderCaption"><?php echo $sana_user->birthDate->FldCaption() ?></div></div></th>
-	<?php } else { ?>
-		<th data-name="birthDate"><div class="ewPointer" onclick="ew_Sort(event,'<?php echo $sana_user->SortUrl($sana_user->birthDate) ?>',1);"><div id="elh_sana_user_birthDate" class="sana_user_birthDate">
-			<div class="ewTableHeaderBtn"><span class="ewTableHeaderCaption"><?php echo $sana_user->birthDate->FldCaption() ?></span><span class="ewTableHeaderSort"><?php if ($sana_user->birthDate->getSort() == "ASC") { ?><span class="caret ewSortUp"></span><?php } elseif ($sana_user->birthDate->getSort() == "DESC") { ?><span class="caret"></span><?php } ?></span></div>
-        </div></div></th>
-	<?php } ?>
-<?php } ?>		
-<?php if ($sana_user->ageRange->Visible) { // ageRange ?>
-	<?php if ($sana_user->SortUrl($sana_user->ageRange) == "") { ?>
-		<th data-name="ageRange"><div id="elh_sana_user_ageRange" class="sana_user_ageRange"><div class="ewTableHeaderCaption"><?php echo $sana_user->ageRange->FldCaption() ?></div></div></th>
-	<?php } else { ?>
-		<th data-name="ageRange"><div class="ewPointer" onclick="ew_Sort(event,'<?php echo $sana_user->SortUrl($sana_user->ageRange) ?>',1);"><div id="elh_sana_user_ageRange" class="sana_user_ageRange">
-			<div class="ewTableHeaderBtn"><span class="ewTableHeaderCaption"><?php echo $sana_user->ageRange->FldCaption() ?><?php echo $Language->Phrase("SrchLegend") ?></span><span class="ewTableHeaderSort"><?php if ($sana_user->ageRange->getSort() == "ASC") { ?><span class="caret ewSortUp"></span><?php } elseif ($sana_user->ageRange->getSort() == "DESC") { ?><span class="caret"></span><?php } ?></span></div>
-        </div></div></th>
-	<?php } ?>
-<?php } ?>		
-<?php if ($sana_user->phone->Visible) { // phone ?>
-	<?php if ($sana_user->SortUrl($sana_user->phone) == "") { ?>
-		<th data-name="phone"><div id="elh_sana_user_phone" class="sana_user_phone"><div class="ewTableHeaderCaption"><?php echo $sana_user->phone->FldCaption() ?></div></div></th>
-	<?php } else { ?>
-		<th data-name="phone"><div class="ewPointer" onclick="ew_Sort(event,'<?php echo $sana_user->SortUrl($sana_user->phone) ?>',1);"><div id="elh_sana_user_phone" class="sana_user_phone">
-			<div class="ewTableHeaderBtn"><span class="ewTableHeaderCaption"><?php echo $sana_user->phone->FldCaption() ?><?php echo $Language->Phrase("SrchLegend") ?></span><span class="ewTableHeaderSort"><?php if ($sana_user->phone->getSort() == "ASC") { ?><span class="caret ewSortUp"></span><?php } elseif ($sana_user->phone->getSort() == "DESC") { ?><span class="caret"></span><?php } ?></span></div>
-        </div></div></th>
-	<?php } ?>
-<?php } ?>		
 <?php if ($sana_user->mobilePhone->Visible) { // mobilePhone ?>
 	<?php if ($sana_user->SortUrl($sana_user->mobilePhone) == "") { ?>
 		<th data-name="mobilePhone"><div id="elh_sana_user_mobilePhone" class="sana_user_mobilePhone"><div class="ewTableHeaderCaption"><?php echo $sana_user->mobilePhone->FldCaption() ?></div></div></th>
 	<?php } else { ?>
 		<th data-name="mobilePhone"><div class="ewPointer" onclick="ew_Sort(event,'<?php echo $sana_user->SortUrl($sana_user->mobilePhone) ?>',1);"><div id="elh_sana_user_mobilePhone" class="sana_user_mobilePhone">
 			<div class="ewTableHeaderBtn"><span class="ewTableHeaderCaption"><?php echo $sana_user->mobilePhone->FldCaption() ?><?php echo $Language->Phrase("SrchLegend") ?></span><span class="ewTableHeaderSort"><?php if ($sana_user->mobilePhone->getSort() == "ASC") { ?><span class="caret ewSortUp"></span><?php } elseif ($sana_user->mobilePhone->getSort() == "DESC") { ?><span class="caret"></span><?php } ?></span></div>
-        </div></div></th>
-	<?php } ?>
-<?php } ?>		
-<?php if ($sana_user->userPassword->Visible) { // userPassword ?>
-	<?php if ($sana_user->SortUrl($sana_user->userPassword) == "") { ?>
-		<th data-name="userPassword"><div id="elh_sana_user_userPassword" class="sana_user_userPassword"><div class="ewTableHeaderCaption"><?php echo $sana_user->userPassword->FldCaption() ?></div></div></th>
-	<?php } else { ?>
-		<th data-name="userPassword"><div class="ewPointer" onclick="ew_Sort(event,'<?php echo $sana_user->SortUrl($sana_user->userPassword) ?>',1);"><div id="elh_sana_user_userPassword" class="sana_user_userPassword">
-			<div class="ewTableHeaderBtn"><span class="ewTableHeaderCaption"><?php echo $sana_user->userPassword->FldCaption() ?><?php echo $Language->Phrase("SrchLegend") ?></span><span class="ewTableHeaderSort"><?php if ($sana_user->userPassword->getSort() == "ASC") { ?><span class="caret ewSortUp"></span><?php } elseif ($sana_user->userPassword->getSort() == "DESC") { ?><span class="caret"></span><?php } ?></span></div>
         </div></div></th>
 	<?php } ?>
 <?php } ?>		
@@ -2507,51 +2214,6 @@ $sana_user_list->ListOptions->Render("header", "left");
 	<?php } else { ?>
 		<th data-name="picture"><div class="ewPointer" onclick="ew_Sort(event,'<?php echo $sana_user->SortUrl($sana_user->picture) ?>',1);"><div id="elh_sana_user_picture" class="sana_user_picture">
 			<div class="ewTableHeaderBtn"><span class="ewTableHeaderCaption"><?php echo $sana_user->picture->FldCaption() ?><?php echo $Language->Phrase("SrchLegend") ?></span><span class="ewTableHeaderSort"><?php if ($sana_user->picture->getSort() == "ASC") { ?><span class="caret ewSortUp"></span><?php } elseif ($sana_user->picture->getSort() == "DESC") { ?><span class="caret"></span><?php } ?></span></div>
-        </div></div></th>
-	<?php } ?>
-<?php } ?>		
-<?php if ($sana_user->registrationUser->Visible) { // registrationUser ?>
-	<?php if ($sana_user->SortUrl($sana_user->registrationUser) == "") { ?>
-		<th data-name="registrationUser"><div id="elh_sana_user_registrationUser" class="sana_user_registrationUser"><div class="ewTableHeaderCaption"><?php echo $sana_user->registrationUser->FldCaption() ?></div></div></th>
-	<?php } else { ?>
-		<th data-name="registrationUser"><div class="ewPointer" onclick="ew_Sort(event,'<?php echo $sana_user->SortUrl($sana_user->registrationUser) ?>',1);"><div id="elh_sana_user_registrationUser" class="sana_user_registrationUser">
-			<div class="ewTableHeaderBtn"><span class="ewTableHeaderCaption"><?php echo $sana_user->registrationUser->FldCaption() ?></span><span class="ewTableHeaderSort"><?php if ($sana_user->registrationUser->getSort() == "ASC") { ?><span class="caret ewSortUp"></span><?php } elseif ($sana_user->registrationUser->getSort() == "DESC") { ?><span class="caret"></span><?php } ?></span></div>
-        </div></div></th>
-	<?php } ?>
-<?php } ?>		
-<?php if ($sana_user->registrationDateTime->Visible) { // registrationDateTime ?>
-	<?php if ($sana_user->SortUrl($sana_user->registrationDateTime) == "") { ?>
-		<th data-name="registrationDateTime"><div id="elh_sana_user_registrationDateTime" class="sana_user_registrationDateTime"><div class="ewTableHeaderCaption"><?php echo $sana_user->registrationDateTime->FldCaption() ?></div></div></th>
-	<?php } else { ?>
-		<th data-name="registrationDateTime"><div class="ewPointer" onclick="ew_Sort(event,'<?php echo $sana_user->SortUrl($sana_user->registrationDateTime) ?>',1);"><div id="elh_sana_user_registrationDateTime" class="sana_user_registrationDateTime">
-			<div class="ewTableHeaderBtn"><span class="ewTableHeaderCaption"><?php echo $sana_user->registrationDateTime->FldCaption() ?></span><span class="ewTableHeaderSort"><?php if ($sana_user->registrationDateTime->getSort() == "ASC") { ?><span class="caret ewSortUp"></span><?php } elseif ($sana_user->registrationDateTime->getSort() == "DESC") { ?><span class="caret"></span><?php } ?></span></div>
-        </div></div></th>
-	<?php } ?>
-<?php } ?>		
-<?php if ($sana_user->registrationStation->Visible) { // registrationStation ?>
-	<?php if ($sana_user->SortUrl($sana_user->registrationStation) == "") { ?>
-		<th data-name="registrationStation"><div id="elh_sana_user_registrationStation" class="sana_user_registrationStation"><div class="ewTableHeaderCaption"><?php echo $sana_user->registrationStation->FldCaption() ?></div></div></th>
-	<?php } else { ?>
-		<th data-name="registrationStation"><div class="ewPointer" onclick="ew_Sort(event,'<?php echo $sana_user->SortUrl($sana_user->registrationStation) ?>',1);"><div id="elh_sana_user_registrationStation" class="sana_user_registrationStation">
-			<div class="ewTableHeaderBtn"><span class="ewTableHeaderCaption"><?php echo $sana_user->registrationStation->FldCaption() ?></span><span class="ewTableHeaderSort"><?php if ($sana_user->registrationStation->getSort() == "ASC") { ?><span class="caret ewSortUp"></span><?php } elseif ($sana_user->registrationStation->getSort() == "DESC") { ?><span class="caret"></span><?php } ?></span></div>
-        </div></div></th>
-	<?php } ?>
-<?php } ?>		
-<?php if ($sana_user->isolatedDateTime->Visible) { // isolatedDateTime ?>
-	<?php if ($sana_user->SortUrl($sana_user->isolatedDateTime) == "") { ?>
-		<th data-name="isolatedDateTime"><div id="elh_sana_user_isolatedDateTime" class="sana_user_isolatedDateTime"><div class="ewTableHeaderCaption"><?php echo $sana_user->isolatedDateTime->FldCaption() ?></div></div></th>
-	<?php } else { ?>
-		<th data-name="isolatedDateTime"><div class="ewPointer" onclick="ew_Sort(event,'<?php echo $sana_user->SortUrl($sana_user->isolatedDateTime) ?>',1);"><div id="elh_sana_user_isolatedDateTime" class="sana_user_isolatedDateTime">
-			<div class="ewTableHeaderBtn"><span class="ewTableHeaderCaption"><?php echo $sana_user->isolatedDateTime->FldCaption() ?></span><span class="ewTableHeaderSort"><?php if ($sana_user->isolatedDateTime->getSort() == "ASC") { ?><span class="caret ewSortUp"></span><?php } elseif ($sana_user->isolatedDateTime->getSort() == "DESC") { ?><span class="caret"></span><?php } ?></span></div>
-        </div></div></th>
-	<?php } ?>
-<?php } ?>		
-<?php if ($sana_user->acl->Visible) { // acl ?>
-	<?php if ($sana_user->SortUrl($sana_user->acl) == "") { ?>
-		<th data-name="acl"><div id="elh_sana_user_acl" class="sana_user_acl"><div class="ewTableHeaderCaption"><?php echo $sana_user->acl->FldCaption() ?></div></div></th>
-	<?php } else { ?>
-		<th data-name="acl"><div class="ewPointer" onclick="ew_Sort(event,'<?php echo $sana_user->SortUrl($sana_user->acl) ?>',1);"><div id="elh_sana_user_acl" class="sana_user_acl">
-			<div class="ewTableHeaderBtn"><span class="ewTableHeaderCaption"><?php echo $sana_user->acl->FldCaption() ?><?php echo $Language->Phrase("SrchLegend") ?></span><span class="ewTableHeaderSort"><?php if ($sana_user->acl->getSort() == "ASC") { ?><span class="caret ewSortUp"></span><?php } elseif ($sana_user->acl->getSort() == "DESC") { ?><span class="caret"></span><?php } ?></span></div>
         </div></div></th>
 	<?php } ?>
 <?php } ?>		
@@ -2660,115 +2322,11 @@ $sana_user_list->ListOptions->Render("body", "left", $sana_user_list->RowCnt);
 </span>
 </td>
 	<?php } ?>
-	<?php if ($sana_user->nationalNumber->Visible) { // nationalNumber ?>
-		<td data-name="nationalNumber"<?php echo $sana_user->nationalNumber->CellAttributes() ?>>
-<span id="el<?php echo $sana_user_list->RowCnt ?>_sana_user_nationalNumber" class="sana_user_nationalNumber">
-<span<?php echo $sana_user->nationalNumber->ViewAttributes() ?>>
-<?php echo $sana_user->nationalNumber->ListViewValue() ?></span>
-</span>
-</td>
-	<?php } ?>
-	<?php if ($sana_user->fatherName->Visible) { // fatherName ?>
-		<td data-name="fatherName"<?php echo $sana_user->fatherName->CellAttributes() ?>>
-<span id="el<?php echo $sana_user_list->RowCnt ?>_sana_user_fatherName" class="sana_user_fatherName">
-<span<?php echo $sana_user->fatherName->ViewAttributes() ?>>
-<?php echo $sana_user->fatherName->ListViewValue() ?></span>
-</span>
-</td>
-	<?php } ?>
-	<?php if ($sana_user->country->Visible) { // country ?>
-		<td data-name="country"<?php echo $sana_user->country->CellAttributes() ?>>
-<span id="el<?php echo $sana_user_list->RowCnt ?>_sana_user_country" class="sana_user_country">
-<span<?php echo $sana_user->country->ViewAttributes() ?>>
-<?php echo $sana_user->country->ListViewValue() ?></span>
-</span>
-</td>
-	<?php } ?>
-	<?php if ($sana_user->province->Visible) { // province ?>
-		<td data-name="province"<?php echo $sana_user->province->CellAttributes() ?>>
-<span id="el<?php echo $sana_user_list->RowCnt ?>_sana_user_province" class="sana_user_province">
-<span<?php echo $sana_user->province->ViewAttributes() ?>>
-<?php echo $sana_user->province->ListViewValue() ?></span>
-</span>
-</td>
-	<?php } ?>
-	<?php if ($sana_user->county->Visible) { // county ?>
-		<td data-name="county"<?php echo $sana_user->county->CellAttributes() ?>>
-<span id="el<?php echo $sana_user_list->RowCnt ?>_sana_user_county" class="sana_user_county">
-<span<?php echo $sana_user->county->ViewAttributes() ?>>
-<?php echo $sana_user->county->ListViewValue() ?></span>
-</span>
-</td>
-	<?php } ?>
-	<?php if ($sana_user->district->Visible) { // district ?>
-		<td data-name="district"<?php echo $sana_user->district->CellAttributes() ?>>
-<span id="el<?php echo $sana_user_list->RowCnt ?>_sana_user_district" class="sana_user_district">
-<span<?php echo $sana_user->district->ViewAttributes() ?>>
-<?php echo $sana_user->district->ListViewValue() ?></span>
-</span>
-</td>
-	<?php } ?>
-	<?php if ($sana_user->city_ruralDistrict->Visible) { // city_ruralDistrict ?>
-		<td data-name="city_ruralDistrict"<?php echo $sana_user->city_ruralDistrict->CellAttributes() ?>>
-<span id="el<?php echo $sana_user_list->RowCnt ?>_sana_user_city_ruralDistrict" class="sana_user_city_ruralDistrict">
-<span<?php echo $sana_user->city_ruralDistrict->ViewAttributes() ?>>
-<?php echo $sana_user->city_ruralDistrict->ListViewValue() ?></span>
-</span>
-</td>
-	<?php } ?>
-	<?php if ($sana_user->region_village->Visible) { // region_village ?>
-		<td data-name="region_village"<?php echo $sana_user->region_village->CellAttributes() ?>>
-<span id="el<?php echo $sana_user_list->RowCnt ?>_sana_user_region_village" class="sana_user_region_village">
-<span<?php echo $sana_user->region_village->ViewAttributes() ?>>
-<?php echo $sana_user->region_village->ListViewValue() ?></span>
-</span>
-</td>
-	<?php } ?>
-	<?php if ($sana_user->address->Visible) { // address ?>
-		<td data-name="address"<?php echo $sana_user->address->CellAttributes() ?>>
-<span id="el<?php echo $sana_user_list->RowCnt ?>_sana_user_address" class="sana_user_address">
-<span<?php echo $sana_user->address->ViewAttributes() ?>>
-<?php echo $sana_user->address->ListViewValue() ?></span>
-</span>
-</td>
-	<?php } ?>
-	<?php if ($sana_user->birthDate->Visible) { // birthDate ?>
-		<td data-name="birthDate"<?php echo $sana_user->birthDate->CellAttributes() ?>>
-<span id="el<?php echo $sana_user_list->RowCnt ?>_sana_user_birthDate" class="sana_user_birthDate">
-<span<?php echo $sana_user->birthDate->ViewAttributes() ?>>
-<?php echo $sana_user->birthDate->ListViewValue() ?></span>
-</span>
-</td>
-	<?php } ?>
-	<?php if ($sana_user->ageRange->Visible) { // ageRange ?>
-		<td data-name="ageRange"<?php echo $sana_user->ageRange->CellAttributes() ?>>
-<span id="el<?php echo $sana_user_list->RowCnt ?>_sana_user_ageRange" class="sana_user_ageRange">
-<span<?php echo $sana_user->ageRange->ViewAttributes() ?>>
-<?php echo $sana_user->ageRange->ListViewValue() ?></span>
-</span>
-</td>
-	<?php } ?>
-	<?php if ($sana_user->phone->Visible) { // phone ?>
-		<td data-name="phone"<?php echo $sana_user->phone->CellAttributes() ?>>
-<span id="el<?php echo $sana_user_list->RowCnt ?>_sana_user_phone" class="sana_user_phone">
-<span<?php echo $sana_user->phone->ViewAttributes() ?>>
-<?php echo $sana_user->phone->ListViewValue() ?></span>
-</span>
-</td>
-	<?php } ?>
 	<?php if ($sana_user->mobilePhone->Visible) { // mobilePhone ?>
 		<td data-name="mobilePhone"<?php echo $sana_user->mobilePhone->CellAttributes() ?>>
 <span id="el<?php echo $sana_user_list->RowCnt ?>_sana_user_mobilePhone" class="sana_user_mobilePhone">
 <span<?php echo $sana_user->mobilePhone->ViewAttributes() ?>>
 <?php echo $sana_user->mobilePhone->ListViewValue() ?></span>
-</span>
-</td>
-	<?php } ?>
-	<?php if ($sana_user->userPassword->Visible) { // userPassword ?>
-		<td data-name="userPassword"<?php echo $sana_user->userPassword->CellAttributes() ?>>
-<span id="el<?php echo $sana_user_list->RowCnt ?>_sana_user_userPassword" class="sana_user_userPassword">
-<span<?php echo $sana_user->userPassword->ViewAttributes() ?>>
-<?php echo $sana_user->userPassword->ListViewValue() ?></span>
 </span>
 </td>
 	<?php } ?>
@@ -2784,47 +2342,8 @@ $sana_user_list->ListOptions->Render("body", "left", $sana_user_list->RowCnt);
 		<td data-name="picture"<?php echo $sana_user->picture->CellAttributes() ?>>
 <span id="el<?php echo $sana_user_list->RowCnt ?>_sana_user_picture" class="sana_user_picture">
 <span<?php echo $sana_user->picture->ViewAttributes() ?>>
-<?php echo $sana_user->picture->ListViewValue() ?></span>
+<?php echo ew_GetFileViewTag($sana_user->picture, $sana_user->picture->ListViewValue()) ?>
 </span>
-</td>
-	<?php } ?>
-	<?php if ($sana_user->registrationUser->Visible) { // registrationUser ?>
-		<td data-name="registrationUser"<?php echo $sana_user->registrationUser->CellAttributes() ?>>
-<span id="el<?php echo $sana_user_list->RowCnt ?>_sana_user_registrationUser" class="sana_user_registrationUser">
-<span<?php echo $sana_user->registrationUser->ViewAttributes() ?>>
-<?php echo $sana_user->registrationUser->ListViewValue() ?></span>
-</span>
-</td>
-	<?php } ?>
-	<?php if ($sana_user->registrationDateTime->Visible) { // registrationDateTime ?>
-		<td data-name="registrationDateTime"<?php echo $sana_user->registrationDateTime->CellAttributes() ?>>
-<span id="el<?php echo $sana_user_list->RowCnt ?>_sana_user_registrationDateTime" class="sana_user_registrationDateTime">
-<span<?php echo $sana_user->registrationDateTime->ViewAttributes() ?>>
-<?php echo $sana_user->registrationDateTime->ListViewValue() ?></span>
-</span>
-</td>
-	<?php } ?>
-	<?php if ($sana_user->registrationStation->Visible) { // registrationStation ?>
-		<td data-name="registrationStation"<?php echo $sana_user->registrationStation->CellAttributes() ?>>
-<span id="el<?php echo $sana_user_list->RowCnt ?>_sana_user_registrationStation" class="sana_user_registrationStation">
-<span<?php echo $sana_user->registrationStation->ViewAttributes() ?>>
-<?php echo $sana_user->registrationStation->ListViewValue() ?></span>
-</span>
-</td>
-	<?php } ?>
-	<?php if ($sana_user->isolatedDateTime->Visible) { // isolatedDateTime ?>
-		<td data-name="isolatedDateTime"<?php echo $sana_user->isolatedDateTime->CellAttributes() ?>>
-<span id="el<?php echo $sana_user_list->RowCnt ?>_sana_user_isolatedDateTime" class="sana_user_isolatedDateTime">
-<span<?php echo $sana_user->isolatedDateTime->ViewAttributes() ?>>
-<?php echo $sana_user->isolatedDateTime->ListViewValue() ?></span>
-</span>
-</td>
-	<?php } ?>
-	<?php if ($sana_user->acl->Visible) { // acl ?>
-		<td data-name="acl"<?php echo $sana_user->acl->CellAttributes() ?>>
-<span id="el<?php echo $sana_user_list->RowCnt ?>_sana_user_acl" class="sana_user_acl">
-<span<?php echo $sana_user->acl->ViewAttributes() ?>>
-<?php echo $sana_user->acl->ListViewValue() ?></span>
 </span>
 </td>
 	<?php } ?>

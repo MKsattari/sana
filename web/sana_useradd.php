@@ -211,7 +211,6 @@ class csana_user_add extends csana_user {
 	//
 	function __construct() {
 		global $conn, $Language;
-		global $UserTable, $UserTableConn;
 		$GLOBALS["Page"] = &$this;
 		$this->TokenTimeout = ew_SessionTimeoutTime();
 
@@ -240,12 +239,6 @@ class csana_user_add extends csana_user {
 
 		// Open connection
 		if (!isset($conn)) $conn = ew_Connect($this->DBID);
-
-		// User table object (sana_user)
-		if (!isset($UserTable)) {
-			$UserTable = new csana_user();
-			$UserTableConn = Conn($UserTable->DBID);
-		}
 	}
 
 	// 
@@ -253,23 +246,6 @@ class csana_user_add extends csana_user {
 	//
 	function Page_Init() {
 		global $gsExport, $gsCustomExport, $gsExportFile, $UserProfile, $Language, $Security, $objForm;
-
-		// Security
-		$Security = new cAdvancedSecurity();
-		if (!$Security->IsLoggedIn()) $Security->AutoLogin();
-		if ($Security->IsLoggedIn()) $Security->TablePermission_Loading();
-		$Security->LoadCurrentUserLevel($this->ProjectID . $this->TableName);
-		if ($Security->IsLoggedIn()) $Security->TablePermission_Loaded();
-		if (!$Security->IsLoggedIn()) $this->Page_Terminate(ew_GetUrl("login.php"));
-		if ($Security->IsLoggedIn()) {
-			$Security->UserID_Loading();
-			$Security->LoadUserID();
-			$Security->UserID_Loaded();
-			if (strval($Security->CurrentUserID()) == "") {
-				$this->setFailureMessage($Language->Phrase("NoPermission")); // Set no permission
-				$this->Page_Terminate(ew_GetUrl("sana_userlist.php"));
-			}
-		}
 
 		// Create form object
 		$objForm = new cFormObj();
@@ -441,6 +417,9 @@ class csana_user_add extends csana_user {
 		global $objForm, $Language;
 
 		// Get upload data
+		$this->picture->Upload->Index = $objForm->Index;
+		$this->picture->Upload->UploadFile();
+		$this->picture->CurrentValue = $this->picture->Upload->FileName;
 	}
 
 	// Load default values
@@ -483,14 +462,15 @@ class csana_user_add extends csana_user {
 		$this->userPassword->OldValue = $this->userPassword->CurrentValue;
 		$this->_email->CurrentValue = NULL;
 		$this->_email->OldValue = $this->_email->CurrentValue;
-		$this->picture->CurrentValue = NULL;
-		$this->picture->OldValue = $this->picture->CurrentValue;
+		$this->picture->Upload->DbValue = NULL;
+		$this->picture->OldValue = $this->picture->Upload->DbValue;
+		$this->picture->CurrentValue = NULL; // Clear file related field
 		$this->registrationUser->CurrentValue = NULL;
 		$this->registrationUser->OldValue = $this->registrationUser->CurrentValue;
 		$this->registrationDateTime->CurrentValue = NULL;
 		$this->registrationDateTime->OldValue = $this->registrationDateTime->CurrentValue;
-		$this->registrationStation->CurrentValue = NULL;
-		$this->registrationStation->OldValue = $this->registrationStation->CurrentValue;
+		$this->stationID->CurrentValue = NULL;
+		$this->stationID->OldValue = $this->stationID->CurrentValue;
 		$this->isolatedDateTime->CurrentValue = NULL;
 		$this->isolatedDateTime->OldValue = $this->isolatedDateTime->CurrentValue;
 		$this->acl->CurrentValue = NULL;
@@ -504,6 +484,7 @@ class csana_user_add extends csana_user {
 
 		// Load from form
 		global $objForm;
+		$this->GetUploadFiles(); // Get upload files
 		if (!$this->username->FldIsDetailKey) {
 			$this->username->setFormValue($objForm->GetValue("x_username"));
 		}
@@ -561,9 +542,6 @@ class csana_user_add extends csana_user {
 		if (!$this->_email->FldIsDetailKey) {
 			$this->_email->setFormValue($objForm->GetValue("x__email"));
 		}
-		if (!$this->picture->FldIsDetailKey) {
-			$this->picture->setFormValue($objForm->GetValue("x_picture"));
-		}
 		if (!$this->registrationUser->FldIsDetailKey) {
 			$this->registrationUser->setFormValue($objForm->GetValue("x_registrationUser"));
 		}
@@ -571,8 +549,8 @@ class csana_user_add extends csana_user {
 			$this->registrationDateTime->setFormValue($objForm->GetValue("x_registrationDateTime"));
 			$this->registrationDateTime->CurrentValue = ew_UnFormatDateTime($this->registrationDateTime->CurrentValue, 5);
 		}
-		if (!$this->registrationStation->FldIsDetailKey) {
-			$this->registrationStation->setFormValue($objForm->GetValue("x_registrationStation"));
+		if (!$this->stationID->FldIsDetailKey) {
+			$this->stationID->setFormValue($objForm->GetValue("x_stationID"));
 		}
 		if (!$this->isolatedDateTime->FldIsDetailKey) {
 			$this->isolatedDateTime->setFormValue($objForm->GetValue("x_isolatedDateTime"));
@@ -609,11 +587,10 @@ class csana_user_add extends csana_user {
 		$this->mobilePhone->CurrentValue = $this->mobilePhone->FormValue;
 		$this->userPassword->CurrentValue = $this->userPassword->FormValue;
 		$this->_email->CurrentValue = $this->_email->FormValue;
-		$this->picture->CurrentValue = $this->picture->FormValue;
 		$this->registrationUser->CurrentValue = $this->registrationUser->FormValue;
 		$this->registrationDateTime->CurrentValue = $this->registrationDateTime->FormValue;
 		$this->registrationDateTime->CurrentValue = ew_UnFormatDateTime($this->registrationDateTime->CurrentValue, 5);
-		$this->registrationStation->CurrentValue = $this->registrationStation->FormValue;
+		$this->stationID->CurrentValue = $this->stationID->FormValue;
 		$this->isolatedDateTime->CurrentValue = $this->isolatedDateTime->FormValue;
 		$this->isolatedDateTime->CurrentValue = ew_UnFormatDateTime($this->isolatedDateTime->CurrentValue, 5);
 		$this->acl->CurrentValue = $this->acl->FormValue;
@@ -638,15 +615,6 @@ class csana_user_add extends csana_user {
 			$res = TRUE;
 			$this->LoadRowValues($rs); // Load row values
 			$rs->Close();
-		}
-
-		// Check if valid user id
-		if ($res) {
-			$res = $this->ShowOptionLink('add');
-			if (!$res) {
-				$sUserIdMsg = $Language->Phrase("NoPermission");
-				$this->setFailureMessage($sUserIdMsg);
-			}
 		}
 		return $res;
 	}
@@ -678,10 +646,11 @@ class csana_user_add extends csana_user {
 		$this->mobilePhone->setDbValue($rs->fields('mobilePhone'));
 		$this->userPassword->setDbValue($rs->fields('userPassword'));
 		$this->_email->setDbValue($rs->fields('email'));
-		$this->picture->setDbValue($rs->fields('picture'));
+		$this->picture->Upload->DbValue = $rs->fields('picture');
+		$this->picture->CurrentValue = $this->picture->Upload->DbValue;
 		$this->registrationUser->setDbValue($rs->fields('registrationUser'));
 		$this->registrationDateTime->setDbValue($rs->fields('registrationDateTime'));
-		$this->registrationStation->setDbValue($rs->fields('registrationStation'));
+		$this->stationID->setDbValue($rs->fields('stationID'));
 		$this->isolatedDateTime->setDbValue($rs->fields('isolatedDateTime'));
 		$this->acl->setDbValue($rs->fields('acl'));
 		$this->description->setDbValue($rs->fields('description'));
@@ -711,10 +680,10 @@ class csana_user_add extends csana_user {
 		$this->mobilePhone->DbValue = $row['mobilePhone'];
 		$this->userPassword->DbValue = $row['userPassword'];
 		$this->_email->DbValue = $row['email'];
-		$this->picture->DbValue = $row['picture'];
+		$this->picture->Upload->DbValue = $row['picture'];
 		$this->registrationUser->DbValue = $row['registrationUser'];
 		$this->registrationDateTime->DbValue = $row['registrationDateTime'];
-		$this->registrationStation->DbValue = $row['registrationStation'];
+		$this->stationID->DbValue = $row['stationID'];
 		$this->isolatedDateTime->DbValue = $row['isolatedDateTime'];
 		$this->acl->DbValue = $row['acl'];
 		$this->description->DbValue = $row['description'];
@@ -776,7 +745,7 @@ class csana_user_add extends csana_user {
 		// picture
 		// registrationUser
 		// registrationDateTime
-		// registrationStation
+		// stationID
 		// isolatedDateTime
 		// acl
 		// description
@@ -864,7 +833,11 @@ class csana_user_add extends csana_user {
 		$this->_email->ViewCustomAttributes = "";
 
 		// picture
-		$this->picture->ViewValue = $this->picture->CurrentValue;
+		if (!ew_Empty($this->picture->Upload->DbValue)) {
+			$this->picture->ViewValue = $this->picture->Upload->DbValue;
+		} else {
+			$this->picture->ViewValue = "";
+		}
 		$this->picture->ViewCustomAttributes = "";
 
 		// registrationUser
@@ -876,9 +849,9 @@ class csana_user_add extends csana_user {
 		$this->registrationDateTime->ViewValue = ew_FormatDateTime($this->registrationDateTime->ViewValue, 5);
 		$this->registrationDateTime->ViewCustomAttributes = "";
 
-		// registrationStation
-		$this->registrationStation->ViewValue = $this->registrationStation->CurrentValue;
-		$this->registrationStation->ViewCustomAttributes = "";
+		// stationID
+		$this->stationID->ViewValue = $this->stationID->CurrentValue;
+		$this->stationID->ViewCustomAttributes = "";
 
 		// isolatedDateTime
 		$this->isolatedDateTime->ViewValue = $this->isolatedDateTime->CurrentValue;
@@ -991,6 +964,7 @@ class csana_user_add extends csana_user {
 			// picture
 			$this->picture->LinkCustomAttributes = "";
 			$this->picture->HrefValue = "";
+			$this->picture->HrefValue2 = $this->picture->UploadPath . $this->picture->Upload->DbValue;
 			$this->picture->TooltipValue = "";
 
 			// registrationUser
@@ -1003,10 +977,10 @@ class csana_user_add extends csana_user {
 			$this->registrationDateTime->HrefValue = "";
 			$this->registrationDateTime->TooltipValue = "";
 
-			// registrationStation
-			$this->registrationStation->LinkCustomAttributes = "";
-			$this->registrationStation->HrefValue = "";
-			$this->registrationStation->TooltipValue = "";
+			// stationID
+			$this->stationID->LinkCustomAttributes = "";
+			$this->stationID->HrefValue = "";
+			$this->stationID->TooltipValue = "";
 
 			// isolatedDateTime
 			$this->isolatedDateTime->LinkCustomAttributes = "";
@@ -1141,8 +1115,14 @@ class csana_user_add extends csana_user {
 			// picture
 			$this->picture->EditAttrs["class"] = "form-control";
 			$this->picture->EditCustomAttributes = "";
-			$this->picture->EditValue = ew_HtmlEncode($this->picture->CurrentValue);
-			$this->picture->PlaceHolder = ew_RemoveHtml($this->picture->FldCaption());
+			if (!ew_Empty($this->picture->Upload->DbValue)) {
+				$this->picture->EditValue = $this->picture->Upload->DbValue;
+			} else {
+				$this->picture->EditValue = "";
+			}
+			if (!ew_Empty($this->picture->CurrentValue))
+				$this->picture->Upload->FileName = $this->picture->CurrentValue;
+			if (($this->CurrentAction == "I" || $this->CurrentAction == "C") && !$this->EventCancelled) ew_RenderUploadField($this->picture);
 
 			// registrationUser
 			$this->registrationUser->EditAttrs["class"] = "form-control";
@@ -1156,11 +1136,11 @@ class csana_user_add extends csana_user {
 			$this->registrationDateTime->EditValue = ew_HtmlEncode(ew_FormatDateTime($this->registrationDateTime->CurrentValue, 5));
 			$this->registrationDateTime->PlaceHolder = ew_RemoveHtml($this->registrationDateTime->FldCaption());
 
-			// registrationStation
-			$this->registrationStation->EditAttrs["class"] = "form-control";
-			$this->registrationStation->EditCustomAttributes = "";
-			$this->registrationStation->EditValue = ew_HtmlEncode($this->registrationStation->CurrentValue);
-			$this->registrationStation->PlaceHolder = ew_RemoveHtml($this->registrationStation->FldCaption());
+			// stationID
+			$this->stationID->EditAttrs["class"] = "form-control";
+			$this->stationID->EditCustomAttributes = "";
+			$this->stationID->EditValue = ew_HtmlEncode($this->stationID->CurrentValue);
+			$this->stationID->PlaceHolder = ew_RemoveHtml($this->stationID->FldCaption());
 
 			// isolatedDateTime
 			$this->isolatedDateTime->EditAttrs["class"] = "form-control";
@@ -1261,6 +1241,7 @@ class csana_user_add extends csana_user {
 			// picture
 			$this->picture->LinkCustomAttributes = "";
 			$this->picture->HrefValue = "";
+			$this->picture->HrefValue2 = $this->picture->UploadPath . $this->picture->Upload->DbValue;
 
 			// registrationUser
 			$this->registrationUser->LinkCustomAttributes = "";
@@ -1270,9 +1251,9 @@ class csana_user_add extends csana_user {
 			$this->registrationDateTime->LinkCustomAttributes = "";
 			$this->registrationDateTime->HrefValue = "";
 
-			// registrationStation
-			$this->registrationStation->LinkCustomAttributes = "";
-			$this->registrationStation->HrefValue = "";
+			// stationID
+			$this->stationID->LinkCustomAttributes = "";
+			$this->stationID->HrefValue = "";
 
 			// isolatedDateTime
 			$this->isolatedDateTime->LinkCustomAttributes = "";
@@ -1334,8 +1315,8 @@ class csana_user_add extends csana_user {
 		if (!ew_CheckDate($this->registrationDateTime->FormValue)) {
 			ew_AddMessage($gsFormError, $this->registrationDateTime->FldErrMsg());
 		}
-		if (!ew_CheckInteger($this->registrationStation->FormValue)) {
-			ew_AddMessage($gsFormError, $this->registrationStation->FldErrMsg());
+		if (!ew_CheckInteger($this->stationID->FormValue)) {
+			ew_AddMessage($gsFormError, $this->stationID->FldErrMsg());
 		}
 		if (!ew_CheckDate($this->isolatedDateTime->FormValue)) {
 			ew_AddMessage($gsFormError, $this->isolatedDateTime->FldErrMsg());
@@ -1422,7 +1403,14 @@ class csana_user_add extends csana_user {
 		$this->_email->SetDbValueDef($rsnew, $this->_email->CurrentValue, NULL, FALSE);
 
 		// picture
-		$this->picture->SetDbValueDef($rsnew, $this->picture->CurrentValue, NULL, FALSE);
+		if ($this->picture->Visible && !$this->picture->Upload->KeepFile) {
+			$this->picture->Upload->DbValue = ""; // No need to delete old file
+			if ($this->picture->Upload->FileName == "") {
+				$rsnew['picture'] = NULL;
+			} else {
+				$rsnew['picture'] = $this->picture->Upload->FileName;
+			}
+		}
 
 		// registrationUser
 		$this->registrationUser->SetDbValueDef($rsnew, $this->registrationUser->CurrentValue, NULL, FALSE);
@@ -1430,8 +1418,8 @@ class csana_user_add extends csana_user {
 		// registrationDateTime
 		$this->registrationDateTime->SetDbValueDef($rsnew, ew_UnFormatDateTime($this->registrationDateTime->CurrentValue, 5), NULL, FALSE);
 
-		// registrationStation
-		$this->registrationStation->SetDbValueDef($rsnew, $this->registrationStation->CurrentValue, NULL, FALSE);
+		// stationID
+		$this->stationID->SetDbValueDef($rsnew, $this->stationID->CurrentValue, NULL, FALSE);
 
 		// isolatedDateTime
 		$this->isolatedDateTime->SetDbValueDef($rsnew, ew_UnFormatDateTime($this->isolatedDateTime->CurrentValue, 5), NULL, FALSE);
@@ -1441,10 +1429,17 @@ class csana_user_add extends csana_user {
 
 		// description
 		$this->description->SetDbValueDef($rsnew, $this->description->CurrentValue, NULL, FALSE);
+		if ($this->picture->Visible && !$this->picture->Upload->KeepFile) {
+			if (!ew_Empty($this->picture->Upload->Value)) {
+				if ($this->picture->Upload->FileName == $this->picture->Upload->DbValue) { // Overwrite if same file name
+					$this->picture->Upload->DbValue = ""; // No need to delete any more
+				} else {
+					$rsnew['picture'] = ew_UploadFileNameEx(ew_UploadPathEx(TRUE, $this->picture->UploadPath), $rsnew['picture']); // Get new file name
+				}
+			}
+		}
 
-		// userID
 		// Call Row Inserting event
-
 		$rs = ($rsold == NULL) ? NULL : $rsold->fields;
 		$bInsertRow = $this->Row_Inserting($rs, $rsnew);
 		if ($bInsertRow) {
@@ -1456,6 +1451,13 @@ class csana_user_add extends csana_user {
 				// Get insert id if necessary
 				$this->_userID->setDbValue($conn->Insert_ID());
 				$rsnew['userID'] = $this->_userID->DbValue;
+				if ($this->picture->Visible && !$this->picture->Upload->KeepFile) {
+					if (!ew_Empty($this->picture->Upload->Value)) {
+						$this->picture->Upload->SaveToFile($this->picture->UploadPath, $rsnew['picture'], TRUE);
+					}
+					if ($this->picture->Upload->DbValue <> "")
+						@unlink(ew_UploadPathEx(TRUE, $this->picture->OldUploadPath) . $this->picture->Upload->DbValue);
+				}
 			}
 		} else {
 			if ($this->getSuccessMessage() <> "" || $this->getFailureMessage() <> "") {
@@ -1475,15 +1477,10 @@ class csana_user_add extends csana_user {
 			$rs = ($rsold == NULL) ? NULL : $rsold->fields;
 			$this->Row_Inserted($rs, $rsnew);
 		}
-		return $AddRow;
-	}
 
-	// Show link optionally based on User ID
-	function ShowOptionLink($id = "") {
-		global $Security;
-		if ($Security->IsLoggedIn() && !$Security->IsAdmin() && !$this->UserIDAllow($id))
-			return $Security->IsValidUserID($this->_userID->CurrentValue);
-		return TRUE;
+		// picture
+		ew_CleanUploadTempPath($this->picture, $this->picture->Upload->Index);
+		return $AddRow;
 	}
 
 	// Set up Breadcrumb
@@ -1633,9 +1630,9 @@ fsana_useradd.Validate = function() {
 			elm = this.GetElements("x" + infix + "_registrationDateTime");
 			if (elm && !ew_CheckDate(elm.value))
 				return this.OnError(elm, "<?php echo ew_JsEncode2($sana_user->registrationDateTime->FldErrMsg()) ?>");
-			elm = this.GetElements("x" + infix + "_registrationStation");
+			elm = this.GetElements("x" + infix + "_stationID");
 			if (elm && !ew_CheckInteger(elm.value))
-				return this.OnError(elm, "<?php echo ew_JsEncode2($sana_user->registrationStation->FldErrMsg()) ?>");
+				return this.OnError(elm, "<?php echo ew_JsEncode2($sana_user->stationID->FldErrMsg()) ?>");
 			elm = this.GetElements("x" + infix + "_isolatedDateTime");
 			if (elm && !ew_CheckDate(elm.value))
 				return this.OnError(elm, "<?php echo ew_JsEncode2($sana_user->isolatedDateTime->FldErrMsg()) ?>");
@@ -1899,10 +1896,21 @@ $sana_user_add->ShowMessage();
 <?php } ?>
 <?php if ($sana_user->picture->Visible) { // picture ?>
 	<div id="r_picture" class="form-group">
-		<label id="elh_sana_user_picture" for="x_picture" class="col-sm-2 control-label ewLabel"><?php echo $sana_user->picture->FldCaption() ?></label>
+		<label id="elh_sana_user_picture" class="col-sm-2 control-label ewLabel"><?php echo $sana_user->picture->FldCaption() ?></label>
 		<div class="col-sm-10"><div<?php echo $sana_user->picture->CellAttributes() ?>>
 <span id="el_sana_user_picture">
-<input type="text" data-table="sana_user" data-field="x_picture" name="x_picture" id="x_picture" size="30" maxlength="255" placeholder="<?php echo ew_HtmlEncode($sana_user->picture->getPlaceHolder()) ?>" value="<?php echo $sana_user->picture->EditValue ?>"<?php echo $sana_user->picture->EditAttributes() ?>>
+<div id="fd_x_picture">
+<span title="<?php echo $sana_user->picture->FldTitle() ? $sana_user->picture->FldTitle() : $Language->Phrase("ChooseFile") ?>" class="btn btn-default btn-sm fileinput-button ewTooltip<?php if ($sana_user->picture->ReadOnly || $sana_user->picture->Disabled) echo " hide"; ?>">
+	<span><?php echo $Language->Phrase("ChooseFileBtn") ?></span>
+	<input type="file" title=" " data-table="sana_user" data-field="x_picture" name="x_picture" id="x_picture"<?php echo $sana_user->picture->EditAttributes() ?>>
+</span>
+<input type="hidden" name="fn_x_picture" id= "fn_x_picture" value="<?php echo $sana_user->picture->Upload->FileName ?>">
+<input type="hidden" name="fa_x_picture" id= "fa_x_picture" value="0">
+<input type="hidden" name="fs_x_picture" id= "fs_x_picture" value="255">
+<input type="hidden" name="fx_x_picture" id= "fx_x_picture" value="<?php echo $sana_user->picture->UploadAllowedFileExt ?>">
+<input type="hidden" name="fm_x_picture" id= "fm_x_picture" value="<?php echo $sana_user->picture->UploadMaxFileSize ?>">
+</div>
+<table id="ft_x_picture" class="table table-condensed pull-left ewUploadTable"><tbody class="files"></tbody></table>
 </span>
 <?php echo $sana_user->picture->CustomMsg ?></div></div>
 	</div>
@@ -1927,14 +1935,14 @@ $sana_user_add->ShowMessage();
 <?php echo $sana_user->registrationDateTime->CustomMsg ?></div></div>
 	</div>
 <?php } ?>
-<?php if ($sana_user->registrationStation->Visible) { // registrationStation ?>
-	<div id="r_registrationStation" class="form-group">
-		<label id="elh_sana_user_registrationStation" for="x_registrationStation" class="col-sm-2 control-label ewLabel"><?php echo $sana_user->registrationStation->FldCaption() ?></label>
-		<div class="col-sm-10"><div<?php echo $sana_user->registrationStation->CellAttributes() ?>>
-<span id="el_sana_user_registrationStation">
-<input type="text" data-table="sana_user" data-field="x_registrationStation" name="x_registrationStation" id="x_registrationStation" size="30" placeholder="<?php echo ew_HtmlEncode($sana_user->registrationStation->getPlaceHolder()) ?>" value="<?php echo $sana_user->registrationStation->EditValue ?>"<?php echo $sana_user->registrationStation->EditAttributes() ?>>
+<?php if ($sana_user->stationID->Visible) { // stationID ?>
+	<div id="r_stationID" class="form-group">
+		<label id="elh_sana_user_stationID" for="x_stationID" class="col-sm-2 control-label ewLabel"><?php echo $sana_user->stationID->FldCaption() ?></label>
+		<div class="col-sm-10"><div<?php echo $sana_user->stationID->CellAttributes() ?>>
+<span id="el_sana_user_stationID">
+<input type="text" data-table="sana_user" data-field="x_stationID" name="x_stationID" id="x_stationID" size="30" placeholder="<?php echo ew_HtmlEncode($sana_user->stationID->getPlaceHolder()) ?>" value="<?php echo $sana_user->stationID->EditValue ?>"<?php echo $sana_user->stationID->EditAttributes() ?>>
 </span>
-<?php echo $sana_user->registrationStation->CustomMsg ?></div></div>
+<?php echo $sana_user->stationID->CustomMsg ?></div></div>
 	</div>
 <?php } ?>
 <?php if ($sana_user->isolatedDateTime->Visible) { // isolatedDateTime ?>

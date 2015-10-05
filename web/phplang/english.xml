@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<ew-language date="2015/10/4" version="12.0.0" id="en" name="English" desc="English" author="e.World Technology Ltd.">
+<ew-language date="2015/10/5" version="12.0.0" id="en" name="English" desc="English" author="e.World Technology Ltd.">
 	<locale>
 		<phrase id="locale" value=""/><!-- *** system locale for this language -->
 		<phrase id="use_system_locale" value="1"/><!-- *** change to "0" to disable system locale and use the following settings *** -->
@@ -435,70 +435,36 @@
 		<phrase id="and" value="and"/>
 		<phrase id="or" value="or"/>
 	</global>
-	<project><phrase id="bodytitle" value="سامانه ارتباط ناهمگام اربعین(سانا)"/>
+	<project><phrase id="bodytitle" value="SANA"/>
 <phrase id="footertext" value="&amp;copy;2015 e.World Technology Ltd. All rights reserved."/>
-<menu id="1"><phrase id="menutext" value="sana location"/>
-</menu>
-<menu id="2"><phrase id="menutext" value="sana object"/>
+<menu id="15"><phrase id="menutext" value="sana station"/>
 </menu>
 <menu id="3"><phrase id="menutext" value="sana person"/>
 </menu>
-<menu id="4"><phrase id="menutext" value="sana project"/>
+<menu id="2"><phrase id="menutext" value="sana object"/>
+</menu>
+<menu id="6"><phrase id="menutext" value="sana user"/>
 </menu>
 <menu id="5"><phrase id="menutext" value="sana state"/>
 </menu>
-<menu id="6"><phrase id="menutext" value="sana user"/>
+<menu id="4"><phrase id="menutext" value="sana project"/>
+</menu>
+<menu id="9"><phrase id="menutext" value="sana location level 1"/>
+</menu>
+<menu id="10"><phrase id="menutext" value="sana location level 2"/>
+</menu>
+<menu id="11"><phrase id="menutext" value="sana location level 3"/>
+</menu>
+<menu id="12"><phrase id="menutext" value="sana location level 4"/>
+</menu>
+<menu id="13"><phrase id="menutext" value="sana location level 5"/>
+</menu>
+<menu id="14"><phrase id="menutext" value="sana location level 6"/>
 </menu>
 <menu id="7"><phrase id="menutext" value="userlevelpermissions"/>
 </menu>
 <menu id="8"><phrase id="menutext" value="userlevels"/>
 </menu>
-<table id="sana_location"><phrase id="tblcaption" value="sana location"/>
-<field id="locationid"><phrase id="fldcaption" value="location ID"/>
-</field>
-<field id="locationclass"><phrase id="fldcaption" value="location Class"/>
-</field>
-<field id="locationname"><phrase id="fldcaption" value="location Name"/>
-</field>
-<field id="parentid"><phrase id="fldcaption" value="parent ID"/>
-</field>
-<field id="hierarchyidpath"><phrase id="fldcaption" value="hierarchy IDPath"/>
-</field>
-<field id="hierarchypath"><phrase id="fldcaption" value="hierarchy Path"/>
-</field>
-</table>
-<table id="sana_object"><phrase id="tblcaption" value="sana object"/>
-<field id="objectid"><phrase id="fldcaption" value="object ID"/>
-</field>
-<field id="objectname"><phrase id="fldcaption" value="object Name"/>
-</field>
-<field id="ownerid"><phrase id="fldcaption" value="owner ID"/>
-</field>
-<field id="ownername"><phrase id="fldcaption" value="owner Name"/>
-</field>
-<field id="lastname"><phrase id="fldcaption" value="last Name"/>
-</field>
-<field id="mobilephone"><phrase id="fldcaption" value="mobile Phone"/>
-</field>
-<field id="color"><phrase id="fldcaption" value="color"/>
-</field>
-<field id="status"><phrase id="fldcaption" value="status"/>
-</field>
-<field id="content"><phrase id="fldcaption" value="content"/>
-</field>
-<field id="financialvalue"><phrase id="fldcaption" value="financial Value"/>
-</field>
-<field id="registrationuser"><phrase id="fldcaption" value="registration User"/>
-</field>
-<field id="registrationdatetime"><phrase id="fldcaption" value="registration Date Time"/>
-</field>
-<field id="registrationstation"><phrase id="fldcaption" value="registration Station"/>
-</field>
-<field id="isolateddatetime"><phrase id="fldcaption" value="isolated Date Time"/>
-</field>
-<field id="description"><phrase id="fldcaption" value="description"/>
-</field>
-</table>
 <table id="sana_person"><phrase id="tblcaption" value="sana person"/>
 <field id="personid"><phrase id="fldcaption" value="person ID"/>
 </field>
@@ -510,21 +476,23 @@
 </field>
 <field id="nationalnumber"><phrase id="fldcaption" value="national Number"/>
 </field>
+<field id="passportnumber"><phrase id="fldcaption" value="passport Number"/>
+</field>
 <field id="fathername"><phrase id="fldcaption" value="father Name"/>
 </field>
 <field id="gender"><phrase id="fldcaption" value="gender"/>
 </field>
-<field id="country"><phrase id="fldcaption" value="country"/>
+<field id="locationlevel1"><phrase id="fldcaption" value="country"/>
 </field>
-<field id="province"><phrase id="fldcaption" value="province"/>
+<field id="locationlevel2"><phrase id="fldcaption" value="province"/>
 </field>
-<field id="county"><phrase id="fldcaption" value="county"/>
+<field id="locationlevel3"><phrase id="fldcaption" value="county"/>
 </field>
-<field id="district"><phrase id="fldcaption" value="district"/>
+<field id="locationlevel4"><phrase id="fldcaption" value="location Level 4"/>
 </field>
-<field id="city_ruraldistrict"><phrase id="fldcaption" value="city rural District"/>
+<field id="locationlevel5"><phrase id="fldcaption" value="city rural District"/>
 </field>
-<field id="region_village"><phrase id="fldcaption" value="region village"/>
+<field id="locationlevel6"><phrase id="fldcaption" value="region village"/>
 </field>
 <field id="address"><phrase id="fldcaption" value="address"/>
 </field>
@@ -571,20 +539,34 @@
 <field id="description"><phrase id="fldcaption" value="description"/>
 </field>
 </table>
-<table id="sana_project"><phrase id="tblcaption" value="sana project"/>
-<field id="projectid"><phrase id="fldcaption" value="project ID"/>
+<table id="sana_object"><phrase id="tblcaption" value="sana object"/>
+<field id="objectid"><phrase id="fldcaption" value="object ID"/>
 </field>
-<field id="projectname"><phrase id="fldcaption" value="project Name"/>
+<field id="objectname"><phrase id="fldcaption" value="object Name"/>
 </field>
-<field id="description"><phrase id="fldcaption" value="description"/>
+<field id="ownerid"><phrase id="fldcaption" value="owner ID"/>
 </field>
-</table>
-<table id="sana_state"><phrase id="tblcaption" value="sana state"/>
-<field id="stateid"><phrase id="fldcaption" value="state ID"/>
+<field id="ownername"><phrase id="fldcaption" value="owner Name"/>
 </field>
-<field id="stateclass"><phrase id="fldcaption" value="state Class"/>
+<field id="lastname"><phrase id="fldcaption" value="last Name"/>
 </field>
-<field id="statename"><phrase id="fldcaption" value="state Name"/>
+<field id="mobilephone"><phrase id="fldcaption" value="mobile Phone"/>
+</field>
+<field id="color"><phrase id="fldcaption" value="color"/>
+</field>
+<field id="status"><phrase id="fldcaption" value="status"/>
+</field>
+<field id="content"><phrase id="fldcaption" value="content"/>
+</field>
+<field id="financialvalue"><phrase id="fldcaption" value="financial Value"/>
+</field>
+<field id="registrationuser"><phrase id="fldcaption" value="registration User"/>
+</field>
+<field id="registrationdatetime"><phrase id="fldcaption" value="registration Date Time"/>
+</field>
+<field id="registrationstation"><phrase id="fldcaption" value="registration Station"/>
+</field>
+<field id="isolateddatetime"><phrase id="fldcaption" value="isolated Date Time"/>
 </field>
 <field id="description"><phrase id="fldcaption" value="description"/>
 </field>
@@ -638,11 +620,43 @@
 </field>
 <field id="registrationdatetime"><phrase id="fldcaption" value="registration Date Time"/>
 </field>
-<field id="registrationstation"><phrase id="fldcaption" value="registration Station"/>
+<field id="stationid"><phrase id="fldcaption" value="registration Station"/>
 </field>
 <field id="isolateddatetime"><phrase id="fldcaption" value="isolated Date Time"/>
 </field>
 <field id="acl"><phrase id="fldcaption" value="acl"/>
+</field>
+<field id="description"><phrase id="fldcaption" value="description"/>
+</field>
+</table>
+<table id="userlevels"><phrase id="tblcaption" value="userlevels"/>
+<field id="userlevelid"><phrase id="fldcaption" value="userlevelid"/>
+</field>
+<field id="userlevelname"><phrase id="fldcaption" value="userlevelname"/>
+</field>
+</table>
+<table id="sana_project"><phrase id="tblcaption" value="sana project"/>
+<field id="projectid"><phrase id="fldcaption" value="project ID"/>
+</field>
+<field id="projectname"><phrase id="fldcaption" value="project Name"/>
+</field>
+<field id="description"><phrase id="fldcaption" value="description"/>
+</field>
+</table>
+<table id="sana_state"><phrase id="tblcaption" value="sana state"/>
+<field id="stateid"><phrase id="fldcaption" value="state ID"/>
+</field>
+<field id="stateclass"><phrase id="fldcaption" value="state Class"/>
+</field>
+<field id="statename"><phrase id="fldcaption" value="state Name"/>
+</field>
+<field id="statelanguage"><phrase id="fldcaption" value="state Language"/>
+<phrase id="fldtagvalue1" value="fa"/>
+<phrase id="fldtagcaption1" value="fa"/>
+<phrase id="fldtagvalue2" value="ar"/>
+<phrase id="fldtagcaption2" value="ar"/>
+<phrase id="fldtagvalue3" value="en"/>
+<phrase id="fldtagcaption3" value="en"/>
 </field>
 <field id="description"><phrase id="fldcaption" value="description"/>
 </field>
@@ -655,10 +669,90 @@
 <field id="permission"><phrase id="fldcaption" value="permission"/>
 </field>
 </table>
-<table id="userlevels"><phrase id="tblcaption" value="userlevels"/>
-<field id="userlevelid"><phrase id="fldcaption" value="userlevelid"/>
+<table id="sana_location_level1"><phrase id="tblcaption" value="sana location level 1"/>
+<field id="locationlevel1id"><phrase id="fldcaption" value="location Level 1ID"/>
 </field>
-<field id="userlevelname"><phrase id="fldcaption" value="userlevelname"/>
+<field id="locationname"><phrase id="fldcaption" value="location Name"/>
+</field>
+</table>
+<table id="sana_location_level2"><phrase id="tblcaption" value="sana location level 2"/>
+<field id="locationlevel2id"><phrase id="fldcaption" value="location Level 2ID"/>
+</field>
+<field id="locationname"><phrase id="fldcaption" value="location Name"/>
+</field>
+<field id="locationlevel1id"><phrase id="fldcaption" value="location Level 1ID"/>
+</field>
+<field id="locationlevel1name"><phrase id="fldcaption" value="location Level 1Name"/>
+</field>
+</table>
+<table id="sana_location_level3"><phrase id="tblcaption" value="sana location level 3"/>
+<field id="locationlevel3id"><phrase id="fldcaption" value="location Level 3ID"/>
+</field>
+<field id="locationname"><phrase id="fldcaption" value="location Name"/>
+</field>
+<field id="locationlevel2id"><phrase id="fldcaption" value="location Level 2ID"/>
+</field>
+<field id="locationlevel2name"><phrase id="fldcaption" value="location Level 2Name"/>
+</field>
+<field id="locationlevel1id"><phrase id="fldcaption" value="location Level 1ID"/>
+</field>
+</table>
+<table id="sana_location_level4"><phrase id="tblcaption" value="sana location level 4"/>
+<field id="locationlevel4id"><phrase id="fldcaption" value="location Level 4ID"/>
+</field>
+<field id="locationname"><phrase id="fldcaption" value="location Name"/>
+</field>
+<field id="locationlevel3id"><phrase id="fldcaption" value="location Level 3ID"/>
+</field>
+<field id="locationlevel3name"><phrase id="fldcaption" value="location Level 3Name"/>
+</field>
+<field id="locationlevel1id"><phrase id="fldcaption" value="location Level 1ID"/>
+</field>
+<field id="locationlevel2id"><phrase id="fldcaption" value="location Level 2ID"/>
+</field>
+</table>
+<table id="sana_location_level5"><phrase id="tblcaption" value="sana location level 5"/>
+<field id="locationlevel5id"><phrase id="fldcaption" value="location Level 5ID"/>
+</field>
+<field id="locationname"><phrase id="fldcaption" value="location Name"/>
+</field>
+<field id="locationlevel4id"><phrase id="fldcaption" value="location Level 4ID"/>
+</field>
+<field id="locationlevel4name"><phrase id="fldcaption" value="location Level 4Name"/>
+</field>
+<field id="locationlevel1id"><phrase id="fldcaption" value="location Level 1ID"/>
+</field>
+<field id="locationlevel2id"><phrase id="fldcaption" value="location Level 2ID"/>
+</field>
+<field id="locationlevel3id"><phrase id="fldcaption" value="location Level 3ID"/>
+</field>
+</table>
+<table id="sana_location_level6"><phrase id="tblcaption" value="sana location level 6"/>
+<field id="locationlevel6id"><phrase id="fldcaption" value="location Level 6ID"/>
+</field>
+<field id="locationname"><phrase id="fldcaption" value="location Name"/>
+</field>
+<field id="locationlevel5id"><phrase id="fldcaption" value="location Level 5ID"/>
+</field>
+<field id="locationlevel5name"><phrase id="fldcaption" value="location Level 5Name"/>
+</field>
+<field id="locationlevel1id"><phrase id="fldcaption" value="location Level 1ID"/>
+</field>
+<field id="locationlevel2id"><phrase id="fldcaption" value="location Level 2ID"/>
+</field>
+<field id="locationlevel3id"><phrase id="fldcaption" value="location Level 3ID"/>
+</field>
+<field id="locationlevel4id"><phrase id="fldcaption" value="location Level 4ID"/>
+</field>
+</table>
+<table id="sana_station"><phrase id="tblcaption" value="sana station"/>
+<field id="stationid"><phrase id="fldcaption" value="station ID"/>
+</field>
+<field id="stationname"><phrase id="fldcaption" value="station Name"/>
+</field>
+<field id="projectid"><phrase id="fldcaption" value="project ID"/>
+</field>
+<field id="description"><phrase id="fldcaption" value="description"/>
 </field>
 </table>
 </project>

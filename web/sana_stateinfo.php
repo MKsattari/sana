@@ -10,6 +10,7 @@ class csana_state extends cTable {
 	var $stateID;
 	var $stateClass;
 	var $stateName;
+	var $stateLanguage;
 	var $description;
 
 	//
@@ -54,6 +55,11 @@ class csana_state extends cTable {
 		// stateName
 		$this->stateName = new cField('sana_state', 'sana_state', 'x_stateName', 'stateName', '`stateName`', '`stateName`', 200, -1, FALSE, '`stateName`', FALSE, FALSE, FALSE, 'FORMATTED TEXT', 'TEXT');
 		$this->fields['stateName'] = &$this->stateName;
+
+		// stateLanguage
+		$this->stateLanguage = new cField('sana_state', 'sana_state', 'x_stateLanguage', 'stateLanguage', '`stateLanguage`', '`stateLanguage`', 200, -1, FALSE, '`stateLanguage`', FALSE, FALSE, FALSE, 'FORMATTED TEXT', 'SELECT');
+		$this->stateLanguage->OptionCount = 3;
+		$this->fields['stateLanguage'] = &$this->stateLanguage;
 
 		// description
 		$this->description = new cField('sana_state', 'sana_state', 'x_description', 'description', '`description`', '`description`', 201, -1, FALSE, '`description`', FALSE, FALSE, FALSE, 'FORMATTED TEXT', 'TEXTAREA');
@@ -537,6 +543,7 @@ class csana_state extends cTable {
 		$this->stateID->setDbValue($rs->fields('stateID'));
 		$this->stateClass->setDbValue($rs->fields('stateClass'));
 		$this->stateName->setDbValue($rs->fields('stateName'));
+		$this->stateLanguage->setDbValue($rs->fields('stateLanguage'));
 		$this->description->setDbValue($rs->fields('description'));
 	}
 
@@ -551,6 +558,7 @@ class csana_state extends cTable {
 		// stateID
 		// stateClass
 		// stateName
+		// stateLanguage
 		// description
 		// stateID
 
@@ -564,6 +572,14 @@ class csana_state extends cTable {
 		// stateName
 		$this->stateName->ViewValue = $this->stateName->CurrentValue;
 		$this->stateName->ViewCustomAttributes = "";
+
+		// stateLanguage
+		if (strval($this->stateLanguage->CurrentValue) <> "") {
+			$this->stateLanguage->ViewValue = $this->stateLanguage->OptionCaption($this->stateLanguage->CurrentValue);
+		} else {
+			$this->stateLanguage->ViewValue = NULL;
+		}
+		$this->stateLanguage->ViewCustomAttributes = "";
 
 		// description
 		$this->description->ViewValue = $this->description->CurrentValue;
@@ -583,6 +599,11 @@ class csana_state extends cTable {
 		$this->stateName->LinkCustomAttributes = "";
 		$this->stateName->HrefValue = "";
 		$this->stateName->TooltipValue = "";
+
+		// stateLanguage
+		$this->stateLanguage->LinkCustomAttributes = "";
+		$this->stateLanguage->HrefValue = "";
+		$this->stateLanguage->TooltipValue = "";
 
 		// description
 		$this->description->LinkCustomAttributes = "";
@@ -617,6 +638,11 @@ class csana_state extends cTable {
 		$this->stateName->EditCustomAttributes = "";
 		$this->stateName->EditValue = $this->stateName->CurrentValue;
 		$this->stateName->PlaceHolder = ew_RemoveHtml($this->stateName->FldCaption());
+
+		// stateLanguage
+		$this->stateLanguage->EditAttrs["class"] = "form-control";
+		$this->stateLanguage->EditCustomAttributes = "";
+		$this->stateLanguage->EditValue = $this->stateLanguage->Options(TRUE);
 
 		// description
 		$this->description->EditAttrs["class"] = "form-control";
@@ -654,11 +680,13 @@ class csana_state extends cTable {
 					if ($this->stateID->Exportable) $Doc->ExportCaption($this->stateID);
 					if ($this->stateClass->Exportable) $Doc->ExportCaption($this->stateClass);
 					if ($this->stateName->Exportable) $Doc->ExportCaption($this->stateName);
+					if ($this->stateLanguage->Exportable) $Doc->ExportCaption($this->stateLanguage);
 					if ($this->description->Exportable) $Doc->ExportCaption($this->description);
 				} else {
 					if ($this->stateID->Exportable) $Doc->ExportCaption($this->stateID);
 					if ($this->stateClass->Exportable) $Doc->ExportCaption($this->stateClass);
 					if ($this->stateName->Exportable) $Doc->ExportCaption($this->stateName);
+					if ($this->stateLanguage->Exportable) $Doc->ExportCaption($this->stateLanguage);
 				}
 				$Doc->EndExportRow();
 			}
@@ -693,11 +721,13 @@ class csana_state extends cTable {
 						if ($this->stateID->Exportable) $Doc->ExportField($this->stateID);
 						if ($this->stateClass->Exportable) $Doc->ExportField($this->stateClass);
 						if ($this->stateName->Exportable) $Doc->ExportField($this->stateName);
+						if ($this->stateLanguage->Exportable) $Doc->ExportField($this->stateLanguage);
 						if ($this->description->Exportable) $Doc->ExportField($this->description);
 					} else {
 						if ($this->stateID->Exportable) $Doc->ExportField($this->stateID);
 						if ($this->stateClass->Exportable) $Doc->ExportField($this->stateClass);
 						if ($this->stateName->Exportable) $Doc->ExportField($this->stateName);
+						if ($this->stateLanguage->Exportable) $Doc->ExportField($this->stateLanguage);
 					}
 					$Doc->EndExportRow();
 				}

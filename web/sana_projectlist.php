@@ -6,7 +6,6 @@ ob_start(); // Turn on output buffering
 <?php include_once ((EW_USE_ADODB) ? "adodb5/adodb.inc.php" : "ewmysql12.php") ?>
 <?php include_once "phpfn12.php" ?>
 <?php include_once "sana_projectinfo.php" ?>
-<?php include_once "sana_userinfo.php" ?>
 <?php include_once "userfn12.php" ?>
 <?php
 
@@ -252,7 +251,6 @@ class csana_project_list extends csana_project {
 	//
 	function __construct() {
 		global $conn, $Language;
-		global $UserTable, $UserTableConn;
 		$GLOBALS["Page"] = &$this;
 		$this->TokenTimeout = ew_SessionTimeoutTime();
 
@@ -283,9 +281,6 @@ class csana_project_list extends csana_project {
 		$this->MultiDeleteUrl = "sana_projectdelete.php";
 		$this->MultiUpdateUrl = "sana_projectupdate.php";
 
-		// Table object (sana_user)
-		if (!isset($GLOBALS['sana_user'])) $GLOBALS['sana_user'] = new csana_user();
-
 		// Page ID
 		if (!defined("EW_PAGE_ID"))
 			define("EW_PAGE_ID", 'list', TRUE);
@@ -299,12 +294,6 @@ class csana_project_list extends csana_project {
 
 		// Open connection
 		if (!isset($conn)) $conn = ew_Connect($this->DBID);
-
-		// User table object (sana_user)
-		if (!isset($UserTable)) {
-			$UserTable = new csana_user();
-			$UserTableConn = Conn($UserTable->DBID);
-		}
 
 		// List options
 		$this->ListOptions = new cListOptions();
@@ -340,19 +329,6 @@ class csana_project_list extends csana_project {
 	//
 	function Page_Init() {
 		global $gsExport, $gsCustomExport, $gsExportFile, $UserProfile, $Language, $Security, $objForm;
-
-		// Security
-		$Security = new cAdvancedSecurity();
-		if (!$Security->IsLoggedIn()) $Security->AutoLogin();
-		if ($Security->IsLoggedIn()) $Security->TablePermission_Loading();
-		$Security->LoadCurrentUserLevel($this->ProjectID . $this->TableName);
-		if ($Security->IsLoggedIn()) $Security->TablePermission_Loaded();
-		if (!$Security->IsLoggedIn()) $this->Page_Terminate(ew_GetUrl("login.php"));
-		if ($Security->IsLoggedIn()) {
-			$Security->UserID_Loading();
-			$Security->LoadUserID();
-			$Security->UserID_Loaded();
-		}
 		$this->CurrentAction = (@$_GET["a"] <> "") ? $_GET["a"] : @$_POST["a_list"]; // Set up current action
 
 		// Get grid add count
@@ -606,8 +582,6 @@ class csana_project_list extends csana_project {
 
 		// Build filter
 		$sFilter = "";
-		if (!$Security->CanList())
-			$sFilter = "(0=1)"; // Filter all records
 		ew_AddFilter($sFilter, $this->DbDetailFilter);
 		ew_AddFilter($sFilter, $this->SearchWhere);
 
@@ -798,7 +772,6 @@ class csana_project_list extends csana_project {
 	function BasicSearchWhere($Default = FALSE) {
 		global $Security;
 		$sSearchStr = "";
-		if (!$Security->CanSearch()) return "";
 		$sSearchKeyword = ($Default) ? $this->BasicSearch->KeywordDefault : $this->BasicSearch->Keyword;
 		$sSearchType = ($Default) ? $this->BasicSearch->TypeDefault : $this->BasicSearch->Type;
 		if ($sSearchKeyword <> "") {
@@ -947,25 +920,25 @@ class csana_project_list extends csana_project {
 		// "view"
 		$item = &$this->ListOptions->Add("view");
 		$item->CssStyle = "white-space: nowrap;";
-		$item->Visible = $Security->CanView();
+		$item->Visible = TRUE;
 		$item->OnLeft = FALSE;
 
 		// "edit"
 		$item = &$this->ListOptions->Add("edit");
 		$item->CssStyle = "white-space: nowrap;";
-		$item->Visible = $Security->CanEdit();
+		$item->Visible = TRUE;
 		$item->OnLeft = FALSE;
 
 		// "copy"
 		$item = &$this->ListOptions->Add("copy");
 		$item->CssStyle = "white-space: nowrap;";
-		$item->Visible = $Security->CanAdd();
+		$item->Visible = TRUE;
 		$item->OnLeft = FALSE;
 
 		// "delete"
 		$item = &$this->ListOptions->Add("delete");
 		$item->CssStyle = "white-space: nowrap;";
-		$item->Visible = $Security->CanDelete();
+		$item->Visible = TRUE;
 		$item->OnLeft = FALSE;
 
 		// List actions
@@ -1007,14 +980,14 @@ class csana_project_list extends csana_project {
 
 		// "view"
 		$oListOpt = &$this->ListOptions->Items["view"];
-		if ($Security->CanView())
+		if (TRUE)
 			$oListOpt->Body = "<a class=\"ewRowLink ewView\" title=\"" . ew_HtmlTitle($Language->Phrase("ViewLink")) . "\" data-caption=\"" . ew_HtmlTitle($Language->Phrase("ViewLink")) . "\" href=\"" . ew_HtmlEncode($this->ViewUrl) . "\">" . $Language->Phrase("ViewLink") . "</a>";
 		else
 			$oListOpt->Body = "";
 
 		// "edit"
 		$oListOpt = &$this->ListOptions->Items["edit"];
-		if ($Security->CanEdit()) {
+		if (TRUE) {
 			$oListOpt->Body = "<a class=\"ewRowLink ewEdit\" title=\"" . ew_HtmlTitle($Language->Phrase("EditLink")) . "\" data-caption=\"" . ew_HtmlTitle($Language->Phrase("EditLink")) . "\" href=\"" . ew_HtmlEncode($this->EditUrl) . "\">" . $Language->Phrase("EditLink") . "</a>";
 		} else {
 			$oListOpt->Body = "";
@@ -1022,7 +995,7 @@ class csana_project_list extends csana_project {
 
 		// "copy"
 		$oListOpt = &$this->ListOptions->Items["copy"];
-		if ($Security->CanAdd()) {
+		if (TRUE) {
 			$oListOpt->Body = "<a class=\"ewRowLink ewCopy\" title=\"" . ew_HtmlTitle($Language->Phrase("CopyLink")) . "\" data-caption=\"" . ew_HtmlTitle($Language->Phrase("CopyLink")) . "\" href=\"" . ew_HtmlEncode($this->CopyUrl) . "\">" . $Language->Phrase("CopyLink") . "</a>";
 		} else {
 			$oListOpt->Body = "";
@@ -1030,7 +1003,7 @@ class csana_project_list extends csana_project {
 
 		// "delete"
 		$oListOpt = &$this->ListOptions->Items["delete"];
-		if ($Security->CanDelete())
+		if (TRUE)
 			$oListOpt->Body = "<a class=\"ewRowLink ewDelete\"" . "" . " title=\"" . ew_HtmlTitle($Language->Phrase("DeleteLink")) . "\" data-caption=\"" . ew_HtmlTitle($Language->Phrase("DeleteLink")) . "\" href=\"" . ew_HtmlEncode($this->DeleteUrl) . "\">" . $Language->Phrase("DeleteLink") . "</a>";
 		else
 			$oListOpt->Body = "";
@@ -1082,7 +1055,7 @@ class csana_project_list extends csana_project {
 		// Add
 		$item = &$option->Add("add");
 		$item->Body = "<a class=\"ewAddEdit ewAdd\" title=\"" . ew_HtmlTitle($Language->Phrase("AddLink")) . "\" data-caption=\"" . ew_HtmlTitle($Language->Phrase("AddLink")) . "\" href=\"" . ew_HtmlEncode($this->AddUrl) . "\">" . $Language->Phrase("AddLink") . "</a>";
-		$item->Visible = ($this->AddUrl <> "" && $Security->CanAdd());
+		$item->Visible = ($this->AddUrl <> "");
 		$option = $options["action"];
 
 		// Set up options default
@@ -1254,11 +1227,6 @@ class csana_project_list extends csana_project {
 		// Hide search options
 		if ($this->Export <> "" || $this->CurrentAction <> "")
 			$this->SearchOptions->HideAllOptions();
-		global $Security;
-		if (!$Security->CanSearch()) {
-			$this->SearchOptions->HideAllOptions();
-			$this->FilterOptions->HideAllOptions();
-		}
 	}
 
 	function SetupListOptionsExt() {
@@ -1662,8 +1630,6 @@ var CurrentSearchForm = fsana_projectlistsrch = new ew_Form("fsana_projectlistsr
 
 	// Set no record found message
 	if ($sana_project->CurrentAction == "" && $sana_project_list->TotalRecs == 0) {
-		if (!$Security->CanList())
-			$sana_project_list->setWarningMessage($Language->Phrase("NoPermission"));
 		if ($sana_project_list->SearchWhere == "0=101")
 			$sana_project_list->setWarningMessage($Language->Phrase("EnterSearchCriteria"));
 		else
@@ -1671,7 +1637,6 @@ var CurrentSearchForm = fsana_projectlistsrch = new ew_Form("fsana_projectlistsr
 	}
 $sana_project_list->RenderOtherOptions();
 ?>
-<?php if ($Security->CanSearch()) { ?>
 <?php if ($sana_project->Export == "" && $sana_project->CurrentAction == "") { ?>
 <form name="fsana_projectlistsrch" id="fsana_projectlistsrch" class="form-inline ewForm" action="<?php echo ew_CurrentPage() ?>">
 <?php $SearchPanelClass = ($sana_project_list->SearchWhere <> "") ? " in" : " in"; ?>
@@ -1698,7 +1663,6 @@ $sana_project_list->RenderOtherOptions();
 	</div>
 </div>
 </form>
-<?php } ?>
 <?php } ?>
 <?php $sana_project_list->ShowPageHeader(); ?>
 <?php

@@ -3,7 +3,7 @@
 -- http://www.phpmyadmin.net
 --
 -- Host: 127.0.0.1
--- Generation Time: Oct 05, 2015 at 01:37 PM
+-- Generation Time: Oct 21, 2015 at 09:37 AM
 -- Server version: 5.6.17
 -- PHP Version: 5.5.12
 
@@ -30,14 +30,15 @@ CREATE TABLE IF NOT EXISTS `sana_location_level1` (
   `locationLevel1ID` int(11) NOT NULL AUTO_INCREMENT COMMENT 'شناسه',
   `locationName` varchar(255) NOT NULL COMMENT 'نام موقعیت',
   PRIMARY KEY (`locationLevel1ID`)
-) ENGINE=InnoDB  DEFAULT CHARSET=utf8 COMMENT='سطح یک از اطلاعات سلسله مراتب آدرس' AUTO_INCREMENT=10 ;
+) ENGINE=InnoDB  DEFAULT CHARSET=utf8 COMMENT='سطح یک از اطلاعات سلسله مراتب آدرس' AUTO_INCREMENT=11 ;
 
 --
 -- Dumping data for table `sana_location_level1`
 --
 
 INSERT INTO `sana_location_level1` (`locationLevel1ID`, `locationName`) VALUES
-(9, 'ایران');
+(9, 'ایران'),
+(10, 'عراق');
 
 -- --------------------------------------------------------
 
@@ -98,7 +99,7 @@ CREATE TABLE IF NOT EXISTS `sana_location_level4` (
   `locationLevel3ID` int(11) NOT NULL COMMENT 'موقعیت سطح بالاتر',
   `locationLevel3Name` varchar(255) NOT NULL COMMENT 'نام موقعیت سطح بالاتر',
   PRIMARY KEY (`locationLevel4ID`)
-) ENGINE=InnoDB  DEFAULT CHARSET=utf8 COMMENT='سطح چهار اطلاعات سلسله مراتب آدرس' AUTO_INCREMENT=9 ;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8 COMMENT='سطح چهار اطلاعات سلسله مراتب آدرس' AUTO_INCREMENT=1 ;
 
 -- --------------------------------------------------------
 
@@ -115,7 +116,7 @@ CREATE TABLE IF NOT EXISTS `sana_location_level5` (
   `locationLevel4ID` int(11) NOT NULL COMMENT 'موقعیت سطح بالاتر',
   `locationLevel4Name` varchar(255) NOT NULL COMMENT 'نام موقعیت سطح بالاتر',
   PRIMARY KEY (`locationLevel5ID`)
-) ENGINE=InnoDB  DEFAULT CHARSET=utf8 COMMENT='سطح پنج اطلاعات سلسله مراتب آدرس' AUTO_INCREMENT=9 ;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8 COMMENT='سطح پنج اطلاعات سلسله مراتب آدرس' AUTO_INCREMENT=1 ;
 
 -- --------------------------------------------------------
 
@@ -133,7 +134,34 @@ CREATE TABLE IF NOT EXISTS `sana_location_level6` (
   `locationLevel5ID` int(11) NOT NULL COMMENT 'موقعیت سطح بالاتر',
   `locationLevel5Name` varchar(255) NOT NULL COMMENT 'نام موقعیت سطح بالاتر',
   PRIMARY KEY (`locationLevel6ID`)
-) ENGINE=InnoDB  DEFAULT CHARSET=utf8 COMMENT='سطح شش اطلاعات سلسله مراتب آدرس' AUTO_INCREMENT=9 ;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8 COMMENT='سطح شش اطلاعات سلسله مراتب آدرس' AUTO_INCREMENT=1 ;
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `sana_message`
+--
+
+CREATE TABLE IF NOT EXISTS `sana_message` (
+  `messageID` bigint(20) NOT NULL AUTO_INCREMENT COMMENT 'شناسه',
+  `personID` bigint(20) NOT NULL COMMENT 'گیرنده',
+  `userID` bigint(20) NOT NULL COMMENT 'فرستنده',
+  `messageType` varchar(100) NOT NULL COMMENT 'قرار یا پیام',
+  `messageText` text NOT NULL COMMENT 'متن پیام',
+  `stationID` int(11) DEFAULT NULL COMMENT 'ایستگاه مراجعه',
+  `messageDateTime` datetime DEFAULT NULL COMMENT 'تاریخ و ساعت مراجعه',
+  `registrationUser` int(11) DEFAULT NULL COMMENT 'کاربر ثبت کننده',
+  `registrationDateTime` datetime DEFAULT NULL COMMENT 'تاریخ و ساعت ثبت',
+  `registrationStation` int(11) DEFAULT NULL COMMENT 'ایستگاه مراجعه',
+  PRIMARY KEY (`messageID`)
+) ENGINE=InnoDB  DEFAULT CHARSET=utf8 COMMENT='پیام و قرار' AUTO_INCREMENT=2 ;
+
+--
+-- Dumping data for table `sana_message`
+--
+
+INSERT INTO `sana_message` (`messageID`, `personID`, `userID`, `messageType`, `messageText`, `stationID`, `messageDateTime`, `registrationUser`, `registrationDateTime`, `registrationStation`) VALUES
+(1, 4, 1, 'عادی', 'تست', 1, NULL, NULL, NULL, NULL);
 
 -- --------------------------------------------------------
 
@@ -284,17 +312,23 @@ INSERT INTO `sana_state` (`stateID`, `stateClass`, `stateName`, `stateLanguage`,
 CREATE TABLE IF NOT EXISTS `sana_station` (
   `stationID` int(11) NOT NULL AUTO_INCREMENT COMMENT 'شناسه',
   `stationName` varchar(255) NOT NULL COMMENT 'نام موقعیت',
+  `address` varchar(255) DEFAULT NULL COMMENT 'آدرس',
+  `GPS1` char(10) NOT NULL COMMENT 'طول',
+  `GPS2` char(10) NOT NULL COMMENT 'عرض',
+  `GPS3` char(10) NOT NULL COMMENT 'ارتفاع',
+  `stationType` varchar(255) NOT NULL COMMENT 'نوع ایستگاه-گمشده، قرار، هردو',
   `projectID` int(11) DEFAULT NULL COMMENT 'پروژه',
   `description` text COMMENT 'توضیحات',
   PRIMARY KEY (`stationID`)
-) ENGINE=InnoDB  DEFAULT CHARSET=utf8 COMMENT='ایستگاهها' AUTO_INCREMENT=10 ;
+) ENGINE=InnoDB  DEFAULT CHARSET=utf8 COMMENT='ایستگاهها' AUTO_INCREMENT=11 ;
 
 --
 -- Dumping data for table `sana_station`
 --
 
-INSERT INTO `sana_station` (`stationID`, `stationName`, `projectID`, `description`) VALUES
-(9, 'ایستگاه مرکزی', 1, NULL);
+INSERT INTO `sana_station` (`stationID`, `stationName`, `address`, `GPS1`, `GPS2`, `GPS3`, `stationType`, `projectID`, `description`) VALUES
+(9, 'ایستگاه مرکزی', NULL, '0', '0', '0', '', 1, NULL),
+(10, 'test2', NULL, '0', '0', '0', '', 1, NULL);
 
 -- --------------------------------------------------------
 
@@ -329,10 +363,17 @@ CREATE TABLE IF NOT EXISTS `sana_user` (
   `registrationDateTime` datetime DEFAULT NULL COMMENT 'تاریخ و ساعت ثبت',
   `stationID` int(11) DEFAULT NULL COMMENT 'ایستگاه مراجعه',
   `isolatedDateTime` datetime DEFAULT NULL COMMENT 'تاریخ و ساعت جدا شدن',
-  `acl` varchar(100) DEFAULT NULL COMMENT 'سطح دسترسی',
+  `acl` int(11) DEFAULT NULL COMMENT 'سطح دسترسی',
   `description` text COMMENT 'توضیحات',
   PRIMARY KEY (`userID`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8 COMMENT='اطلاعات کاربران' AUTO_INCREMENT=1 ;
+) ENGINE=InnoDB  DEFAULT CHARSET=utf8 COMMENT='اطلاعات کاربران' AUTO_INCREMENT=2 ;
+
+--
+-- Dumping data for table `sana_user`
+--
+
+INSERT INTO `sana_user` (`userID`, `username`, `personName`, `lastName`, `nationalID`, `nationalNumber`, `fatherName`, `gender`, `country`, `province`, `county`, `district`, `city_ruralDistrict`, `region_village`, `address`, `birthDate`, `ageRange`, `phone`, `mobilePhone`, `userPassword`, `email`, `picture`, `registrationUser`, `registrationDateTime`, `stationID`, `isolatedDateTime`, `acl`, `description`) VALUES
+(1, '09124121047', 'محمد کاظم', 'ستاری امناب', NULL, NULL, 'مظاهر', b'0', 'ایران', 'تهران', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'roz0502081!*R', NULL, 'sana40(1).jpg', NULL, NULL, NULL, NULL, NULL, NULL);
 
 -- --------------------------------------------------------
 

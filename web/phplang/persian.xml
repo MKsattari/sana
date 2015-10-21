@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<ew-language date="2015/10/5" version="12.0.0" id="fa" name="Persian" desc="Persian" author="e.World Technology Ltd.">
+<ew-language date="2015/10/14" version="12.0.0" id="fa" name="Persian" desc="Persian" author="e.World Technology Ltd.">
 	<locale>
 		<phrase id="locale" value=""/><!-- *** system locale for this language -->
 		<phrase id="use_system_locale" value="1"/><!-- *** change to "0" to disable system locale and use the following settings *** -->
@@ -439,6 +439,8 @@
 <phrase id="footertext" value="&amp;copy;2015 e.World Technology Ltd. All rights reserved."/>
 <menu id="15"><phrase id="menutext" value="ایستگاه"/>
 </menu>
+<menu id="16"><phrase id="menutext" value="پیام و قرار"/>
+</menu>
 <menu id="3"><phrase id="menutext" value="افراد"/>
 </menu>
 <menu id="2"><phrase id="menutext" value="اشیا"/>
@@ -629,7 +631,7 @@
 <field id="description"><phrase id="fldcaption" value="توضیحات"/>
 </field>
 </table>
-<table id="userlevels"><phrase id="tblcaption" value="userlevels"/>
+<table id="userlevels"><phrase id="tblcaption" value="سطوح دسترسی"/>
 <field id="userlevelid"><phrase id="fldcaption" value="شناسه"/>
 </field>
 <field id="userlevelname"><phrase id="fldcaption" value="سطح دسترسی"/>
@@ -661,7 +663,7 @@
 <field id="description"><phrase id="fldcaption" value="توضیحات"/>
 </field>
 </table>
-<table id="userlevelpermissions"><phrase id="tblcaption" value="userlevelpermissions"/>
+<table id="userlevelpermissions"><phrase id="tblcaption" value="مجوز ای دسترسی"/>
 <field id="userlevelid"><phrase id="fldcaption" value="شناسه"/>
 </field>
 <field id="_tablename"><phrase id="fldcaption" value="بخش"/>
@@ -690,11 +692,11 @@
 </field>
 <field id="locationname"><phrase id="fldcaption" value="نام"/>
 </field>
+<field id="locationlevel1id"><phrase id="fldcaption" value="کشور"/>
+</field>
 <field id="locationlevel2id"><phrase id="fldcaption" value="استان"/>
 </field>
 <field id="locationlevel2name"><phrase id="fldcaption" value="نام استان"/>
-</field>
-<field id="locationlevel1id"><phrase id="fldcaption" value="کشور"/>
 </field>
 </table>
 <table id="sana_location_level4"><phrase id="tblcaption" value="بخش"/>
@@ -745,14 +747,46 @@
 <field id="locationlevel4id"><phrase id="fldcaption" value="location Level 4ID"/>
 </field>
 </table>
-<table id="sana_station"><phrase id="tblcaption" value="sana station"/>
-<field id="stationid"><phrase id="fldcaption" value="station ID"/>
+<table id="sana_station"><phrase id="tblcaption" value="ایستگاه"/>
+<field id="stationid"><phrase id="fldcaption" value="شناسه"/>
 </field>
-<field id="stationname"><phrase id="fldcaption" value="station Name"/>
+<field id="stationname"><phrase id="fldcaption" value="نام"/>
 </field>
-<field id="projectid"><phrase id="fldcaption" value="project ID"/>
+<field id="projectid"><phrase id="fldcaption" value="پروژه"/>
 </field>
-<field id="description"><phrase id="fldcaption" value="description"/>
+<field id="description"><phrase id="fldcaption" value="توضیحات"/>
+</field>
+<field id="address"><phrase id="fldcaption" value="موقعیت"/>
+</field>
+<field id="gps1"><phrase id="fldcaption" value="GPS طول"/>
+</field>
+<field id="gps2"><phrase id="fldcaption" value="GPS عرض"/>
+</field>
+<field id="gps3"><phrase id="fldcaption" value="GPS ارتفاع"/>
+</field>
+<field id="stationtype"><phrase id="fldcaption" value="نوع"/>
+</field>
+</table>
+<table id="sana_message"><phrase id="tblcaption" value="پیام و قرار"/>
+<field id="messageid"><phrase id="fldcaption" value="شناسه"/>
+</field>
+<field id="personid"><phrase id="fldcaption" value="گیرنده"/>
+</field>
+<field id="_userid"><phrase id="fldcaption" value="فرستنده"/>
+</field>
+<field id="messagetype"><phrase id="fldcaption" value="نوع پیام"/>
+</field>
+<field id="messagetext"><phrase id="fldcaption" value="متن پیام"/>
+</field>
+<field id="stationid"><phrase id="fldcaption" value="ایستگاه قرار"/>
+</field>
+<field id="messagedatetime"><phrase id="fldcaption" value="زمان قرار"/>
+</field>
+<field id="registrationuser"><phrase id="fldcaption" value="اپراتور ثبت"/>
+</field>
+<field id="registrationdatetime"><phrase id="fldcaption" value="زمان ثبت"/>
+</field>
+<field id="registrationstation"><phrase id="fldcaption" value="ایستگاه ثبت"/>
 </field>
 </table>
 </project>

@@ -6,6 +6,7 @@ ob_start(); // Turn on output buffering
 <?php include_once ((EW_USE_ADODB) ? "adodb5/adodb.inc.php" : "ewmysql12.php") ?>
 <?php include_once "phpfn12.php" ?>
 <?php include_once "sana_personinfo.php" ?>
+<?php include_once "sana_messagegridcls.php" ?>
 <?php include_once "userfn12.php" ?>
 <?php
 
@@ -267,6 +268,14 @@ class csana_person_edit extends csana_person {
 
 		// Process auto fill
 		if (@$_POST["ajax"] == "autofill") {
+
+			// Process auto fill for detail table 'sana_message'
+			if (@$_POST["grid"] == "fsana_messagegrid") {
+				if (!isset($GLOBALS["sana_message_grid"])) $GLOBALS["sana_message_grid"] = new csana_message_grid;
+				$GLOBALS["sana_message_grid"]->Page_Init();
+				$this->Page_Terminate();
+				exit();
+			}
 			$results = $this->GetAutoFill(@$_POST["name"], @$_POST["q"]);
 			if ($results) {
 
@@ -347,6 +356,9 @@ class csana_person_edit extends csana_person {
 		if (@$_POST["a_edit"] <> "") {
 			$this->CurrentAction = $_POST["a_edit"]; // Get action code
 			$this->LoadFormValues(); // Get form values
+
+			// Set up detail parameters
+			$this->SetUpDetailParms();
 		} else {
 			$this->CurrentAction = "I"; // Default action is display
 		}
@@ -370,9 +382,15 @@ class csana_person_edit extends csana_person {
 					if ($this->getFailureMessage() == "") $this->setFailureMessage($Language->Phrase("NoRecord")); // No record found
 					$this->Page_Terminate("sana_personlist.php"); // No matching record, return to list
 				}
+
+				// Set up detail parameters
+				$this->SetUpDetailParms();
 				break;
 			Case "U": // Update
-				$sReturnUrl = $this->getReturnUrl();
+				if ($this->getCurrentDetailTable() <> "") // Master/detail edit
+					$sReturnUrl = $this->GetViewUrl(EW_TABLE_SHOW_DETAIL . "=" . $this->getCurrentDetailTable()); // Master/Detail view page
+				else
+					$sReturnUrl = $this->getReturnUrl();
 				if (ew_GetPageName($sReturnUrl) == "sana_personlist.php")
 					$sReturnUrl = $this->AddMasterUrl($this->GetListUrl()); // List page, return to list page with correct master key if necessary
 				$this->SendEmail = TRUE; // Send email on update success
@@ -385,6 +403,9 @@ class csana_person_edit extends csana_person {
 				} else {
 					$this->EventCancelled = TRUE; // Event cancelled
 					$this->RestoreFormValues(); // Restore form values if update failed
+
+					// Set up detail parameters
+					$this->SetUpDetailParms();
 				}
 		}
 
@@ -1862,6 +1883,13 @@ class csana_person_edit extends csana_person {
 			ew_AddMessage($gsFormError, $this->isolatedDateTime->FldErrMsg());
 		}
 
+		// Validate detail grid
+		$DetailTblVar = explode(",", $this->getCurrentDetailTable());
+		if (in_array("sana_message", $DetailTblVar) && $GLOBALS["sana_message"]->DetailEdit) {
+			if (!isset($GLOBALS["sana_message_grid"])) $GLOBALS["sana_message_grid"] = new csana_message_grid(); // get detail page object
+			$GLOBALS["sana_message_grid"]->ValidateGridForm();
+		}
+
 		// Return validate result
 		$ValidateForm = ($gsFormError == "");
 
@@ -1891,6 +1919,10 @@ class csana_person_edit extends csana_person {
 			$this->setFailureMessage($Language->Phrase("NoRecord")); // Set no record message
 			$EditRow = FALSE; // Update Failed
 		} else {
+
+			// Begin transaction
+			if ($this->getCurrentDetailTable() <> "")
+				$conn->BeginTrans();
 
 			// Save old values
 			$rsold = &$rs->fields;
@@ -2039,6 +2071,24 @@ class csana_person_edit extends csana_person {
 							@unlink(ew_UploadPathEx(TRUE, $this->picture->OldUploadPath) . $this->picture->Upload->DbValue);
 					}
 				}
+
+				// Update detail records
+				if ($EditRow) {
+					$DetailTblVar = explode(",", $this->getCurrentDetailTable());
+					if (in_array("sana_message", $DetailTblVar) && $GLOBALS["sana_message"]->DetailEdit) {
+						if (!isset($GLOBALS["sana_message_grid"])) $GLOBALS["sana_message_grid"] = new csana_message_grid(); // Get detail page object
+						$EditRow = $GLOBALS["sana_message_grid"]->GridUpdate();
+					}
+				}
+
+				// Commit/Rollback transaction
+				if ($this->getCurrentDetailTable() <> "") {
+					if ($EditRow) {
+						$conn->CommitTrans(); // Commit transaction
+					} else {
+						$conn->RollbackTrans(); // Rollback transaction
+					}
+				}
 			} else {
 				if ($this->getSuccessMessage() <> "" || $this->getFailureMessage() <> "") {
 
@@ -2061,6 +2111,36 @@ class csana_person_edit extends csana_person {
 		// picture
 		ew_CleanUploadTempPath($this->picture, $this->picture->Upload->Index);
 		return $EditRow;
+	}
+
+	// Set up detail parms based on QueryString
+	function SetUpDetailParms() {
+
+		// Get the keys for master table
+		if (isset($_GET[EW_TABLE_SHOW_DETAIL])) {
+			$sDetailTblVar = $_GET[EW_TABLE_SHOW_DETAIL];
+			$this->setCurrentDetailTable($sDetailTblVar);
+		} else {
+			$sDetailTblVar = $this->getCurrentDetailTable();
+		}
+		if ($sDetailTblVar <> "") {
+			$DetailTblVar = explode(",", $sDetailTblVar);
+			if (in_array("sana_message", $DetailTblVar)) {
+				if (!isset($GLOBALS["sana_message_grid"]))
+					$GLOBALS["sana_message_grid"] = new csana_message_grid;
+				if ($GLOBALS["sana_message_grid"]->DetailEdit) {
+					$GLOBALS["sana_message_grid"]->CurrentMode = "edit";
+					$GLOBALS["sana_message_grid"]->CurrentAction = "gridedit";
+
+					// Save current master table to detail table
+					$GLOBALS["sana_message_grid"]->setCurrentMasterTable($this->TableVar);
+					$GLOBALS["sana_message_grid"]->setStartRecordNumber(1);
+					$GLOBALS["sana_message_grid"]->personID->FldIsDetailKey = TRUE;
+					$GLOBALS["sana_message_grid"]->personID->CurrentValue = $this->personID->CurrentValue;
+					$GLOBALS["sana_message_grid"]->personID->setSessionValue($GLOBALS["sana_message_grid"]->personID->CurrentValue);
+				}
+			}
+		}
 	}
 
 	// Set up Breadcrumb
@@ -2898,6 +2978,14 @@ if ($sSqlWrk <> "") $sana_person->ageRange->LookupFilters["s"] .= $sSqlWrk;
 	</div>
 <?php } ?>
 </div>
+<?php
+	if (in_array("sana_message", explode(",", $sana_person->getCurrentDetailTable())) && $sana_message->DetailEdit) {
+?>
+<?php if ($sana_person->getCurrentDetailTable() <> "") { ?>
+<h4 class="ewDetailCaption"><?php echo $Language->TablePhrase("sana_message", "TblCaption") ?></h4>
+<?php } ?>
+<?php include_once "sana_messagegrid.php" ?>
+<?php } ?>
 <div class="form-group">
 	<div class="col-sm-offset-2 col-sm-10">
 <button class="btn btn-primary ewButton" name="btnAction" id="btnAction" type="submit"><?php echo $Language->Phrase("SaveBtn") ?></button>

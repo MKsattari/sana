@@ -65,9 +65,9 @@ class csana_person extends cTable {
 		$this->ExportPageSize = "a4"; // Page size (PDF only)
 		$this->ExportExcelPageOrientation = ""; // Page orientation (PHPExcel only)
 		$this->ExportExcelPageSize = ""; // Page size (PHPExcel only)
-		$this->DetailAdd = FALSE; // Allow detail add
+		$this->DetailAdd = TRUE; // Allow detail add
 		$this->DetailEdit = FALSE; // Allow detail edit
-		$this->DetailView = FALSE; // Allow detail view
+		$this->DetailView = TRUE; // Allow detail view
 		$this->ShowMultipleDetails = FALSE; // Show multiple details
 		$this->GridAddRowCount = 5;
 		$this->AllowAddDeleteRow = ew_AllowAddDeleteRow(); // Allow add/delete row
@@ -242,6 +242,30 @@ class csana_person extends cTable {
 		} else {
 			$ofld->setSort("");
 		}
+	}
+
+	// Current detail table name
+	function getCurrentDetailTable() {
+		return @$_SESSION[EW_PROJECT_NAME . "_" . $this->TableVar . "_" . EW_TABLE_DETAIL_TABLE];
+	}
+
+	function setCurrentDetailTable($v) {
+		$_SESSION[EW_PROJECT_NAME . "_" . $this->TableVar . "_" . EW_TABLE_DETAIL_TABLE] = $v;
+	}
+
+	// Get detail url
+	function GetDetailUrl() {
+
+		// Detail url
+		$sDetailUrl = "";
+		if ($this->getCurrentDetailTable() == "sana_message") {
+			$sDetailUrl = $GLOBALS["sana_message"]->GetListUrl() . "?" . EW_TABLE_SHOW_MASTER . "=" . $this->TableVar;
+			$sDetailUrl .= "&fk_personID=" . urlencode($this->personID->CurrentValue);
+		}
+		if ($sDetailUrl == "") {
+			$sDetailUrl = "sana_personlist.php";
+		}
+		return $sDetailUrl;
 	}
 
 	// Table level SQL
@@ -516,6 +540,14 @@ class csana_person extends cTable {
 	// Delete
 	function Delete(&$rs, $where = "", $curfilter = TRUE) {
 		$conn = &$this->Connection();
+
+		// Cascade delete detail table 'sana_message'
+		if (!isset($GLOBALS["sana_message"])) $GLOBALS["sana_message"] = new csana_message();
+		$rscascade = $GLOBALS["sana_message"]->LoadRs("`personID` = " . ew_QuotedValue($rs['personID'], EW_DATATYPE_NUMBER, "DB")); 
+		while ($rscascade && !$rscascade->EOF) {
+			$GLOBALS["sana_message"]->Delete($rscascade->fields);
+			$rscascade->MoveNext();
+		}
 		return $conn->Execute($this->DeleteSQL($rs, $where, $curfilter));
 	}
 
@@ -576,7 +608,10 @@ class csana_person extends cTable {
 
 	// Edit URL
 	function GetEditUrl($parm = "") {
-		$url = $this->KeyUrl("sana_personedit.php", $this->UrlParm($parm));
+		if ($parm <> "")
+			$url = $this->KeyUrl("sana_personedit.php", $this->UrlParm($parm));
+		else
+			$url = $this->KeyUrl("sana_personedit.php", $this->UrlParm(EW_TABLE_SHOW_DETAIL . "="));
 		return $this->AddMasterUrl($url);
 	}
 
@@ -588,7 +623,10 @@ class csana_person extends cTable {
 
 	// Copy URL
 	function GetCopyUrl($parm = "") {
-		$url = $this->KeyUrl("sana_personadd.php", $this->UrlParm($parm));
+		if ($parm <> "")
+			$url = $this->KeyUrl("sana_personadd.php", $this->UrlParm($parm));
+		else
+			$url = $this->KeyUrl("sana_personadd.php", $this->UrlParm(EW_TABLE_SHOW_DETAIL . "="));
 		return $this->AddMasterUrl($url);
 	}
 

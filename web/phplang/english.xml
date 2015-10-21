@@ -439,6 +439,8 @@
 <phrase id="footertext" value="&amp;copy;2015 e.World Technology Ltd. All rights reserved."/>
 <menu id="15"><phrase id="menutext" value="sana station"/>
 </menu>
+<menu id="16"><phrase id="menutext" value="sana message"/>
+</menu>
 <menu id="3"><phrase id="menutext" value="sana person"/>
 </menu>
 <menu id="2"><phrase id="menutext" value="sana object"/>
@@ -753,6 +755,28 @@
 <field id="projectid"><phrase id="fldcaption" value="project ID"/>
 </field>
 <field id="description"><phrase id="fldcaption" value="description"/>
+</field>
+</table>
+<table id="sana_message"><phrase id="tblcaption" value="sana message"/>
+<field id="messageid"><phrase id="fldcaption" value="message ID"/>
+</field>
+<field id="personid"><phrase id="fldcaption" value="person ID"/>
+</field>
+<field id="_userid"><phrase id="fldcaption" value="user ID"/>
+</field>
+<field id="messagetype"><phrase id="fldcaption" value="message Type"/>
+</field>
+<field id="messagetext"><phrase id="fldcaption" value="message Text"/>
+</field>
+<field id="stationid"><phrase id="fldcaption" value="station ID"/>
+</field>
+<field id="messagedatetime"><phrase id="fldcaption" value="message Date Time"/>
+</field>
+<field id="registrationuser"><phrase id="fldcaption" value="registration User"/>
+</field>
+<field id="registrationdatetime"><phrase id="fldcaption" value="registration Date Time"/>
+</field>
+<field id="registrationstation"><phrase id="fldcaption" value="registration Station"/>
 </field>
 </table>
 </project>

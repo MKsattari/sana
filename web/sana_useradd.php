@@ -211,6 +211,7 @@ class csana_user_add extends csana_user {
 	//
 	function __construct() {
 		global $conn, $Language;
+		global $UserTable, $UserTableConn;
 		$GLOBALS["Page"] = &$this;
 		$this->TokenTimeout = ew_SessionTimeoutTime();
 
@@ -239,6 +240,12 @@ class csana_user_add extends csana_user {
 
 		// Open connection
 		if (!isset($conn)) $conn = ew_Connect($this->DBID);
+
+		// User table object (sana_user)
+		if (!isset($UserTable)) {
+			$UserTable = new csana_user();
+			$UserTableConn = Conn($UserTable->DBID);
+		}
 	}
 
 	// 
@@ -246,6 +253,30 @@ class csana_user_add extends csana_user {
 	//
 	function Page_Init() {
 		global $gsExport, $gsCustomExport, $gsExportFile, $UserProfile, $Language, $Security, $objForm;
+
+		// Security
+		$Security = new cAdvancedSecurity();
+		if (!$Security->IsLoggedIn()) $Security->AutoLogin();
+		if ($Security->IsLoggedIn()) $Security->TablePermission_Loading();
+		$Security->LoadCurrentUserLevel($this->ProjectID . $this->TableName);
+		if ($Security->IsLoggedIn()) $Security->TablePermission_Loaded();
+		if (!$Security->CanAdd()) {
+			$Security->SaveLastUrl();
+			$this->setFailureMessage($Language->Phrase("NoPermission")); // Set no permission
+			if ($Security->CanList())
+				$this->Page_Terminate(ew_GetUrl("sana_userlist.php"));
+			else
+				$this->Page_Terminate(ew_GetUrl("login.php"));
+		}
+		if ($Security->IsLoggedIn()) {
+			$Security->UserID_Loading();
+			$Security->LoadUserID();
+			$Security->UserID_Loaded();
+			if (strval($Security->CurrentUserID()) == "") {
+				$this->setFailureMessage($Language->Phrase("NoPermission")); // Set no permission
+				$this->Page_Terminate(ew_GetUrl("sana_userlist.php"));
+			}
+		}
 
 		// Create form object
 		$objForm = new cFormObj();
@@ -616,6 +647,15 @@ class csana_user_add extends csana_user {
 			$this->LoadRowValues($rs); // Load row values
 			$rs->Close();
 		}
+
+		// Check if valid user id
+		if ($res) {
+			$res = $this->ShowOptionLink('add');
+			if (!$res) {
+				$sUserIdMsg = $Language->Phrase("NoPermission");
+				$this->setFailureMessage($sUserIdMsg);
+			}
+		}
 		return $res;
 	}
 
@@ -859,7 +899,41 @@ class csana_user_add extends csana_user {
 		$this->isolatedDateTime->ViewCustomAttributes = "";
 
 		// acl
-		$this->acl->ViewValue = $this->acl->CurrentValue;
+		if ($Security->CanAdmin()) { // System admin
+		if (strval($this->acl->CurrentValue) <> "") {
+			$sFilterWrk = "`userlevelid`" . ew_SearchString("=", $this->acl->CurrentValue, EW_DATATYPE_NUMBER, "");
+		switch (@$gsLanguage) {
+			case "en":
+				$sSqlWrk = "SELECT `userlevelid`, `userlevelname` AS `DispFld`, '' AS `Disp2Fld`, '' AS `Disp3Fld`, '' AS `Disp4Fld` FROM `userlevels`";
+				$sWhereWrk = "";
+				break;
+			case "fa":
+				$sSqlWrk = "SELECT `userlevelid`, `userlevelname` AS `DispFld`, '' AS `Disp2Fld`, '' AS `Disp3Fld`, '' AS `Disp4Fld` FROM `userlevels`";
+				$sWhereWrk = "";
+				break;
+			default:
+				$sSqlWrk = "SELECT `userlevelid`, `userlevelname` AS `DispFld`, '' AS `Disp2Fld`, '' AS `Disp3Fld`, '' AS `Disp4Fld` FROM `userlevels`";
+				$sWhereWrk = "";
+				break;
+		}
+		ew_AddFilter($sWhereWrk, $sFilterWrk);
+		$this->Lookup_Selecting($this->acl, $sWhereWrk); // Call Lookup selecting
+		if ($sWhereWrk <> "") $sSqlWrk .= " WHERE " . $sWhereWrk;
+			$rswrk = Conn()->Execute($sSqlWrk);
+			if ($rswrk && !$rswrk->EOF) { // Lookup values found
+				$arwrk = array();
+				$arwrk[1] = $rswrk->fields('DispFld');
+				$this->acl->ViewValue = $this->acl->DisplayValue($arwrk);
+				$rswrk->Close();
+			} else {
+				$this->acl->ViewValue = $this->acl->CurrentValue;
+			}
+		} else {
+			$this->acl->ViewValue = NULL;
+		}
+		} else {
+			$this->acl->ViewValue = $Language->Phrase("PasswordMask");
+		}
 		$this->acl->ViewCustomAttributes = "";
 
 		// description
@@ -1139,8 +1213,34 @@ class csana_user_add extends csana_user {
 			// stationID
 			$this->stationID->EditAttrs["class"] = "form-control";
 			$this->stationID->EditCustomAttributes = "";
+			if (!$Security->IsAdmin() && $Security->IsLoggedIn()) { // Non system admin
+			$sFilterWrk = "";
+			$sFilterWrk = $GLOBALS["sana_user"]->AddParentUserIDFilter("", "");
+			switch (@$gsLanguage) {
+				case "en":
+					$sSqlWrk = "SELECT `userID`, `userID` AS `DispFld`, '' AS `Disp2Fld`, '' AS `Disp3Fld`, '' AS `Disp4Fld`, '' AS `SelectFilterFld`, '' AS `SelectFilterFld2`, '' AS `SelectFilterFld3`, '' AS `SelectFilterFld4` FROM `sana_user`";
+					$sWhereWrk = "";
+					break;
+				case "fa":
+					$sSqlWrk = "SELECT `userID`, `userID` AS `DispFld`, '' AS `Disp2Fld`, '' AS `Disp3Fld`, '' AS `Disp4Fld`, '' AS `SelectFilterFld`, '' AS `SelectFilterFld2`, '' AS `SelectFilterFld3`, '' AS `SelectFilterFld4` FROM `sana_user`";
+					$sWhereWrk = "";
+					break;
+				default:
+					$sSqlWrk = "SELECT `userID`, `userID` AS `DispFld`, '' AS `Disp2Fld`, '' AS `Disp3Fld`, '' AS `Disp4Fld`, '' AS `SelectFilterFld`, '' AS `SelectFilterFld2`, '' AS `SelectFilterFld3`, '' AS `SelectFilterFld4` FROM `sana_user`";
+					$sWhereWrk = "";
+					break;
+			}
+			ew_AddFilter($sWhereWrk, $sFilterWrk);
+			$this->Lookup_Selecting($this->stationID, $sWhereWrk); // Call Lookup selecting
+			if ($sWhereWrk <> "") $sSqlWrk .= " WHERE " . $sWhereWrk;
+			$rswrk = Conn()->Execute($sSqlWrk);
+			$arwrk = ($rswrk) ? $rswrk->GetRows() : array();
+			if ($rswrk) $rswrk->Close();
+			$this->stationID->EditValue = $arwrk;
+			} else {
 			$this->stationID->EditValue = ew_HtmlEncode($this->stationID->CurrentValue);
 			$this->stationID->PlaceHolder = ew_RemoveHtml($this->stationID->FldCaption());
+			}
 
 			// isolatedDateTime
 			$this->isolatedDateTime->EditAttrs["class"] = "form-control";
@@ -1151,8 +1251,37 @@ class csana_user_add extends csana_user {
 			// acl
 			$this->acl->EditAttrs["class"] = "form-control";
 			$this->acl->EditCustomAttributes = "";
-			$this->acl->EditValue = ew_HtmlEncode($this->acl->CurrentValue);
-			$this->acl->PlaceHolder = ew_RemoveHtml($this->acl->FldCaption());
+			if (!$Security->CanAdmin()) { // System admin
+				$this->acl->EditValue = $Language->Phrase("PasswordMask");
+			} else {
+			if (trim(strval($this->acl->CurrentValue)) == "") {
+				$sFilterWrk = "0=1";
+			} else {
+				$sFilterWrk = "`userlevelid`" . ew_SearchString("=", $this->acl->CurrentValue, EW_DATATYPE_NUMBER, "");
+			}
+			switch (@$gsLanguage) {
+				case "en":
+					$sSqlWrk = "SELECT `userlevelid`, `userlevelname` AS `DispFld`, '' AS `Disp2Fld`, '' AS `Disp3Fld`, '' AS `Disp4Fld`, '' AS `SelectFilterFld`, '' AS `SelectFilterFld2`, '' AS `SelectFilterFld3`, '' AS `SelectFilterFld4` FROM `userlevels`";
+					$sWhereWrk = "";
+					break;
+				case "fa":
+					$sSqlWrk = "SELECT `userlevelid`, `userlevelname` AS `DispFld`, '' AS `Disp2Fld`, '' AS `Disp3Fld`, '' AS `Disp4Fld`, '' AS `SelectFilterFld`, '' AS `SelectFilterFld2`, '' AS `SelectFilterFld3`, '' AS `SelectFilterFld4` FROM `userlevels`";
+					$sWhereWrk = "";
+					break;
+				default:
+					$sSqlWrk = "SELECT `userlevelid`, `userlevelname` AS `DispFld`, '' AS `Disp2Fld`, '' AS `Disp3Fld`, '' AS `Disp4Fld`, '' AS `SelectFilterFld`, '' AS `SelectFilterFld2`, '' AS `SelectFilterFld3`, '' AS `SelectFilterFld4` FROM `userlevels`";
+					$sWhereWrk = "";
+					break;
+			}
+			ew_AddFilter($sWhereWrk, $sFilterWrk);
+			$this->Lookup_Selecting($this->acl, $sWhereWrk); // Call Lookup selecting
+			if ($sWhereWrk <> "") $sSqlWrk .= " WHERE " . $sWhereWrk;
+			$rswrk = Conn()->Execute($sSqlWrk);
+			$arwrk = ($rswrk) ? $rswrk->GetRows() : array();
+			if ($rswrk) $rswrk->Close();
+			array_unshift($arwrk, array("", $Language->Phrase("PleaseSelect"), "", "", "", "", "", "", ""));
+			$this->acl->EditValue = $arwrk;
+			}
 
 			// description
 			$this->description->EditAttrs["class"] = "form-control";
@@ -1337,6 +1466,18 @@ class csana_user_add extends csana_user {
 	// Add record
 	function AddRow($rsold = NULL) {
 		global $Language, $Security;
+
+		// Check if valid parent user id
+		$bValidParentUser = FALSE;
+		if ($Security->CurrentUserID() <> "" && !$Security->IsAdmin()) { // Non system admin
+			$bValidParentUser = $Security->IsValidUserID($this->stationID->CurrentValue);
+			if (!$bValidParentUser) {
+				$sParentUserIdMsg = str_replace("%c", CurrentUserID(), $Language->Phrase("UnAuthorizedParentUserID"));
+				$sParentUserIdMsg = str_replace("%p", $this->stationID->CurrentValue, $sParentUserIdMsg);
+				$this->setFailureMessage($sParentUserIdMsg);
+				return FALSE;
+			}
+		}
 		$conn = &$this->Connection();
 
 		// Load db values from rsold
@@ -1425,10 +1566,14 @@ class csana_user_add extends csana_user {
 		$this->isolatedDateTime->SetDbValueDef($rsnew, ew_UnFormatDateTime($this->isolatedDateTime->CurrentValue, 5), NULL, FALSE);
 
 		// acl
+		if ($Security->CanAdmin()) { // System admin
 		$this->acl->SetDbValueDef($rsnew, $this->acl->CurrentValue, NULL, FALSE);
+		}
 
 		// description
 		$this->description->SetDbValueDef($rsnew, $this->description->CurrentValue, NULL, FALSE);
+
+		// userID
 		if ($this->picture->Visible && !$this->picture->Upload->KeepFile) {
 			if (!ew_Empty($this->picture->Upload->Value)) {
 				if ($this->picture->Upload->FileName == $this->picture->Upload->DbValue) { // Overwrite if same file name
@@ -1481,6 +1626,14 @@ class csana_user_add extends csana_user {
 		// picture
 		ew_CleanUploadTempPath($this->picture, $this->picture->Upload->Index);
 		return $AddRow;
+	}
+
+	// Show link optionally based on User ID
+	function ShowOptionLink($id = "") {
+		global $Security;
+		if ($Security->IsLoggedIn() && !$Security->IsAdmin() && !$this->UserIDAllow($id))
+			return $Security->IsValidUserID($this->_userID->CurrentValue);
+		return TRUE;
 	}
 
 	// Set up Breadcrumb
@@ -1669,8 +1822,9 @@ fsana_useradd.ValidateRequired = false;
 <?php } ?>
 
 // Dynamic selection lists
-// Form object for search
+fsana_useradd.Lists["x_acl"] = {"LinkField":"x_userlevelid","Ajax":true,"AutoFill":false,"DisplayFields":["x_userlevelname","","",""],"ParentFields":[],"ChildFields":[],"FilterFields":[],"Options":[],"Template":""};
 
+// Form object for search
 </script>
 <script type="text/javascript">
 
@@ -1939,9 +2093,37 @@ $sana_user_add->ShowMessage();
 	<div id="r_stationID" class="form-group">
 		<label id="elh_sana_user_stationID" for="x_stationID" class="col-sm-2 control-label ewLabel"><?php echo $sana_user->stationID->FldCaption() ?></label>
 		<div class="col-sm-10"><div<?php echo $sana_user->stationID->CellAttributes() ?>>
+<?php if (!$Security->IsAdmin() && $Security->IsLoggedIn()) { // Non system admin ?>
+<span id="el_sana_user_stationID">
+<select data-table="sana_user" data-field="x_stationID" data-value-separator="<?php echo ew_HtmlEncode(is_array($sana_user->stationID->DisplayValueSeparator) ? json_encode($sana_user->stationID->DisplayValueSeparator) : $sana_user->stationID->DisplayValueSeparator) ?>" id="x_stationID" name="x_stationID"<?php echo $sana_user->stationID->EditAttributes() ?>>
+<?php
+if (is_array($sana_user->stationID->EditValue)) {
+	$arwrk = $sana_user->stationID->EditValue;
+	$rowswrk = count($arwrk);
+	$emptywrk = TRUE;
+	for ($rowcntwrk = 0; $rowcntwrk < $rowswrk; $rowcntwrk++) {
+		$selwrk = ew_SameStr($sana_user->stationID->CurrentValue, $arwrk[$rowcntwrk][0]) ? " selected" : "";
+		if ($selwrk <> "") $emptywrk = FALSE;		
+?>
+<option value="<?php echo ew_HtmlEncode($arwrk[$rowcntwrk][0]) ?>"<?php echo $selwrk ?>>
+<?php echo $sana_user->stationID->DisplayValue($arwrk[$rowcntwrk]) ?>
+</option>
+<?php
+	}
+	if ($emptywrk && strval($sana_user->stationID->CurrentValue) <> "") {
+?>
+<option value="<?php echo ew_HtmlEncode($sana_user->stationID->CurrentValue) ?>" selected><?php echo $sana_user->stationID->CurrentValue ?></option>
+<?php
+    }
+}
+?>
+</select>
+</span>
+<?php } else { ?>
 <span id="el_sana_user_stationID">
 <input type="text" data-table="sana_user" data-field="x_stationID" name="x_stationID" id="x_stationID" size="30" placeholder="<?php echo ew_HtmlEncode($sana_user->stationID->getPlaceHolder()) ?>" value="<?php echo $sana_user->stationID->EditValue ?>"<?php echo $sana_user->stationID->EditAttributes() ?>>
 </span>
+<?php } ?>
 <?php echo $sana_user->stationID->CustomMsg ?></div></div>
 	</div>
 <?php } ?>
@@ -1959,9 +2141,60 @@ $sana_user_add->ShowMessage();
 	<div id="r_acl" class="form-group">
 		<label id="elh_sana_user_acl" for="x_acl" class="col-sm-2 control-label ewLabel"><?php echo $sana_user->acl->FldCaption() ?></label>
 		<div class="col-sm-10"><div<?php echo $sana_user->acl->CellAttributes() ?>>
+<?php if (!$Security->IsAdmin() && $Security->IsLoggedIn()) { // Non system admin ?>
 <span id="el_sana_user_acl">
-<input type="text" data-table="sana_user" data-field="x_acl" name="x_acl" id="x_acl" size="30" maxlength="100" placeholder="<?php echo ew_HtmlEncode($sana_user->acl->getPlaceHolder()) ?>" value="<?php echo $sana_user->acl->EditValue ?>"<?php echo $sana_user->acl->EditAttributes() ?>>
+<p class="form-control-static"><?php echo $sana_user->acl->EditValue ?></p>
 </span>
+<?php } else { ?>
+<span id="el_sana_user_acl">
+<select data-table="sana_user" data-field="x_acl" data-value-separator="<?php echo ew_HtmlEncode(is_array($sana_user->acl->DisplayValueSeparator) ? json_encode($sana_user->acl->DisplayValueSeparator) : $sana_user->acl->DisplayValueSeparator) ?>" id="x_acl" name="x_acl"<?php echo $sana_user->acl->EditAttributes() ?>>
+<?php
+if (is_array($sana_user->acl->EditValue)) {
+	$arwrk = $sana_user->acl->EditValue;
+	$rowswrk = count($arwrk);
+	$emptywrk = TRUE;
+	for ($rowcntwrk = 0; $rowcntwrk < $rowswrk; $rowcntwrk++) {
+		$selwrk = ew_SameStr($sana_user->acl->CurrentValue, $arwrk[$rowcntwrk][0]) ? " selected" : "";
+		if ($selwrk <> "") $emptywrk = FALSE;		
+?>
+<option value="<?php echo ew_HtmlEncode($arwrk[$rowcntwrk][0]) ?>"<?php echo $selwrk ?>>
+<?php echo $sana_user->acl->DisplayValue($arwrk[$rowcntwrk]) ?>
+</option>
+<?php
+	}
+	if ($emptywrk && strval($sana_user->acl->CurrentValue) <> "") {
+?>
+<option value="<?php echo ew_HtmlEncode($sana_user->acl->CurrentValue) ?>" selected><?php echo $sana_user->acl->CurrentValue ?></option>
+<?php
+    }
+}
+?>
+</select>
+<?php
+switch (@$gsLanguage) {
+	case "en":
+		$sSqlWrk = "SELECT `userlevelid`, `userlevelname` AS `DispFld`, '' AS `Disp2Fld`, '' AS `Disp3Fld`, '' AS `Disp4Fld` FROM `userlevels`";
+		$sWhereWrk = "";
+		break;
+	case "fa":
+		$sSqlWrk = "SELECT `userlevelid`, `userlevelname` AS `DispFld`, '' AS `Disp2Fld`, '' AS `Disp3Fld`, '' AS `Disp4Fld` FROM `userlevels`";
+		$sWhereWrk = "";
+		break;
+	default:
+		$sSqlWrk = "SELECT `userlevelid`, `userlevelname` AS `DispFld`, '' AS `Disp2Fld`, '' AS `Disp3Fld`, '' AS `Disp4Fld` FROM `userlevels`";
+		$sWhereWrk = "";
+		break;
+}
+$sana_user->acl->LookupFilters = array("s" => $sSqlWrk, "d" => "");
+$sana_user->acl->LookupFilters += array("f0" => "`userlevelid` = {filter_value}", "t0" => "3", "fn0" => "");
+$sSqlWrk = "";
+$sana_user->Lookup_Selecting($sana_user->acl, $sWhereWrk); // Call Lookup selecting
+if ($sWhereWrk <> "") $sSqlWrk .= " WHERE " . $sWhereWrk;
+if ($sSqlWrk <> "") $sana_user->acl->LookupFilters["s"] .= $sSqlWrk;
+?>
+<input type="hidden" name="s_x_acl" id="s_x_acl" value="<?php echo $sana_user->acl->LookupFilterQuery() ?>">
+</span>
+<?php } ?>
 <?php echo $sana_user->acl->CustomMsg ?></div></div>
 	</div>
 <?php } ?>

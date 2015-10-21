@@ -319,6 +319,7 @@ class clogin extends csana_user {
 		} else {
 			if (!$Security->IsLoggedIn())
 				$Security->AutoLogin();
+			$Security->LoadUserLevel(); // Load user level
 			$this->Username = ""; // Initialize
 			$encrypted = FALSE;
 			if (isset($_POST["username"])) {

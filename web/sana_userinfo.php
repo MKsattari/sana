@@ -172,7 +172,7 @@ class csana_user extends cTable {
 		$this->fields['isolatedDateTime'] = &$this->isolatedDateTime;
 
 		// acl
-		$this->acl = new cField('sana_user', 'sana_user', 'x_acl', 'acl', '`acl`', '`acl`', 200, -1, FALSE, '`acl`', FALSE, FALSE, FALSE, 'FORMATTED TEXT', 'TEXT');
+		$this->acl = new cField('sana_user', 'sana_user', 'x_acl', 'acl', '`acl`', '`acl`', 3, -1, FALSE, '`acl`', FALSE, FALSE, FALSE, 'FORMATTED TEXT', 'SELECT');
 		$this->fields['acl'] = &$this->acl;
 
 		// description
@@ -282,12 +282,18 @@ class csana_user extends cTable {
 
 	// Apply User ID filters
 	function ApplyUserIDFilters($sFilter) {
+		global $Security;
+
+		// Add User ID filter
+		if ($Security->CurrentUserID() <> "" && !$Security->IsAdmin()) { // Non system admin
+			$sFilter = $this->AddUserIDFilter($sFilter);
+		}
 		return $sFilter;
 	}
 
 	// Check if User ID security allows view all
 	function UserIDAllow($id = "") {
-		$allow = EW_USER_ID_ALLOW;
+		$allow = $this->UserIDAllowSecurity;
 		switch ($id) {
 			case "add":
 			case "copy":
@@ -407,6 +413,8 @@ class csana_user extends cTable {
 		foreach ($rs as $name => $value) {
 			if (!isset($this->fields[$name]) || $this->fields[$name]->FldIsCustom)
 				continue;
+			if (EW_ENCRYPTED_PASSWORD && $name == 'userPassword')
+				$value = (EW_CASE_SENSITIVE_PASSWORD) ? ew_EncryptPassword($value) : ew_EncryptPassword(strtolower($value));
 			$names .= $this->fields[$name]->FldExpression . ",";
 			$values .= ew_QuotedValue($value, $this->fields[$name]->FldDataType, $this->DBID) . ",";
 		}
@@ -429,6 +437,9 @@ class csana_user extends cTable {
 		foreach ($rs as $name => $value) {
 			if (!isset($this->fields[$name]) || $this->fields[$name]->FldIsCustom)
 				continue;
+			if (EW_ENCRYPTED_PASSWORD && $name == 'userPassword') {
+				$value = (EW_CASE_SENSITIVE_PASSWORD) ? ew_EncryptPassword($value) : ew_EncryptPassword(strtolower($value));
+			}
 			$sql .= $this->fields[$name]->FldExpression . "=";
 			$sql .= ew_QuotedValue($value, $this->fields[$name]->FldDataType, $this->DBID) . ",";
 		}
@@ -826,7 +837,41 @@ class csana_user extends cTable {
 		$this->isolatedDateTime->ViewCustomAttributes = "";
 
 		// acl
-		$this->acl->ViewValue = $this->acl->CurrentValue;
+		if ($Security->CanAdmin()) { // System admin
+		if (strval($this->acl->CurrentValue) <> "") {
+			$sFilterWrk = "`userlevelid`" . ew_SearchString("=", $this->acl->CurrentValue, EW_DATATYPE_NUMBER, "");
+		switch (@$gsLanguage) {
+			case "en":
+				$sSqlWrk = "SELECT `userlevelid`, `userlevelname` AS `DispFld`, '' AS `Disp2Fld`, '' AS `Disp3Fld`, '' AS `Disp4Fld` FROM `userlevels`";
+				$sWhereWrk = "";
+				break;
+			case "fa":
+				$sSqlWrk = "SELECT `userlevelid`, `userlevelname` AS `DispFld`, '' AS `Disp2Fld`, '' AS `Disp3Fld`, '' AS `Disp4Fld` FROM `userlevels`";
+				$sWhereWrk = "";
+				break;
+			default:
+				$sSqlWrk = "SELECT `userlevelid`, `userlevelname` AS `DispFld`, '' AS `Disp2Fld`, '' AS `Disp3Fld`, '' AS `Disp4Fld` FROM `userlevels`";
+				$sWhereWrk = "";
+				break;
+		}
+		ew_AddFilter($sWhereWrk, $sFilterWrk);
+		$this->Lookup_Selecting($this->acl, $sWhereWrk); // Call Lookup selecting
+		if ($sWhereWrk <> "") $sSqlWrk .= " WHERE " . $sWhereWrk;
+			$rswrk = Conn()->Execute($sSqlWrk);
+			if ($rswrk && !$rswrk->EOF) { // Lookup values found
+				$arwrk = array();
+				$arwrk[1] = $rswrk->fields('DispFld');
+				$this->acl->ViewValue = $this->acl->DisplayValue($arwrk);
+				$rswrk->Close();
+			} else {
+				$this->acl->ViewValue = $this->acl->CurrentValue;
+			}
+		} else {
+			$this->acl->ViewValue = NULL;
+		}
+		} else {
+			$this->acl->ViewValue = $Language->Phrase("PasswordMask");
+		}
 		$this->acl->ViewCustomAttributes = "";
 
 		// description
@@ -1126,8 +1171,39 @@ class csana_user extends cTable {
 		// stationID
 		$this->stationID->EditAttrs["class"] = "form-control";
 		$this->stationID->EditCustomAttributes = "";
+		if (!$Security->IsAdmin() && $Security->IsLoggedIn()) { // Non system admin
+			if (strval($this->_userID->CurrentValue) == strval(CurrentUserID())) {
+		$this->stationID->EditValue = $this->stationID->CurrentValue;
+		$this->stationID->ViewCustomAttributes = "";
+			} else {
+		$sFilterWrk = "";
+		$sFilterWrk = $GLOBALS["sana_user"]->AddParentUserIDFilter("", $this->_userID->CurrentValue);
+		switch (@$gsLanguage) {
+			case "en":
+				$sSqlWrk = "SELECT `userID`, `userID` AS `DispFld`, '' AS `Disp2Fld`, '' AS `Disp3Fld`, '' AS `Disp4Fld`, '' AS `SelectFilterFld`, '' AS `SelectFilterFld2`, '' AS `SelectFilterFld3`, '' AS `SelectFilterFld4` FROM `sana_user`";
+				$sWhereWrk = "";
+				break;
+			case "fa":
+				$sSqlWrk = "SELECT `userID`, `userID` AS `DispFld`, '' AS `Disp2Fld`, '' AS `Disp3Fld`, '' AS `Disp4Fld`, '' AS `SelectFilterFld`, '' AS `SelectFilterFld2`, '' AS `SelectFilterFld3`, '' AS `SelectFilterFld4` FROM `sana_user`";
+				$sWhereWrk = "";
+				break;
+			default:
+				$sSqlWrk = "SELECT `userID`, `userID` AS `DispFld`, '' AS `Disp2Fld`, '' AS `Disp3Fld`, '' AS `Disp4Fld`, '' AS `SelectFilterFld`, '' AS `SelectFilterFld2`, '' AS `SelectFilterFld3`, '' AS `SelectFilterFld4` FROM `sana_user`";
+				$sWhereWrk = "";
+				break;
+		}
+		ew_AddFilter($sWhereWrk, $sFilterWrk);
+		$this->Lookup_Selecting($this->stationID, $sWhereWrk); // Call Lookup selecting
+		if ($sWhereWrk <> "") $sSqlWrk .= " WHERE " . $sWhereWrk;
+		$rswrk = Conn()->Execute($sSqlWrk);
+		$arwrk = ($rswrk) ? $rswrk->GetRows() : array();
+		if ($rswrk) $rswrk->Close();
+		$this->stationID->EditValue = $arwrk;
+			}
+		} else {
 		$this->stationID->EditValue = $this->stationID->CurrentValue;
 		$this->stationID->PlaceHolder = ew_RemoveHtml($this->stationID->FldCaption());
+		}
 
 		// isolatedDateTime
 		$this->isolatedDateTime->EditAttrs["class"] = "form-control";
@@ -1138,8 +1214,10 @@ class csana_user extends cTable {
 		// acl
 		$this->acl->EditAttrs["class"] = "form-control";
 		$this->acl->EditCustomAttributes = "";
-		$this->acl->EditValue = $this->acl->CurrentValue;
-		$this->acl->PlaceHolder = ew_RemoveHtml($this->acl->FldCaption());
+		if (!$Security->CanAdmin()) { // System admin
+			$this->acl->EditValue = $Language->Phrase("PasswordMask");
+		} else {
+		}
 
 		// description
 		$this->description->EditAttrs["class"] = "form-control";
@@ -1326,6 +1404,74 @@ class csana_user extends cTable {
 		if (!$Doc->ExportCustom) {
 			$Doc->ExportTableFooter();
 		}
+	}
+
+	// User ID filter
+	function UserIDFilter($userid) {
+		$sUserIDFilter = '`userID` = ' . ew_QuotedValue($userid, EW_DATATYPE_NUMBER, EW_USER_TABLE_DBID);
+		$sParentUserIDFilter = '`userID` IN (SELECT `userID` FROM ' . "`sana_user`" . ' WHERE `stationID` = ' . ew_QuotedValue($userid, EW_DATATYPE_NUMBER, EW_USER_TABLE_DBID) . ')';
+		$sUserIDFilter = "($sUserIDFilter) OR ($sParentUserIDFilter)";
+		return $sUserIDFilter;
+	}
+
+	// Add User ID filter
+	function AddUserIDFilter($sFilter) {
+		global $Security;
+		$sFilterWrk = "";
+		$id = (CurrentPageID() == "list") ? $this->CurrentAction : CurrentPageID();
+		if (!$this->UserIDAllow($id) && !$Security->IsAdmin()) {
+			$sFilterWrk = $Security->UserIDList();
+			if ($sFilterWrk <> "")
+				$sFilterWrk = '`userID` IN (' . $sFilterWrk . ')';
+		}
+
+		// Call User ID Filtering event
+		$this->UserID_Filtering($sFilterWrk);
+		ew_AddFilter($sFilter, $sFilterWrk);
+		return $sFilter;
+	}
+
+	// Add Parent User ID filter
+	function AddParentUserIDFilter($sFilter, $userid) {
+		global $Security;
+		if (!$Security->IsAdmin()) {
+			$result = $Security->ParentUserIDList($userid);
+			if ($result <> "")
+				$result = '`userID` IN (' . $result . ')';
+			ew_AddFilter($result, $sFilter);
+			return $result;
+		} else {
+			return $sFilter;
+		}
+	}
+
+	// User ID subquery
+	function GetUserIDSubquery(&$fld, &$masterfld) {
+		global $UserTableConn;
+		$sWrk = "";
+		$sSql = "SELECT " . $masterfld->FldExpression . " FROM `sana_user`";
+		$sFilter = $this->AddUserIDFilter("");
+		if ($sFilter <> "") $sSql .= " WHERE " . $sFilter;
+
+		// Use subquery
+		if (EW_USE_SUBQUERY_FOR_MASTER_USER_ID) {
+			$sWrk = $sSql;
+		} else {
+
+			// List all values
+			if ($rs = $UserTableConn->Execute($sSql)) {
+				while (!$rs->EOF) {
+					if ($sWrk <> "") $sWrk .= ",";
+					$sWrk .= ew_QuotedValue($rs->fields[0], $masterfld->FldDataType, EW_USER_TABLE_DBID);
+					$rs->MoveNext();
+				}
+				$rs->Close();
+			}
+		}
+		if ($sWrk <> "") {
+			$sWrk = $fld->FldExpression . " IN (" . $sWrk . ")";
+		}
+		return $sWrk;
 	}
 
 	// Get auto fill value

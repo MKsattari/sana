@@ -3,7 +3,7 @@
 -- http://www.phpmyadmin.net
 --
 -- Host: 127.0.0.1
--- Generation Time: Oct 21, 2015 at 09:37 AM
+-- Generation Time: Oct 21, 2015 at 08:58 PM
 -- Server version: 5.6.17
 -- PHP Version: 5.5.12
 
@@ -267,6 +267,22 @@ INSERT INTO `sana_project` (`projectID`, `projectName`, `description`) VALUES
 -- --------------------------------------------------------
 
 --
+-- Table structure for table `sana_sms`
+--
+
+CREATE TABLE IF NOT EXISTS `sana_sms` (
+  `smsID` int(11) NOT NULL AUTO_INCREMENT COMMENT 'شناسه',
+  `userID` int(11) NOT NULL COMMENT 'کاربر',
+  `mobilePhone` char(15) NOT NULL COMMENT 'شماره موبایل',
+  `message` varchar(255) NOT NULL COMMENT 'متن پیامک',
+  `result` varchar(100) DEFAULT NULL COMMENT 'نتیجه',
+  `description` varchar(255) DEFAULT NULL COMMENT 'توضیحات',
+  PRIMARY KEY (`smsID`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8 AUTO_INCREMENT=1 ;
+
+-- --------------------------------------------------------
+
+--
 -- Table structure for table `sana_state`
 --
 
@@ -366,14 +382,15 @@ CREATE TABLE IF NOT EXISTS `sana_user` (
   `acl` int(11) DEFAULT NULL COMMENT 'سطح دسترسی',
   `description` text COMMENT 'توضیحات',
   PRIMARY KEY (`userID`)
-) ENGINE=InnoDB  DEFAULT CHARSET=utf8 COMMENT='اطلاعات کاربران' AUTO_INCREMENT=2 ;
+) ENGINE=InnoDB  DEFAULT CHARSET=utf8 COMMENT='اطلاعات کاربران' AUTO_INCREMENT=3 ;
 
 --
 -- Dumping data for table `sana_user`
 --
 
 INSERT INTO `sana_user` (`userID`, `username`, `personName`, `lastName`, `nationalID`, `nationalNumber`, `fatherName`, `gender`, `country`, `province`, `county`, `district`, `city_ruralDistrict`, `region_village`, `address`, `birthDate`, `ageRange`, `phone`, `mobilePhone`, `userPassword`, `email`, `picture`, `registrationUser`, `registrationDateTime`, `stationID`, `isolatedDateTime`, `acl`, `description`) VALUES
-(1, '09124121047', 'محمد کاظم', 'ستاری امناب', NULL, NULL, 'مظاهر', b'0', 'ایران', 'تهران', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'roz0502081!*R', NULL, 'sana40(1).jpg', NULL, NULL, NULL, NULL, NULL, NULL);
+(1, '09124121047', 'محمد کاظم', 'ستاری امناب', NULL, NULL, 'مظاهر', b'0', 'ایران', 'تهران', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'roz0502081!*R', NULL, 'sana40(1).jpg', NULL, NULL, NULL, NULL, NULL, NULL),
+(2, '09127705071', 'ع', 'م', NULL, '0912770507', '', b'0', '', '', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, '09127705071', 'Sana09127705071!', NULL, NULL, -1, '2015-10-21 00:00:00', NULL, NULL, -1, 'Sana09127705071!');
 
 -- --------------------------------------------------------
 

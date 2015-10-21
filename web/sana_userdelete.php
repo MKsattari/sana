@@ -636,7 +636,7 @@ class csana_user_delete extends csana_user {
 		$this->mobilePhone->ViewCustomAttributes = "";
 
 		// userPassword
-		$this->userPassword->ViewValue = $this->userPassword->CurrentValue;
+		$this->userPassword->ViewValue = $Language->Phrase("PasswordMask");
 		$this->userPassword->ViewCustomAttributes = "";
 
 		// email
@@ -652,7 +652,6 @@ class csana_user_delete extends csana_user {
 		$this->picture->ViewCustomAttributes = "";
 
 		// registrationUser
-		$this->registrationUser->ViewValue = $this->registrationUser->CurrentValue;
 		$this->registrationUser->ViewCustomAttributes = "";
 
 		// registrationDateTime
@@ -727,10 +726,10 @@ class csana_user_delete extends csana_user {
 			$this->lastName->HrefValue = "";
 			$this->lastName->TooltipValue = "";
 
-			// nationalID
-			$this->nationalID->LinkCustomAttributes = "";
-			$this->nationalID->HrefValue = "";
-			$this->nationalID->TooltipValue = "";
+			// nationalNumber
+			$this->nationalNumber->LinkCustomAttributes = "";
+			$this->nationalNumber->HrefValue = "";
+			$this->nationalNumber->TooltipValue = "";
 
 			// mobilePhone
 			$this->mobilePhone->LinkCustomAttributes = "";
@@ -1014,8 +1013,8 @@ $sana_user_delete->ShowMessage();
 <?php if ($sana_user->lastName->Visible) { // lastName ?>
 		<th><span id="elh_sana_user_lastName" class="sana_user_lastName"><?php echo $sana_user->lastName->FldCaption() ?></span></th>
 <?php } ?>
-<?php if ($sana_user->nationalID->Visible) { // nationalID ?>
-		<th><span id="elh_sana_user_nationalID" class="sana_user_nationalID"><?php echo $sana_user->nationalID->FldCaption() ?></span></th>
+<?php if ($sana_user->nationalNumber->Visible) { // nationalNumber ?>
+		<th><span id="elh_sana_user_nationalNumber" class="sana_user_nationalNumber"><?php echo $sana_user->nationalNumber->FldCaption() ?></span></th>
 <?php } ?>
 <?php if ($sana_user->mobilePhone->Visible) { // mobilePhone ?>
 		<th><span id="elh_sana_user_mobilePhone" class="sana_user_mobilePhone"><?php echo $sana_user->mobilePhone->FldCaption() ?></span></th>
@@ -1079,11 +1078,11 @@ while (!$sana_user_delete->Recordset->EOF) {
 </span>
 </td>
 <?php } ?>
-<?php if ($sana_user->nationalID->Visible) { // nationalID ?>
-		<td<?php echo $sana_user->nationalID->CellAttributes() ?>>
-<span id="el<?php echo $sana_user_delete->RowCnt ?>_sana_user_nationalID" class="sana_user_nationalID">
-<span<?php echo $sana_user->nationalID->ViewAttributes() ?>>
-<?php echo $sana_user->nationalID->ListViewValue() ?></span>
+<?php if ($sana_user->nationalNumber->Visible) { // nationalNumber ?>
+		<td<?php echo $sana_user->nationalNumber->CellAttributes() ?>>
+<span id="el<?php echo $sana_user_delete->RowCnt ?>_sana_user_nationalNumber" class="sana_user_nationalNumber">
+<span<?php echo $sana_user->nationalNumber->ViewAttributes() ?>>
+<?php echo $sana_user->nationalNumber->ListViewValue() ?></span>
 </span>
 </td>
 <?php } ?>

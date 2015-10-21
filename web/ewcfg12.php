@@ -30,7 +30,7 @@ define("EW_PROJECT_ID", "{07091A10-D58A-4784-942B-0E21010F5DFC}", TRUE); // Proj
 $EW_RELATED_PROJECT_ID = "";
 $EW_RELATED_LANGUAGE_FOLDER = "";
 define("EW_RANDOM_KEY", '1Ni71Ur0ebhUxylq', TRUE); // Random key for encryption
-define("EW_PROJECT_STYLESHEET_FILENAME", "phpcss/sanaPHPMaker.css", TRUE); // Project stylesheet file name
+define("EW_PROJECT_STYLESHEET_FILENAME", "phpcss/" . ((!isset($_GET["language"]))? "fa" : $_GET["language"]) . "sanaPHPMaker.css", TRUE); // Project stylesheet file name
 define("EW_CHARSET", "utf-8", TRUE); // Project charset
 define("EW_EMAIL_CHARSET", EW_CHARSET, TRUE); // Email charset
 define("EW_EMAIL_KEYWORD_SEPARATOR", "", TRUE); // Email keyword separator

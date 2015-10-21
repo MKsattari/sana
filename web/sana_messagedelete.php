@@ -7,6 +7,7 @@ ob_start(); // Turn on output buffering
 <?php include_once "phpfn12.php" ?>
 <?php include_once "sana_messageinfo.php" ?>
 <?php include_once "sana_personinfo.php" ?>
+<?php include_once "sana_userinfo.php" ?>
 <?php include_once "userfn12.php" ?>
 <?php
 
@@ -143,7 +144,7 @@ class csana_message_delete extends csana_message {
 			$html .= "<div class=\"alert alert-danger ewError\">" . $sErrorMessage . "</div>";
 			$_SESSION[EW_SESSION_FAILURE_MESSAGE] = ""; // Clear message in Session
 		}
-		echo "<div class=\"ewMessageDialog\"" . (($hidden) ? " style=\"display: none;\"" : "") . ">" . $html . "</div>";
+		echo "<br><div class=\"ewMessageDialog\"" . (($hidden) ? " style=\"display: none;\"" : "") . ">" . $html . "</div>";
 	}
 	var $PageHeader;
 	var $PageFooter;
@@ -212,6 +213,7 @@ class csana_message_delete extends csana_message {
 	//
 	function __construct() {
 		global $conn, $Language;
+		global $UserTable, $UserTableConn;
 		$GLOBALS["Page"] = &$this;
 		$this->TokenTimeout = ew_SessionTimeoutTime();
 
@@ -230,6 +232,9 @@ class csana_message_delete extends csana_message {
 		// Table object (sana_person)
 		if (!isset($GLOBALS['sana_person'])) $GLOBALS['sana_person'] = new csana_person();
 
+		// Table object (sana_user)
+		if (!isset($GLOBALS['sana_user'])) $GLOBALS['sana_user'] = new csana_user();
+
 		// Page ID
 		if (!defined("EW_PAGE_ID"))
 			define("EW_PAGE_ID", 'delete', TRUE);
@@ -243,6 +248,12 @@ class csana_message_delete extends csana_message {
 
 		// Open connection
 		if (!isset($conn)) $conn = ew_Connect($this->DBID);
+
+		// User table object (sana_user)
+		if (!isset($UserTable)) {
+			$UserTable = new csana_user();
+			$UserTableConn = Conn($UserTable->DBID);
+		}
 	}
 
 	// 
@@ -250,6 +261,26 @@ class csana_message_delete extends csana_message {
 	//
 	function Page_Init() {
 		global $gsExport, $gsCustomExport, $gsExportFile, $UserProfile, $Language, $Security, $objForm;
+
+		// Security
+		$Security = new cAdvancedSecurity();
+		if (!$Security->IsLoggedIn()) $Security->AutoLogin();
+		if ($Security->IsLoggedIn()) $Security->TablePermission_Loading();
+		$Security->LoadCurrentUserLevel($this->ProjectID . $this->TableName);
+		if ($Security->IsLoggedIn()) $Security->TablePermission_Loaded();
+		if (!$Security->CanDelete()) {
+			$Security->SaveLastUrl();
+			$this->setFailureMessage($Language->Phrase("NoPermission")); // Set no permission
+			if ($Security->CanList())
+				$this->Page_Terminate(ew_GetUrl("sana_messagelist.php"));
+			else
+				$this->Page_Terminate(ew_GetUrl("login.php"));
+		}
+		if ($Security->IsLoggedIn()) {
+			$Security->UserID_Loading();
+			$Security->LoadUserID();
+			$Security->UserID_Loaded();
+		}
 		$this->CurrentAction = (@$_GET["a"] <> "") ? $_GET["a"] : @$_POST["a_list"]; // Set up current action
 		$this->messageID->Visible = !$this->IsAdd() && !$this->IsCopy() && !$this->IsGridAdd();
 
@@ -641,6 +672,10 @@ class csana_message_delete extends csana_message {
 	//
 	function DeleteRows() {
 		global $Language, $Security;
+		if (!$Security->CanDelete()) {
+			$this->setFailureMessage($Language->Phrase("NoDeletePermission")); // No delete permission
+			return FALSE;
+		}
 		$DeleteRows = TRUE;
 		$sSql = $this->SQL();
 		$conn = &$this->Connection();

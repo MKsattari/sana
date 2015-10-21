@@ -5,7 +5,7 @@ ob_start(); // Turn on output buffering
 <?php include_once "ewcfg12.php" ?>
 <?php include_once ((EW_USE_ADODB) ? "adodb5/adodb.inc.php" : "ewmysql12.php") ?>
 <?php include_once "phpfn12.php" ?>
-<?php include_once "sana_location_level6info.php" ?>
+<?php include_once "sana_smsinfo.php" ?>
 <?php include_once "sana_userinfo.php" ?>
 <?php include_once "userfn12.php" ?>
 <?php
@@ -14,9 +14,9 @@ ob_start(); // Turn on output buffering
 // Page class
 //
 
-$sana_location_level6_view = NULL; // Initialize page object first
+$sana_sms_view = NULL; // Initialize page object first
 
-class csana_location_level6_view extends csana_location_level6 {
+class csana_sms_view extends csana_sms {
 
 	// Page ID
 	var $PageID = 'view';
@@ -25,10 +25,10 @@ class csana_location_level6_view extends csana_location_level6 {
 	var $ProjectID = "{07091A10-D58A-4784-942B-0E21010F5DFC}";
 
 	// Table name
-	var $TableName = 'sana_location_level6';
+	var $TableName = 'sana_sms';
 
 	// Page object name
-	var $PageObjName = 'sana_location_level6_view';
+	var $PageObjName = 'sana_sms_view';
 
 	// Page name
 	function PageName() {
@@ -175,7 +175,7 @@ class csana_location_level6_view extends csana_location_level6 {
 			$html .= "<div class=\"alert alert-danger ewError\">" . $sErrorMessage . "</div>";
 			$_SESSION[EW_SESSION_FAILURE_MESSAGE] = ""; // Clear message in Session
 		}
-		echo "<br><div class=\"ewMessageDialog\"" . (($hidden) ? " style=\"display: none;\"" : "") . ">" . $html . "</div>";
+		echo "<div class=\"ewMessageDialog\"" . (($hidden) ? " style=\"display: none;\"" : "") . ">" . $html . "</div>";
 	}
 	var $PageHeader;
 	var $PageFooter;
@@ -254,15 +254,15 @@ class csana_location_level6_view extends csana_location_level6 {
 		// Parent constuctor
 		parent::__construct();
 
-		// Table object (sana_location_level6)
-		if (!isset($GLOBALS["sana_location_level6"]) || get_class($GLOBALS["sana_location_level6"]) == "csana_location_level6") {
-			$GLOBALS["sana_location_level6"] = &$this;
-			$GLOBALS["Table"] = &$GLOBALS["sana_location_level6"];
+		// Table object (sana_sms)
+		if (!isset($GLOBALS["sana_sms"]) || get_class($GLOBALS["sana_sms"]) == "csana_sms") {
+			$GLOBALS["sana_sms"] = &$this;
+			$GLOBALS["Table"] = &$GLOBALS["sana_sms"];
 		}
 		$KeyUrl = "";
-		if (@$_GET["locationLevel6ID"] <> "") {
-			$this->RecKey["locationLevel6ID"] = $_GET["locationLevel6ID"];
-			$KeyUrl .= "&amp;locationLevel6ID=" . urlencode($this->RecKey["locationLevel6ID"]);
+		if (@$_GET["smsID"] <> "") {
+			$this->RecKey["smsID"] = $_GET["smsID"];
+			$KeyUrl .= "&amp;smsID=" . urlencode($this->RecKey["smsID"]);
 		}
 		$this->ExportPrintUrl = $this->PageUrl() . "export=print" . $KeyUrl;
 		$this->ExportHtmlUrl = $this->PageUrl() . "export=html" . $KeyUrl;
@@ -281,7 +281,7 @@ class csana_location_level6_view extends csana_location_level6 {
 
 		// Table name (for backward compatibility)
 		if (!defined("EW_TABLE_NAME"))
-			define("EW_TABLE_NAME", 'sana_location_level6', TRUE);
+			define("EW_TABLE_NAME", 'sana_sms', TRUE);
 
 		// Start timer
 		if (!isset($GLOBALS["gTimer"])) $GLOBALS["gTimer"] = new cTimer();
@@ -325,7 +325,7 @@ class csana_location_level6_view extends csana_location_level6 {
 			$Security->SaveLastUrl();
 			$this->setFailureMessage($Language->Phrase("NoPermission")); // Set no permission
 			if ($Security->CanList())
-				$this->Page_Terminate(ew_GetUrl("sana_location_level6list.php"));
+				$this->Page_Terminate(ew_GetUrl("sana_smslist.php"));
 			else
 				$this->Page_Terminate(ew_GetUrl("login.php"));
 		}
@@ -335,7 +335,7 @@ class csana_location_level6_view extends csana_location_level6 {
 			$Security->UserID_Loaded();
 		}
 		$this->CurrentAction = (@$_GET["a"] <> "") ? $_GET["a"] : @$_POST["a_list"]; // Set up current action
-		$this->locationLevel6ID->Visible = !$this->IsAdd() && !$this->IsCopy() && !$this->IsGridAdd();
+		$this->smsID->Visible = !$this->IsAdd() && !$this->IsCopy() && !$this->IsGridAdd();
 
 		// Global Page Loading event (in userfn*.php)
 		Page_Loading();
@@ -367,13 +367,13 @@ class csana_location_level6_view extends csana_location_level6 {
 		Page_Unloaded();
 
 		// Export
-		global $EW_EXPORT, $sana_location_level6;
+		global $EW_EXPORT, $sana_sms;
 		if ($this->CustomExport <> "" && $this->CustomExport == $this->Export && array_key_exists($this->CustomExport, $EW_EXPORT)) {
 				$sContent = ob_get_contents();
 			if ($gsExportFile == "") $gsExportFile = $this->TableVar;
 			$class = $EW_EXPORT[$this->CustomExport];
 			if (class_exists($class)) {
-				$doc = new $class($sana_location_level6);
+				$doc = new $class($sana_sms);
 				$doc->Text = $sContent;
 				if ($this->Export == "email")
 					echo $this->ExportEmail($doc->Text);
@@ -421,14 +421,14 @@ class csana_location_level6_view extends csana_location_level6 {
 		if ($this->Export == "")
 			$this->SetupBreadcrumb();
 		if ($this->IsPageRequest()) { // Validate request
-			if (@$_GET["locationLevel6ID"] <> "") {
-				$this->locationLevel6ID->setQueryStringValue($_GET["locationLevel6ID"]);
-				$this->RecKey["locationLevel6ID"] = $this->locationLevel6ID->QueryStringValue;
-			} elseif (@$_POST["locationLevel6ID"] <> "") {
-				$this->locationLevel6ID->setFormValue($_POST["locationLevel6ID"]);
-				$this->RecKey["locationLevel6ID"] = $this->locationLevel6ID->FormValue;
+			if (@$_GET["smsID"] <> "") {
+				$this->smsID->setQueryStringValue($_GET["smsID"]);
+				$this->RecKey["smsID"] = $this->smsID->QueryStringValue;
+			} elseif (@$_POST["smsID"] <> "") {
+				$this->smsID->setFormValue($_POST["smsID"]);
+				$this->RecKey["smsID"] = $this->smsID->FormValue;
 			} else {
-				$sReturnUrl = "sana_location_level6list.php"; // Return to list
+				$sReturnUrl = "sana_smslist.php"; // Return to list
 			}
 
 			// Get action
@@ -438,11 +438,11 @@ class csana_location_level6_view extends csana_location_level6 {
 					if (!$this->LoadRow()) { // Load record based on key
 						if ($this->getSuccessMessage() == "" && $this->getFailureMessage() == "")
 							$this->setFailureMessage($Language->Phrase("NoRecord")); // Set no record message
-						$sReturnUrl = "sana_location_level6list.php"; // No matching record, return to list
+						$sReturnUrl = "sana_smslist.php"; // No matching record, return to list
 					}
 			}
 		} else {
-			$sReturnUrl = "sana_location_level6list.php"; // Not page request, return to list
+			$sReturnUrl = "sana_smslist.php"; // Not page request, return to list
 		}
 		if ($sReturnUrl <> "")
 			$this->Page_Terminate($sReturnUrl);
@@ -468,6 +468,11 @@ class csana_location_level6_view extends csana_location_level6 {
 		$item = &$option->Add("edit");
 		$item->Body = "<a class=\"ewAction ewEdit\" title=\"" . ew_HtmlTitle($Language->Phrase("ViewPageEditLink")) . "\" data-caption=\"" . ew_HtmlTitle($Language->Phrase("ViewPageEditLink")) . "\" href=\"" . ew_HtmlEncode($this->EditUrl) . "\">" . $Language->Phrase("ViewPageEditLink") . "</a>";
 		$item->Visible = ($this->EditUrl <> "" && $Security->CanEdit());
+
+		// Copy
+		$item = &$option->Add("copy");
+		$item->Body = "<a class=\"ewAction ewCopy\" title=\"" . ew_HtmlTitle($Language->Phrase("ViewPageCopyLink")) . "\" data-caption=\"" . ew_HtmlTitle($Language->Phrase("ViewPageCopyLink")) . "\" href=\"" . ew_HtmlEncode($this->CopyUrl) . "\">" . $Language->Phrase("ViewPageCopyLink") . "</a>";
+		$item->Visible = ($this->CopyUrl <> "" && $Security->CanAdd());
 
 		// Delete
 		$item = &$option->Add("delete");
@@ -550,28 +555,24 @@ class csana_location_level6_view extends csana_location_level6 {
 		// Call Row Selected event
 		$row = &$rs->fields;
 		$this->Row_Selected($row);
-		$this->locationLevel6ID->setDbValue($rs->fields('locationLevel6ID'));
-		$this->locationName->setDbValue($rs->fields('locationName'));
-		$this->locationLevel5ID->setDbValue($rs->fields('locationLevel5ID'));
-		$this->locationLevel5Name->setDbValue($rs->fields('locationLevel5Name'));
-		$this->locationLevel1ID->setDbValue($rs->fields('locationLevel1ID'));
-		$this->locationLevel2ID->setDbValue($rs->fields('locationLevel2ID'));
-		$this->locationLevel3ID->setDbValue($rs->fields('locationLevel3ID'));
-		$this->locationLevel4ID->setDbValue($rs->fields('locationLevel4ID'));
+		$this->smsID->setDbValue($rs->fields('smsID'));
+		$this->_userID->setDbValue($rs->fields('userID'));
+		$this->mobilePhone->setDbValue($rs->fields('mobilePhone'));
+		$this->message->setDbValue($rs->fields('message'));
+		$this->result->setDbValue($rs->fields('result'));
+		$this->description->setDbValue($rs->fields('description'));
 	}
 
 	// Load DbValue from recordset
 	function LoadDbValues(&$rs) {
 		if (!$rs || !is_array($rs) && $rs->EOF) return;
 		$row = is_array($rs) ? $rs : $rs->fields;
-		$this->locationLevel6ID->DbValue = $row['locationLevel6ID'];
-		$this->locationName->DbValue = $row['locationName'];
-		$this->locationLevel5ID->DbValue = $row['locationLevel5ID'];
-		$this->locationLevel5Name->DbValue = $row['locationLevel5Name'];
-		$this->locationLevel1ID->DbValue = $row['locationLevel1ID'];
-		$this->locationLevel2ID->DbValue = $row['locationLevel2ID'];
-		$this->locationLevel3ID->DbValue = $row['locationLevel3ID'];
-		$this->locationLevel4ID->DbValue = $row['locationLevel4ID'];
+		$this->smsID->DbValue = $row['smsID'];
+		$this->_userID->DbValue = $row['userID'];
+		$this->mobilePhone->DbValue = $row['mobilePhone'];
+		$this->message->DbValue = $row['message'];
+		$this->result->DbValue = $row['result'];
+		$this->description->DbValue = $row['description'];
 	}
 
 	// Render row values based on field settings
@@ -590,118 +591,68 @@ class csana_location_level6_view extends csana_location_level6 {
 		$this->Row_Rendering();
 
 		// Common render codes for all row types
-		// locationLevel6ID
-		// locationName
-		// locationLevel5ID
-		// locationLevel5Name
-		// locationLevel1ID
-		// locationLevel2ID
-		// locationLevel3ID
-		// locationLevel4ID
+		// smsID
+		// userID
+		// mobilePhone
+		// message
+		// result
+		// description
 
 		if ($this->RowType == EW_ROWTYPE_VIEW) { // View row
 
-		// locationLevel6ID
-		$this->locationLevel6ID->ViewValue = $this->locationLevel6ID->CurrentValue;
-		$this->locationLevel6ID->ViewCustomAttributes = "";
+		// smsID
+		$this->smsID->ViewValue = $this->smsID->CurrentValue;
+		$this->smsID->ViewCustomAttributes = "";
 
-		// locationName
-		$this->locationName->ViewValue = $this->locationName->CurrentValue;
-		$this->locationName->ViewCustomAttributes = "";
+		// userID
+		$this->_userID->ViewValue = $this->_userID->CurrentValue;
+		$this->_userID->ViewCustomAttributes = "";
 
-		// locationLevel5ID
-		if (strval($this->locationLevel5ID->CurrentValue) <> "") {
-			$sFilterWrk = "`locationLevel5ID`" . ew_SearchString("=", $this->locationLevel5ID->CurrentValue, EW_DATATYPE_NUMBER, "");
-		switch (@$gsLanguage) {
-			case "en":
-				$sSqlWrk = "SELECT `locationLevel5ID`, `locationName` AS `DispFld`, '' AS `Disp2Fld`, '' AS `Disp3Fld`, '' AS `Disp4Fld` FROM `sana_location_level5`";
-				$sWhereWrk = "";
-				break;
-			case "fa":
-				$sSqlWrk = "SELECT `locationLevel5ID`, `locationName` AS `DispFld`, '' AS `Disp2Fld`, '' AS `Disp3Fld`, '' AS `Disp4Fld` FROM `sana_location_level5`";
-				$sWhereWrk = "";
-				break;
-			default:
-				$sSqlWrk = "SELECT `locationLevel5ID`, `locationName` AS `DispFld`, '' AS `Disp2Fld`, '' AS `Disp3Fld`, '' AS `Disp4Fld` FROM `sana_location_level5`";
-				$sWhereWrk = "";
-				break;
-		}
-		ew_AddFilter($sWhereWrk, $sFilterWrk);
-		$this->Lookup_Selecting($this->locationLevel5ID, $sWhereWrk); // Call Lookup selecting
-		if ($sWhereWrk <> "") $sSqlWrk .= " WHERE " . $sWhereWrk;
-			$rswrk = Conn()->Execute($sSqlWrk);
-			if ($rswrk && !$rswrk->EOF) { // Lookup values found
-				$arwrk = array();
-				$arwrk[1] = $rswrk->fields('DispFld');
-				$this->locationLevel5ID->ViewValue = $this->locationLevel5ID->DisplayValue($arwrk);
-				$rswrk->Close();
-			} else {
-				$this->locationLevel5ID->ViewValue = $this->locationLevel5ID->CurrentValue;
-			}
-		} else {
-			$this->locationLevel5ID->ViewValue = NULL;
-		}
-		$this->locationLevel5ID->ViewCustomAttributes = "";
+		// mobilePhone
+		$this->mobilePhone->ViewValue = $this->mobilePhone->CurrentValue;
+		$this->mobilePhone->ViewCustomAttributes = "";
 
-		// locationLevel5Name
-		$this->locationLevel5Name->ViewValue = $this->locationLevel5Name->CurrentValue;
-		$this->locationLevel5Name->ViewCustomAttributes = "";
+		// message
+		$this->message->ViewValue = $this->message->CurrentValue;
+		$this->message->ViewCustomAttributes = "";
 
-		// locationLevel1ID
-		$this->locationLevel1ID->ViewValue = $this->locationLevel1ID->CurrentValue;
-		$this->locationLevel1ID->ViewCustomAttributes = "";
+		// result
+		$this->result->ViewValue = $this->result->CurrentValue;
+		$this->result->ViewCustomAttributes = "";
 
-		// locationLevel2ID
-		$this->locationLevel2ID->ViewValue = $this->locationLevel2ID->CurrentValue;
-		$this->locationLevel2ID->ViewCustomAttributes = "";
+		// description
+		$this->description->ViewValue = $this->description->CurrentValue;
+		$this->description->ViewCustomAttributes = "";
 
-		// locationLevel3ID
-		$this->locationLevel3ID->ViewValue = $this->locationLevel3ID->CurrentValue;
-		$this->locationLevel3ID->ViewCustomAttributes = "";
+			// smsID
+			$this->smsID->LinkCustomAttributes = "";
+			$this->smsID->HrefValue = "";
+			$this->smsID->TooltipValue = "";
 
-		// locationLevel4ID
-		$this->locationLevel4ID->ViewValue = $this->locationLevel4ID->CurrentValue;
-		$this->locationLevel4ID->ViewCustomAttributes = "";
+			// userID
+			$this->_userID->LinkCustomAttributes = "";
+			$this->_userID->HrefValue = "";
+			$this->_userID->TooltipValue = "";
 
-			// locationLevel6ID
-			$this->locationLevel6ID->LinkCustomAttributes = "";
-			$this->locationLevel6ID->HrefValue = "";
-			$this->locationLevel6ID->TooltipValue = "";
+			// mobilePhone
+			$this->mobilePhone->LinkCustomAttributes = "";
+			$this->mobilePhone->HrefValue = "";
+			$this->mobilePhone->TooltipValue = "";
 
-			// locationName
-			$this->locationName->LinkCustomAttributes = "";
-			$this->locationName->HrefValue = "";
-			$this->locationName->TooltipValue = "";
+			// message
+			$this->message->LinkCustomAttributes = "";
+			$this->message->HrefValue = "";
+			$this->message->TooltipValue = "";
 
-			// locationLevel5ID
-			$this->locationLevel5ID->LinkCustomAttributes = "";
-			$this->locationLevel5ID->HrefValue = "";
-			$this->locationLevel5ID->TooltipValue = "";
+			// result
+			$this->result->LinkCustomAttributes = "";
+			$this->result->HrefValue = "";
+			$this->result->TooltipValue = "";
 
-			// locationLevel5Name
-			$this->locationLevel5Name->LinkCustomAttributes = "";
-			$this->locationLevel5Name->HrefValue = "";
-			$this->locationLevel5Name->TooltipValue = "";
-
-			// locationLevel1ID
-			$this->locationLevel1ID->LinkCustomAttributes = "";
-			$this->locationLevel1ID->HrefValue = "";
-			$this->locationLevel1ID->TooltipValue = "";
-
-			// locationLevel2ID
-			$this->locationLevel2ID->LinkCustomAttributes = "";
-			$this->locationLevel2ID->HrefValue = "";
-			$this->locationLevel2ID->TooltipValue = "";
-
-			// locationLevel3ID
-			$this->locationLevel3ID->LinkCustomAttributes = "";
-			$this->locationLevel3ID->HrefValue = "";
-			$this->locationLevel3ID->TooltipValue = "";
-
-			// locationLevel4ID
-			$this->locationLevel4ID->LinkCustomAttributes = "";
-			$this->locationLevel4ID->HrefValue = "";
-			$this->locationLevel4ID->TooltipValue = "";
+			// description
+			$this->description->LinkCustomAttributes = "";
+			$this->description->HrefValue = "";
+			$this->description->TooltipValue = "";
 		}
 
 		// Call Row Rendered event
@@ -714,7 +665,7 @@ class csana_location_level6_view extends csana_location_level6 {
 		global $Breadcrumb, $Language;
 		$Breadcrumb = new cBreadcrumb();
 		$url = substr(ew_CurrentUrl(), strrpos(ew_CurrentUrl(), "/")+1);
-		$Breadcrumb->Add("list", $this->TableVar, $this->AddMasterUrl("sana_location_level6list.php"), "", $this->TableVar, TRUE);
+		$Breadcrumb->Add("list", $this->TableVar, $this->AddMasterUrl("sana_smslist.php"), "", $this->TableVar, TRUE);
 		$PageId = "view";
 		$Breadcrumb->Add("view", $PageId, $url);
 	}
@@ -810,29 +761,29 @@ class csana_location_level6_view extends csana_location_level6 {
 <?php
 
 // Create page object
-if (!isset($sana_location_level6_view)) $sana_location_level6_view = new csana_location_level6_view();
+if (!isset($sana_sms_view)) $sana_sms_view = new csana_sms_view();
 
 // Page init
-$sana_location_level6_view->Page_Init();
+$sana_sms_view->Page_Init();
 
 // Page main
-$sana_location_level6_view->Page_Main();
+$sana_sms_view->Page_Main();
 
 // Global Page Rendering event (in userfn*.php)
 Page_Rendering();
 
 // Page Rendering event
-$sana_location_level6_view->Page_Render();
+$sana_sms_view->Page_Render();
 ?>
 <?php include_once "header.php" ?>
 <script type="text/javascript">
 
 // Form object
 var CurrentPageID = EW_PAGE_ID = "view";
-var CurrentForm = fsana_location_level6view = new ew_Form("fsana_location_level6view", "view");
+var CurrentForm = fsana_smsview = new ew_Form("fsana_smsview", "view");
 
 // Form_CustomValidate event
-fsana_location_level6view.Form_CustomValidate = 
+fsana_smsview.Form_CustomValidate = 
  function(fobj) { // DO NOT CHANGE THIS LINE!
 
  	// Your custom validation code here, return false if invalid. 
@@ -841,15 +792,14 @@ fsana_location_level6view.Form_CustomValidate =
 
 // Use JavaScript validation or not
 <?php if (EW_CLIENT_VALIDATE) { ?>
-fsana_location_level6view.ValidateRequired = true;
+fsana_smsview.ValidateRequired = true;
 <?php } else { ?>
-fsana_location_level6view.ValidateRequired = false; 
+fsana_smsview.ValidateRequired = false; 
 <?php } ?>
 
 // Dynamic selection lists
-fsana_location_level6view.Lists["x_locationLevel5ID"] = {"LinkField":"x_locationLevel5ID","Ajax":true,"AutoFill":false,"DisplayFields":["x_locationName","","",""],"ParentFields":[],"ChildFields":[],"FilterFields":[],"Options":[],"Template":""};
-
 // Form object for search
+
 </script>
 <script type="text/javascript">
 
@@ -857,108 +807,86 @@ fsana_location_level6view.Lists["x_locationLevel5ID"] = {"LinkField":"x_location
 </script>
 <div class="ewToolbar">
 <?php $Breadcrumb->Render(); ?>
-<?php $sana_location_level6_view->ExportOptions->Render("body") ?>
+<?php $sana_sms_view->ExportOptions->Render("body") ?>
 <?php
-	foreach ($sana_location_level6_view->OtherOptions as &$option)
+	foreach ($sana_sms_view->OtherOptions as &$option)
 		$option->Render("body");
 ?>
 <?php echo $Language->SelectionForm(); ?>
 <div class="clearfix"></div>
 </div>
-<?php $sana_location_level6_view->ShowPageHeader(); ?>
+<?php $sana_sms_view->ShowPageHeader(); ?>
 <?php
-$sana_location_level6_view->ShowMessage();
+$sana_sms_view->ShowMessage();
 ?>
-<form name="fsana_location_level6view" id="fsana_location_level6view" class="form-inline ewForm ewViewForm" action="<?php echo ew_CurrentPage() ?>" method="post">
-<?php if ($sana_location_level6_view->CheckToken) { ?>
-<input type="hidden" name="<?php echo EW_TOKEN_NAME ?>" value="<?php echo $sana_location_level6_view->Token ?>">
+<form name="fsana_smsview" id="fsana_smsview" class="form-inline ewForm ewViewForm" action="<?php echo ew_CurrentPage() ?>" method="post">
+<?php if ($sana_sms_view->CheckToken) { ?>
+<input type="hidden" name="<?php echo EW_TOKEN_NAME ?>" value="<?php echo $sana_sms_view->Token ?>">
 <?php } ?>
-<input type="hidden" name="t" value="sana_location_level6">
+<input type="hidden" name="t" value="sana_sms">
 <table class="table table-bordered table-striped ewViewTable">
-<?php if ($sana_location_level6->locationLevel6ID->Visible) { // locationLevel6ID ?>
-	<tr id="r_locationLevel6ID">
-		<td><span id="elh_sana_location_level6_locationLevel6ID"><?php echo $sana_location_level6->locationLevel6ID->FldCaption() ?></span></td>
-		<td data-name="locationLevel6ID"<?php echo $sana_location_level6->locationLevel6ID->CellAttributes() ?>>
-<span id="el_sana_location_level6_locationLevel6ID">
-<span<?php echo $sana_location_level6->locationLevel6ID->ViewAttributes() ?>>
-<?php echo $sana_location_level6->locationLevel6ID->ViewValue ?></span>
+<?php if ($sana_sms->smsID->Visible) { // smsID ?>
+	<tr id="r_smsID">
+		<td><span id="elh_sana_sms_smsID"><?php echo $sana_sms->smsID->FldCaption() ?></span></td>
+		<td data-name="smsID"<?php echo $sana_sms->smsID->CellAttributes() ?>>
+<span id="el_sana_sms_smsID">
+<span<?php echo $sana_sms->smsID->ViewAttributes() ?>>
+<?php echo $sana_sms->smsID->ViewValue ?></span>
 </span>
 </td>
 	</tr>
 <?php } ?>
-<?php if ($sana_location_level6->locationName->Visible) { // locationName ?>
-	<tr id="r_locationName">
-		<td><span id="elh_sana_location_level6_locationName"><?php echo $sana_location_level6->locationName->FldCaption() ?></span></td>
-		<td data-name="locationName"<?php echo $sana_location_level6->locationName->CellAttributes() ?>>
-<span id="el_sana_location_level6_locationName">
-<span<?php echo $sana_location_level6->locationName->ViewAttributes() ?>>
-<?php echo $sana_location_level6->locationName->ViewValue ?></span>
+<?php if ($sana_sms->_userID->Visible) { // userID ?>
+	<tr id="r__userID">
+		<td><span id="elh_sana_sms__userID"><?php echo $sana_sms->_userID->FldCaption() ?></span></td>
+		<td data-name="_userID"<?php echo $sana_sms->_userID->CellAttributes() ?>>
+<span id="el_sana_sms__userID">
+<span<?php echo $sana_sms->_userID->ViewAttributes() ?>>
+<?php echo $sana_sms->_userID->ViewValue ?></span>
 </span>
 </td>
 	</tr>
 <?php } ?>
-<?php if ($sana_location_level6->locationLevel5ID->Visible) { // locationLevel5ID ?>
-	<tr id="r_locationLevel5ID">
-		<td><span id="elh_sana_location_level6_locationLevel5ID"><?php echo $sana_location_level6->locationLevel5ID->FldCaption() ?></span></td>
-		<td data-name="locationLevel5ID"<?php echo $sana_location_level6->locationLevel5ID->CellAttributes() ?>>
-<span id="el_sana_location_level6_locationLevel5ID">
-<span<?php echo $sana_location_level6->locationLevel5ID->ViewAttributes() ?>>
-<?php echo $sana_location_level6->locationLevel5ID->ViewValue ?></span>
+<?php if ($sana_sms->mobilePhone->Visible) { // mobilePhone ?>
+	<tr id="r_mobilePhone">
+		<td><span id="elh_sana_sms_mobilePhone"><?php echo $sana_sms->mobilePhone->FldCaption() ?></span></td>
+		<td data-name="mobilePhone"<?php echo $sana_sms->mobilePhone->CellAttributes() ?>>
+<span id="el_sana_sms_mobilePhone">
+<span<?php echo $sana_sms->mobilePhone->ViewAttributes() ?>>
+<?php echo $sana_sms->mobilePhone->ViewValue ?></span>
 </span>
 </td>
 	</tr>
 <?php } ?>
-<?php if ($sana_location_level6->locationLevel5Name->Visible) { // locationLevel5Name ?>
-	<tr id="r_locationLevel5Name">
-		<td><span id="elh_sana_location_level6_locationLevel5Name"><?php echo $sana_location_level6->locationLevel5Name->FldCaption() ?></span></td>
-		<td data-name="locationLevel5Name"<?php echo $sana_location_level6->locationLevel5Name->CellAttributes() ?>>
-<span id="el_sana_location_level6_locationLevel5Name">
-<span<?php echo $sana_location_level6->locationLevel5Name->ViewAttributes() ?>>
-<?php echo $sana_location_level6->locationLevel5Name->ViewValue ?></span>
+<?php if ($sana_sms->message->Visible) { // message ?>
+	<tr id="r_message">
+		<td><span id="elh_sana_sms_message"><?php echo $sana_sms->message->FldCaption() ?></span></td>
+		<td data-name="message"<?php echo $sana_sms->message->CellAttributes() ?>>
+<span id="el_sana_sms_message">
+<span<?php echo $sana_sms->message->ViewAttributes() ?>>
+<?php echo $sana_sms->message->ViewValue ?></span>
 </span>
 </td>
 	</tr>
 <?php } ?>
-<?php if ($sana_location_level6->locationLevel1ID->Visible) { // locationLevel1ID ?>
-	<tr id="r_locationLevel1ID">
-		<td><span id="elh_sana_location_level6_locationLevel1ID"><?php echo $sana_location_level6->locationLevel1ID->FldCaption() ?></span></td>
-		<td data-name="locationLevel1ID"<?php echo $sana_location_level6->locationLevel1ID->CellAttributes() ?>>
-<span id="el_sana_location_level6_locationLevel1ID">
-<span<?php echo $sana_location_level6->locationLevel1ID->ViewAttributes() ?>>
-<?php echo $sana_location_level6->locationLevel1ID->ViewValue ?></span>
+<?php if ($sana_sms->result->Visible) { // result ?>
+	<tr id="r_result">
+		<td><span id="elh_sana_sms_result"><?php echo $sana_sms->result->FldCaption() ?></span></td>
+		<td data-name="result"<?php echo $sana_sms->result->CellAttributes() ?>>
+<span id="el_sana_sms_result">
+<span<?php echo $sana_sms->result->ViewAttributes() ?>>
+<?php echo $sana_sms->result->ViewValue ?></span>
 </span>
 </td>
 	</tr>
 <?php } ?>
-<?php if ($sana_location_level6->locationLevel2ID->Visible) { // locationLevel2ID ?>
-	<tr id="r_locationLevel2ID">
-		<td><span id="elh_sana_location_level6_locationLevel2ID"><?php echo $sana_location_level6->locationLevel2ID->FldCaption() ?></span></td>
-		<td data-name="locationLevel2ID"<?php echo $sana_location_level6->locationLevel2ID->CellAttributes() ?>>
-<span id="el_sana_location_level6_locationLevel2ID">
-<span<?php echo $sana_location_level6->locationLevel2ID->ViewAttributes() ?>>
-<?php echo $sana_location_level6->locationLevel2ID->ViewValue ?></span>
-</span>
-</td>
-	</tr>
-<?php } ?>
-<?php if ($sana_location_level6->locationLevel3ID->Visible) { // locationLevel3ID ?>
-	<tr id="r_locationLevel3ID">
-		<td><span id="elh_sana_location_level6_locationLevel3ID"><?php echo $sana_location_level6->locationLevel3ID->FldCaption() ?></span></td>
-		<td data-name="locationLevel3ID"<?php echo $sana_location_level6->locationLevel3ID->CellAttributes() ?>>
-<span id="el_sana_location_level6_locationLevel3ID">
-<span<?php echo $sana_location_level6->locationLevel3ID->ViewAttributes() ?>>
-<?php echo $sana_location_level6->locationLevel3ID->ViewValue ?></span>
-</span>
-</td>
-	</tr>
-<?php } ?>
-<?php if ($sana_location_level6->locationLevel4ID->Visible) { // locationLevel4ID ?>
-	<tr id="r_locationLevel4ID">
-		<td><span id="elh_sana_location_level6_locationLevel4ID"><?php echo $sana_location_level6->locationLevel4ID->FldCaption() ?></span></td>
-		<td data-name="locationLevel4ID"<?php echo $sana_location_level6->locationLevel4ID->CellAttributes() ?>>
-<span id="el_sana_location_level6_locationLevel4ID">
-<span<?php echo $sana_location_level6->locationLevel4ID->ViewAttributes() ?>>
-<?php echo $sana_location_level6->locationLevel4ID->ViewValue ?></span>
+<?php if ($sana_sms->description->Visible) { // description ?>
+	<tr id="r_description">
+		<td><span id="elh_sana_sms_description"><?php echo $sana_sms->description->FldCaption() ?></span></td>
+		<td data-name="description"<?php echo $sana_sms->description->CellAttributes() ?>>
+<span id="el_sana_sms_description">
+<span<?php echo $sana_sms->description->ViewAttributes() ?>>
+<?php echo $sana_sms->description->ViewValue ?></span>
 </span>
 </td>
 	</tr>
@@ -966,10 +894,10 @@ $sana_location_level6_view->ShowMessage();
 </table>
 </form>
 <script type="text/javascript">
-fsana_location_level6view.Init();
+fsana_smsview.Init();
 </script>
 <?php
-$sana_location_level6_view->ShowPageFooter();
+$sana_sms_view->ShowPageFooter();
 if (EW_DEBUG_ENABLED)
 	echo ew_DebugMsg();
 ?>
@@ -981,5 +909,5 @@ if (EW_DEBUG_ENABLED)
 </script>
 <?php include_once "footer.php" ?>
 <?php
-$sana_location_level6_view->Page_Terminate();
+$sana_sms_view->Page_Terminate();
 ?>

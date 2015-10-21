@@ -142,14 +142,15 @@ var ewVar = <?php echo json_encode($EW_CLIENT_VAR); ?>;
 	<!-- header (end) -->
 	<!-- content (begin) -->
 	<div id="ewContentTable" class="ewContentTable">
-		<div id="ewContentRow">
-			<div id="ewMenuColumn" class="<?php echo $gsMenuColumnClass ?>">
+				<div id="ewMenuColumn" class="<?php echo $gsMenuColumnClass ?>">
 				<!-- left column (begin) -->
 				<div class="ewMenu">
 <?php include_once "ewmenu.php" ?>
 				</div>
 				<!-- left column (end) -->
 			</div>
+
+		<div id="ewContentRow">
 			<div id="ewContentColumn" class="ewContentColumn">
 				<!-- right column (begin) -->
 				<h4 class="<?php echo $gsSiteTitleClass ?>"><?php echo $Language->ProjectPhrase("BodyTitle") ?></h4>

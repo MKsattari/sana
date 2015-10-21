@@ -6,6 +6,7 @@ ob_start(); // Turn on output buffering
 <?php include_once ((EW_USE_ADODB) ? "adodb5/adodb.inc.php" : "ewmysql12.php") ?>
 <?php include_once "phpfn12.php" ?>
 <?php include_once "sana_stationinfo.php" ?>
+<?php include_once "sana_userinfo.php" ?>
 <?php include_once "userfn12.php" ?>
 <?php
 
@@ -182,7 +183,7 @@ class csana_station_list extends csana_station {
 			$html .= "<div class=\"alert alert-danger ewError\">" . $sErrorMessage . "</div>";
 			$_SESSION[EW_SESSION_FAILURE_MESSAGE] = ""; // Clear message in Session
 		}
-		echo "<div class=\"ewMessageDialog\"" . (($hidden) ? " style=\"display: none;\"" : "") . ">" . $html . "</div>";
+		echo "<br><div class=\"ewMessageDialog\"" . (($hidden) ? " style=\"display: none;\"" : "") . ">" . $html . "</div>";
 	}
 	var $PageHeader;
 	var $PageFooter;
@@ -251,6 +252,7 @@ class csana_station_list extends csana_station {
 	//
 	function __construct() {
 		global $conn, $Language;
+		global $UserTable, $UserTableConn;
 		$GLOBALS["Page"] = &$this;
 		$this->TokenTimeout = ew_SessionTimeoutTime();
 
@@ -281,6 +283,9 @@ class csana_station_list extends csana_station {
 		$this->MultiDeleteUrl = "sana_stationdelete.php";
 		$this->MultiUpdateUrl = "sana_stationupdate.php";
 
+		// Table object (sana_user)
+		if (!isset($GLOBALS['sana_user'])) $GLOBALS['sana_user'] = new csana_user();
+
 		// Page ID
 		if (!defined("EW_PAGE_ID"))
 			define("EW_PAGE_ID", 'list', TRUE);
@@ -294,6 +299,12 @@ class csana_station_list extends csana_station {
 
 		// Open connection
 		if (!isset($conn)) $conn = ew_Connect($this->DBID);
+
+		// User table object (sana_user)
+		if (!isset($UserTable)) {
+			$UserTable = new csana_user();
+			$UserTableConn = Conn($UserTable->DBID);
+		}
 
 		// List options
 		$this->ListOptions = new cListOptions();
@@ -329,6 +340,23 @@ class csana_station_list extends csana_station {
 	//
 	function Page_Init() {
 		global $gsExport, $gsCustomExport, $gsExportFile, $UserProfile, $Language, $Security, $objForm;
+
+		// Security
+		$Security = new cAdvancedSecurity();
+		if (!$Security->IsLoggedIn()) $Security->AutoLogin();
+		if ($Security->IsLoggedIn()) $Security->TablePermission_Loading();
+		$Security->LoadCurrentUserLevel($this->ProjectID . $this->TableName);
+		if ($Security->IsLoggedIn()) $Security->TablePermission_Loaded();
+		if (!$Security->CanList()) {
+			$Security->SaveLastUrl();
+			$this->setFailureMessage($Language->Phrase("NoPermission")); // Set no permission
+			$this->Page_Terminate(ew_GetUrl("index.php"));
+		}
+		if ($Security->IsLoggedIn()) {
+			$Security->UserID_Loading();
+			$Security->LoadUserID();
+			$Security->UserID_Loaded();
+		}
 		$this->CurrentAction = (@$_GET["a"] <> "") ? $_GET["a"] : @$_POST["a_list"]; // Set up current action
 
 		// Get grid add count
@@ -491,6 +519,9 @@ class csana_station_list extends csana_station {
 			if ($this->ProcessListAction()) // Ajax request
 				$this->Page_Terminate();
 
+			// Set up records per page
+			$this->SetUpDisplayRecs();
+
 			// Handle reset command
 			$this->ResetCmd();
 
@@ -582,6 +613,8 @@ class csana_station_list extends csana_station {
 
 		// Build filter
 		$sFilter = "";
+		if (!$Security->CanList())
+			$sFilter = "(0=1)"; // Filter all records
 		ew_AddFilter($sFilter, $this->DbDetailFilter);
 		ew_AddFilter($sFilter, $this->SearchWhere);
 
@@ -602,6 +635,27 @@ class csana_station_list extends csana_station {
 
 		// Search options
 		$this->SetupSearchOptions();
+	}
+
+	// Set up number of records displayed per page
+	function SetUpDisplayRecs() {
+		$sWrk = @$_GET[EW_TABLE_REC_PER_PAGE];
+		if ($sWrk <> "") {
+			if (is_numeric($sWrk)) {
+				$this->DisplayRecs = intval($sWrk);
+			} else {
+				if (strtolower($sWrk) == "all") { // Display all records
+					$this->DisplayRecs = -1;
+				} else {
+					$this->DisplayRecs = 50; // Non-numeric, load default
+				}
+			}
+			$this->setRecordsPerPage($this->DisplayRecs); // Save to Session
+
+			// Reset start position
+			$this->StartRec = 1;
+			$this->setStartRecordNumber($this->StartRec);
+		}
 	}
 
 	// Build filter for all keys
@@ -651,6 +705,11 @@ class csana_station_list extends csana_station {
 		$sFilterList = ew_Concat($sFilterList, $this->stationName->AdvancedSearch->ToJSON(), ","); // Field stationName
 		$sFilterList = ew_Concat($sFilterList, $this->projectID->AdvancedSearch->ToJSON(), ","); // Field projectID
 		$sFilterList = ew_Concat($sFilterList, $this->description->AdvancedSearch->ToJSON(), ","); // Field description
+		$sFilterList = ew_Concat($sFilterList, $this->address->AdvancedSearch->ToJSON(), ","); // Field address
+		$sFilterList = ew_Concat($sFilterList, $this->GPS1->AdvancedSearch->ToJSON(), ","); // Field GPS1
+		$sFilterList = ew_Concat($sFilterList, $this->GPS2->AdvancedSearch->ToJSON(), ","); // Field GPS2
+		$sFilterList = ew_Concat($sFilterList, $this->GPS3->AdvancedSearch->ToJSON(), ","); // Field GPS3
+		$sFilterList = ew_Concat($sFilterList, $this->stationType->AdvancedSearch->ToJSON(), ","); // Field stationType
 		if ($this->BasicSearch->Keyword <> "") {
 			$sWrk = "\"" . EW_TABLE_BASIC_SEARCH . "\":\"" . ew_JsEncode2($this->BasicSearch->Keyword) . "\",\"" . EW_TABLE_BASIC_SEARCH_TYPE . "\":\"" . ew_JsEncode2($this->BasicSearch->Type) . "\"";
 			$sFilterList = ew_Concat($sFilterList, $sWrk, ",");
@@ -700,6 +759,46 @@ class csana_station_list extends csana_station {
 		$this->description->AdvancedSearch->SearchValue2 = @$filter["y_description"];
 		$this->description->AdvancedSearch->SearchOperator2 = @$filter["w_description"];
 		$this->description->AdvancedSearch->Save();
+
+		// Field address
+		$this->address->AdvancedSearch->SearchValue = @$filter["x_address"];
+		$this->address->AdvancedSearch->SearchOperator = @$filter["z_address"];
+		$this->address->AdvancedSearch->SearchCondition = @$filter["v_address"];
+		$this->address->AdvancedSearch->SearchValue2 = @$filter["y_address"];
+		$this->address->AdvancedSearch->SearchOperator2 = @$filter["w_address"];
+		$this->address->AdvancedSearch->Save();
+
+		// Field GPS1
+		$this->GPS1->AdvancedSearch->SearchValue = @$filter["x_GPS1"];
+		$this->GPS1->AdvancedSearch->SearchOperator = @$filter["z_GPS1"];
+		$this->GPS1->AdvancedSearch->SearchCondition = @$filter["v_GPS1"];
+		$this->GPS1->AdvancedSearch->SearchValue2 = @$filter["y_GPS1"];
+		$this->GPS1->AdvancedSearch->SearchOperator2 = @$filter["w_GPS1"];
+		$this->GPS1->AdvancedSearch->Save();
+
+		// Field GPS2
+		$this->GPS2->AdvancedSearch->SearchValue = @$filter["x_GPS2"];
+		$this->GPS2->AdvancedSearch->SearchOperator = @$filter["z_GPS2"];
+		$this->GPS2->AdvancedSearch->SearchCondition = @$filter["v_GPS2"];
+		$this->GPS2->AdvancedSearch->SearchValue2 = @$filter["y_GPS2"];
+		$this->GPS2->AdvancedSearch->SearchOperator2 = @$filter["w_GPS2"];
+		$this->GPS2->AdvancedSearch->Save();
+
+		// Field GPS3
+		$this->GPS3->AdvancedSearch->SearchValue = @$filter["x_GPS3"];
+		$this->GPS3->AdvancedSearch->SearchOperator = @$filter["z_GPS3"];
+		$this->GPS3->AdvancedSearch->SearchCondition = @$filter["v_GPS3"];
+		$this->GPS3->AdvancedSearch->SearchValue2 = @$filter["y_GPS3"];
+		$this->GPS3->AdvancedSearch->SearchOperator2 = @$filter["w_GPS3"];
+		$this->GPS3->AdvancedSearch->Save();
+
+		// Field stationType
+		$this->stationType->AdvancedSearch->SearchValue = @$filter["x_stationType"];
+		$this->stationType->AdvancedSearch->SearchOperator = @$filter["z_stationType"];
+		$this->stationType->AdvancedSearch->SearchCondition = @$filter["v_stationType"];
+		$this->stationType->AdvancedSearch->SearchValue2 = @$filter["y_stationType"];
+		$this->stationType->AdvancedSearch->SearchOperator2 = @$filter["w_stationType"];
+		$this->stationType->AdvancedSearch->Save();
 		$this->BasicSearch->setKeyword(@$filter[EW_TABLE_BASIC_SEARCH]);
 		$this->BasicSearch->setType(@$filter[EW_TABLE_BASIC_SEARCH_TYPE]);
 	}
@@ -709,6 +808,11 @@ class csana_station_list extends csana_station {
 		$sWhere = "";
 		$this->BuildBasicSearchSQL($sWhere, $this->stationName, $arKeywords, $type);
 		$this->BuildBasicSearchSQL($sWhere, $this->description, $arKeywords, $type);
+		$this->BuildBasicSearchSQL($sWhere, $this->address, $arKeywords, $type);
+		$this->BuildBasicSearchSQL($sWhere, $this->GPS1, $arKeywords, $type);
+		$this->BuildBasicSearchSQL($sWhere, $this->GPS2, $arKeywords, $type);
+		$this->BuildBasicSearchSQL($sWhere, $this->GPS3, $arKeywords, $type);
+		$this->BuildBasicSearchSQL($sWhere, $this->stationType, $arKeywords, $type);
 		return $sWhere;
 	}
 
@@ -781,6 +885,7 @@ class csana_station_list extends csana_station {
 	function BasicSearchWhere($Default = FALSE) {
 		global $Security;
 		$sSearchStr = "";
+		if (!$Security->CanSearch()) return "";
 		$sSearchKeyword = ($Default) ? $this->BasicSearch->KeywordDefault : $this->BasicSearch->Keyword;
 		$sSearchType = ($Default) ? $this->BasicSearch->TypeDefault : $this->BasicSearch->Type;
 		if ($sSearchKeyword <> "") {
@@ -875,6 +980,11 @@ class csana_station_list extends csana_station {
 			$this->UpdateSort($this->stationID); // stationID
 			$this->UpdateSort($this->stationName); // stationName
 			$this->UpdateSort($this->projectID); // projectID
+			$this->UpdateSort($this->address); // address
+			$this->UpdateSort($this->GPS1); // GPS1
+			$this->UpdateSort($this->GPS2); // GPS2
+			$this->UpdateSort($this->GPS3); // GPS3
+			$this->UpdateSort($this->stationType); // stationType
 			$this->setStartRecordNumber(1); // Reset start position
 		}
 	}
@@ -910,6 +1020,11 @@ class csana_station_list extends csana_station {
 				$this->stationID->setSort("");
 				$this->stationName->setSort("");
 				$this->projectID->setSort("");
+				$this->address->setSort("");
+				$this->GPS1->setSort("");
+				$this->GPS2->setSort("");
+				$this->GPS3->setSort("");
+				$this->stationType->setSort("");
 			}
 
 			// Reset start position
@@ -931,25 +1046,19 @@ class csana_station_list extends csana_station {
 		// "view"
 		$item = &$this->ListOptions->Add("view");
 		$item->CssStyle = "white-space: nowrap;";
-		$item->Visible = TRUE;
+		$item->Visible = $Security->CanView();
 		$item->OnLeft = FALSE;
 
 		// "edit"
 		$item = &$this->ListOptions->Add("edit");
 		$item->CssStyle = "white-space: nowrap;";
-		$item->Visible = TRUE;
-		$item->OnLeft = FALSE;
-
-		// "copy"
-		$item = &$this->ListOptions->Add("copy");
-		$item->CssStyle = "white-space: nowrap;";
-		$item->Visible = TRUE;
+		$item->Visible = $Security->CanEdit();
 		$item->OnLeft = FALSE;
 
 		// "delete"
 		$item = &$this->ListOptions->Add("delete");
 		$item->CssStyle = "white-space: nowrap;";
-		$item->Visible = TRUE;
+		$item->Visible = $Security->CanDelete();
 		$item->OnLeft = FALSE;
 
 		// List actions
@@ -991,30 +1100,22 @@ class csana_station_list extends csana_station {
 
 		// "view"
 		$oListOpt = &$this->ListOptions->Items["view"];
-		if (TRUE)
+		if ($Security->CanView())
 			$oListOpt->Body = "<a class=\"ewRowLink ewView\" title=\"" . ew_HtmlTitle($Language->Phrase("ViewLink")) . "\" data-caption=\"" . ew_HtmlTitle($Language->Phrase("ViewLink")) . "\" href=\"" . ew_HtmlEncode($this->ViewUrl) . "\">" . $Language->Phrase("ViewLink") . "</a>";
 		else
 			$oListOpt->Body = "";
 
 		// "edit"
 		$oListOpt = &$this->ListOptions->Items["edit"];
-		if (TRUE) {
+		if ($Security->CanEdit()) {
 			$oListOpt->Body = "<a class=\"ewRowLink ewEdit\" title=\"" . ew_HtmlTitle($Language->Phrase("EditLink")) . "\" data-caption=\"" . ew_HtmlTitle($Language->Phrase("EditLink")) . "\" href=\"" . ew_HtmlEncode($this->EditUrl) . "\">" . $Language->Phrase("EditLink") . "</a>";
-		} else {
-			$oListOpt->Body = "";
-		}
-
-		// "copy"
-		$oListOpt = &$this->ListOptions->Items["copy"];
-		if (TRUE) {
-			$oListOpt->Body = "<a class=\"ewRowLink ewCopy\" title=\"" . ew_HtmlTitle($Language->Phrase("CopyLink")) . "\" data-caption=\"" . ew_HtmlTitle($Language->Phrase("CopyLink")) . "\" href=\"" . ew_HtmlEncode($this->CopyUrl) . "\">" . $Language->Phrase("CopyLink") . "</a>";
 		} else {
 			$oListOpt->Body = "";
 		}
 
 		// "delete"
 		$oListOpt = &$this->ListOptions->Items["delete"];
-		if (TRUE)
+		if ($Security->CanDelete())
 			$oListOpt->Body = "<a class=\"ewRowLink ewDelete\"" . "" . " title=\"" . ew_HtmlTitle($Language->Phrase("DeleteLink")) . "\" data-caption=\"" . ew_HtmlTitle($Language->Phrase("DeleteLink")) . "\" href=\"" . ew_HtmlEncode($this->DeleteUrl) . "\">" . $Language->Phrase("DeleteLink") . "</a>";
 		else
 			$oListOpt->Body = "";
@@ -1066,7 +1167,7 @@ class csana_station_list extends csana_station {
 		// Add
 		$item = &$option->Add("add");
 		$item->Body = "<a class=\"ewAddEdit ewAdd\" title=\"" . ew_HtmlTitle($Language->Phrase("AddLink")) . "\" data-caption=\"" . ew_HtmlTitle($Language->Phrase("AddLink")) . "\" href=\"" . ew_HtmlEncode($this->AddUrl) . "\">" . $Language->Phrase("AddLink") . "</a>";
-		$item->Visible = ($this->AddUrl <> "");
+		$item->Visible = ($this->AddUrl <> "" && $Security->CanAdd());
 		$option = $options["action"];
 
 		// Set up options default
@@ -1238,6 +1339,11 @@ class csana_station_list extends csana_station {
 		// Hide search options
 		if ($this->Export <> "" || $this->CurrentAction <> "")
 			$this->SearchOptions->HideAllOptions();
+		global $Security;
+		if (!$Security->CanSearch()) {
+			$this->SearchOptions->HideAllOptions();
+			$this->FilterOptions->HideAllOptions();
+		}
 	}
 
 	function SetupListOptionsExt() {
@@ -1350,6 +1456,11 @@ class csana_station_list extends csana_station {
 		$this->stationName->setDbValue($rs->fields('stationName'));
 		$this->projectID->setDbValue($rs->fields('projectID'));
 		$this->description->setDbValue($rs->fields('description'));
+		$this->address->setDbValue($rs->fields('address'));
+		$this->GPS1->setDbValue($rs->fields('GPS1'));
+		$this->GPS2->setDbValue($rs->fields('GPS2'));
+		$this->GPS3->setDbValue($rs->fields('GPS3'));
+		$this->stationType->setDbValue($rs->fields('stationType'));
 	}
 
 	// Load DbValue from recordset
@@ -1360,6 +1471,11 @@ class csana_station_list extends csana_station {
 		$this->stationName->DbValue = $row['stationName'];
 		$this->projectID->DbValue = $row['projectID'];
 		$this->description->DbValue = $row['description'];
+		$this->address->DbValue = $row['address'];
+		$this->GPS1->DbValue = $row['GPS1'];
+		$this->GPS2->DbValue = $row['GPS2'];
+		$this->GPS3->DbValue = $row['GPS3'];
+		$this->stationType->DbValue = $row['stationType'];
 	}
 
 	// Load old record
@@ -1405,6 +1521,11 @@ class csana_station_list extends csana_station {
 		// stationName
 		// projectID
 		// description
+		// address
+		// GPS1
+		// GPS2
+		// GPS3
+		// stationType
 
 		if ($this->RowType == EW_ROWTYPE_VIEW) { // View row
 
@@ -1450,6 +1571,26 @@ class csana_station_list extends csana_station {
 		}
 		$this->projectID->ViewCustomAttributes = "";
 
+		// address
+		$this->address->ViewValue = $this->address->CurrentValue;
+		$this->address->ViewCustomAttributes = "";
+
+		// GPS1
+		$this->GPS1->ViewValue = $this->GPS1->CurrentValue;
+		$this->GPS1->ViewCustomAttributes = "";
+
+		// GPS2
+		$this->GPS2->ViewValue = $this->GPS2->CurrentValue;
+		$this->GPS2->ViewCustomAttributes = "";
+
+		// GPS3
+		$this->GPS3->ViewValue = $this->GPS3->CurrentValue;
+		$this->GPS3->ViewCustomAttributes = "";
+
+		// stationType
+		$this->stationType->ViewValue = $this->stationType->CurrentValue;
+		$this->stationType->ViewCustomAttributes = "";
+
 			// stationID
 			$this->stationID->LinkCustomAttributes = "";
 			$this->stationID->HrefValue = "";
@@ -1464,6 +1605,31 @@ class csana_station_list extends csana_station {
 			$this->projectID->LinkCustomAttributes = "";
 			$this->projectID->HrefValue = "";
 			$this->projectID->TooltipValue = "";
+
+			// address
+			$this->address->LinkCustomAttributes = "";
+			$this->address->HrefValue = "";
+			$this->address->TooltipValue = "";
+
+			// GPS1
+			$this->GPS1->LinkCustomAttributes = "";
+			$this->GPS1->HrefValue = "";
+			$this->GPS1->TooltipValue = "";
+
+			// GPS2
+			$this->GPS2->LinkCustomAttributes = "";
+			$this->GPS2->HrefValue = "";
+			$this->GPS2->TooltipValue = "";
+
+			// GPS3
+			$this->GPS3->LinkCustomAttributes = "";
+			$this->GPS3->HrefValue = "";
+			$this->GPS3->TooltipValue = "";
+
+			// stationType
+			$this->stationType->LinkCustomAttributes = "";
+			$this->stationType->HrefValue = "";
+			$this->stationType->TooltipValue = "";
 		}
 
 		// Call Row Rendered event
@@ -1684,6 +1850,8 @@ var CurrentSearchForm = fsana_stationlistsrch = new ew_Form("fsana_stationlistsr
 
 	// Set no record found message
 	if ($sana_station->CurrentAction == "" && $sana_station_list->TotalRecs == 0) {
+		if (!$Security->CanList())
+			$sana_station_list->setWarningMessage($Language->Phrase("NoPermission"));
 		if ($sana_station_list->SearchWhere == "0=101")
 			$sana_station_list->setWarningMessage($Language->Phrase("EnterSearchCriteria"));
 		else
@@ -1691,6 +1859,7 @@ var CurrentSearchForm = fsana_stationlistsrch = new ew_Form("fsana_stationlistsr
 	}
 $sana_station_list->RenderOtherOptions();
 ?>
+<?php if ($Security->CanSearch()) { ?>
 <?php if ($sana_station->Export == "" && $sana_station->CurrentAction == "") { ?>
 <form name="fsana_stationlistsrch" id="fsana_stationlistsrch" class="form-inline ewForm" action="<?php echo ew_CurrentPage() ?>">
 <?php $SearchPanelClass = ($sana_station_list->SearchWhere <> "") ? " in" : " in"; ?>
@@ -1717,6 +1886,7 @@ $sana_station_list->RenderOtherOptions();
 	</div>
 </div>
 </form>
+<?php } ?>
 <?php } ?>
 <?php $sana_station_list->ShowPageHeader(); ?>
 <?php
@@ -1770,6 +1940,51 @@ $sana_station_list->ListOptions->Render("header", "left");
 	<?php } else { ?>
 		<th data-name="projectID"><div class="ewPointer" onclick="ew_Sort(event,'<?php echo $sana_station->SortUrl($sana_station->projectID) ?>',1);"><div id="elh_sana_station_projectID" class="sana_station_projectID">
 			<div class="ewTableHeaderBtn"><span class="ewTableHeaderCaption"><?php echo $sana_station->projectID->FldCaption() ?></span><span class="ewTableHeaderSort"><?php if ($sana_station->projectID->getSort() == "ASC") { ?><span class="caret ewSortUp"></span><?php } elseif ($sana_station->projectID->getSort() == "DESC") { ?><span class="caret"></span><?php } ?></span></div>
+        </div></div></th>
+	<?php } ?>
+<?php } ?>		
+<?php if ($sana_station->address->Visible) { // address ?>
+	<?php if ($sana_station->SortUrl($sana_station->address) == "") { ?>
+		<th data-name="address"><div id="elh_sana_station_address" class="sana_station_address"><div class="ewTableHeaderCaption"><?php echo $sana_station->address->FldCaption() ?></div></div></th>
+	<?php } else { ?>
+		<th data-name="address"><div class="ewPointer" onclick="ew_Sort(event,'<?php echo $sana_station->SortUrl($sana_station->address) ?>',1);"><div id="elh_sana_station_address" class="sana_station_address">
+			<div class="ewTableHeaderBtn"><span class="ewTableHeaderCaption"><?php echo $sana_station->address->FldCaption() ?><?php echo $Language->Phrase("SrchLegend") ?></span><span class="ewTableHeaderSort"><?php if ($sana_station->address->getSort() == "ASC") { ?><span class="caret ewSortUp"></span><?php } elseif ($sana_station->address->getSort() == "DESC") { ?><span class="caret"></span><?php } ?></span></div>
+        </div></div></th>
+	<?php } ?>
+<?php } ?>		
+<?php if ($sana_station->GPS1->Visible) { // GPS1 ?>
+	<?php if ($sana_station->SortUrl($sana_station->GPS1) == "") { ?>
+		<th data-name="GPS1"><div id="elh_sana_station_GPS1" class="sana_station_GPS1"><div class="ewTableHeaderCaption"><?php echo $sana_station->GPS1->FldCaption() ?></div></div></th>
+	<?php } else { ?>
+		<th data-name="GPS1"><div class="ewPointer" onclick="ew_Sort(event,'<?php echo $sana_station->SortUrl($sana_station->GPS1) ?>',1);"><div id="elh_sana_station_GPS1" class="sana_station_GPS1">
+			<div class="ewTableHeaderBtn"><span class="ewTableHeaderCaption"><?php echo $sana_station->GPS1->FldCaption() ?><?php echo $Language->Phrase("SrchLegend") ?></span><span class="ewTableHeaderSort"><?php if ($sana_station->GPS1->getSort() == "ASC") { ?><span class="caret ewSortUp"></span><?php } elseif ($sana_station->GPS1->getSort() == "DESC") { ?><span class="caret"></span><?php } ?></span></div>
+        </div></div></th>
+	<?php } ?>
+<?php } ?>		
+<?php if ($sana_station->GPS2->Visible) { // GPS2 ?>
+	<?php if ($sana_station->SortUrl($sana_station->GPS2) == "") { ?>
+		<th data-name="GPS2"><div id="elh_sana_station_GPS2" class="sana_station_GPS2"><div class="ewTableHeaderCaption"><?php echo $sana_station->GPS2->FldCaption() ?></div></div></th>
+	<?php } else { ?>
+		<th data-name="GPS2"><div class="ewPointer" onclick="ew_Sort(event,'<?php echo $sana_station->SortUrl($sana_station->GPS2) ?>',1);"><div id="elh_sana_station_GPS2" class="sana_station_GPS2">
+			<div class="ewTableHeaderBtn"><span class="ewTableHeaderCaption"><?php echo $sana_station->GPS2->FldCaption() ?><?php echo $Language->Phrase("SrchLegend") ?></span><span class="ewTableHeaderSort"><?php if ($sana_station->GPS2->getSort() == "ASC") { ?><span class="caret ewSortUp"></span><?php } elseif ($sana_station->GPS2->getSort() == "DESC") { ?><span class="caret"></span><?php } ?></span></div>
+        </div></div></th>
+	<?php } ?>
+<?php } ?>		
+<?php if ($sana_station->GPS3->Visible) { // GPS3 ?>
+	<?php if ($sana_station->SortUrl($sana_station->GPS3) == "") { ?>
+		<th data-name="GPS3"><div id="elh_sana_station_GPS3" class="sana_station_GPS3"><div class="ewTableHeaderCaption"><?php echo $sana_station->GPS3->FldCaption() ?></div></div></th>
+	<?php } else { ?>
+		<th data-name="GPS3"><div class="ewPointer" onclick="ew_Sort(event,'<?php echo $sana_station->SortUrl($sana_station->GPS3) ?>',1);"><div id="elh_sana_station_GPS3" class="sana_station_GPS3">
+			<div class="ewTableHeaderBtn"><span class="ewTableHeaderCaption"><?php echo $sana_station->GPS3->FldCaption() ?><?php echo $Language->Phrase("SrchLegend") ?></span><span class="ewTableHeaderSort"><?php if ($sana_station->GPS3->getSort() == "ASC") { ?><span class="caret ewSortUp"></span><?php } elseif ($sana_station->GPS3->getSort() == "DESC") { ?><span class="caret"></span><?php } ?></span></div>
+        </div></div></th>
+	<?php } ?>
+<?php } ?>		
+<?php if ($sana_station->stationType->Visible) { // stationType ?>
+	<?php if ($sana_station->SortUrl($sana_station->stationType) == "") { ?>
+		<th data-name="stationType"><div id="elh_sana_station_stationType" class="sana_station_stationType"><div class="ewTableHeaderCaption"><?php echo $sana_station->stationType->FldCaption() ?></div></div></th>
+	<?php } else { ?>
+		<th data-name="stationType"><div class="ewPointer" onclick="ew_Sort(event,'<?php echo $sana_station->SortUrl($sana_station->stationType) ?>',1);"><div id="elh_sana_station_stationType" class="sana_station_stationType">
+			<div class="ewTableHeaderBtn"><span class="ewTableHeaderCaption"><?php echo $sana_station->stationType->FldCaption() ?><?php echo $Language->Phrase("SrchLegend") ?></span><span class="ewTableHeaderSort"><?php if ($sana_station->stationType->getSort() == "ASC") { ?><span class="caret ewSortUp"></span><?php } elseif ($sana_station->stationType->getSort() == "DESC") { ?><span class="caret"></span><?php } ?></span></div>
         </div></div></th>
 	<?php } ?>
 <?php } ?>		
@@ -1862,6 +2077,46 @@ $sana_station_list->ListOptions->Render("body", "left", $sana_station_list->RowC
 </span>
 </td>
 	<?php } ?>
+	<?php if ($sana_station->address->Visible) { // address ?>
+		<td data-name="address"<?php echo $sana_station->address->CellAttributes() ?>>
+<span id="el<?php echo $sana_station_list->RowCnt ?>_sana_station_address" class="sana_station_address">
+<span<?php echo $sana_station->address->ViewAttributes() ?>>
+<?php echo $sana_station->address->ListViewValue() ?></span>
+</span>
+</td>
+	<?php } ?>
+	<?php if ($sana_station->GPS1->Visible) { // GPS1 ?>
+		<td data-name="GPS1"<?php echo $sana_station->GPS1->CellAttributes() ?>>
+<span id="el<?php echo $sana_station_list->RowCnt ?>_sana_station_GPS1" class="sana_station_GPS1">
+<span<?php echo $sana_station->GPS1->ViewAttributes() ?>>
+<?php echo $sana_station->GPS1->ListViewValue() ?></span>
+</span>
+</td>
+	<?php } ?>
+	<?php if ($sana_station->GPS2->Visible) { // GPS2 ?>
+		<td data-name="GPS2"<?php echo $sana_station->GPS2->CellAttributes() ?>>
+<span id="el<?php echo $sana_station_list->RowCnt ?>_sana_station_GPS2" class="sana_station_GPS2">
+<span<?php echo $sana_station->GPS2->ViewAttributes() ?>>
+<?php echo $sana_station->GPS2->ListViewValue() ?></span>
+</span>
+</td>
+	<?php } ?>
+	<?php if ($sana_station->GPS3->Visible) { // GPS3 ?>
+		<td data-name="GPS3"<?php echo $sana_station->GPS3->CellAttributes() ?>>
+<span id="el<?php echo $sana_station_list->RowCnt ?>_sana_station_GPS3" class="sana_station_GPS3">
+<span<?php echo $sana_station->GPS3->ViewAttributes() ?>>
+<?php echo $sana_station->GPS3->ListViewValue() ?></span>
+</span>
+</td>
+	<?php } ?>
+	<?php if ($sana_station->stationType->Visible) { // stationType ?>
+		<td data-name="stationType"<?php echo $sana_station->stationType->CellAttributes() ?>>
+<span id="el<?php echo $sana_station_list->RowCnt ?>_sana_station_stationType" class="sana_station_stationType">
+<span<?php echo $sana_station->stationType->ViewAttributes() ?>>
+<?php echo $sana_station->stationType->ListViewValue() ?></span>
+</span>
+</td>
+	<?php } ?>
 <?php
 
 // Render list options (body, right)
@@ -1914,6 +2169,17 @@ if ($sana_station_list->Recordset)
 </div>
 <div class="ewPager ewRec">
 	<span><?php echo $Language->Phrase("Record") ?>&nbsp;<?php echo $sana_station_list->Pager->FromIndex ?>&nbsp;<?php echo $Language->Phrase("To") ?>&nbsp;<?php echo $sana_station_list->Pager->ToIndex ?>&nbsp;<?php echo $Language->Phrase("Of") ?>&nbsp;<?php echo $sana_station_list->Pager->RecordCount ?></span>
+</div>
+<?php } ?>
+<?php if ($sana_station_list->TotalRecs > 0) { ?>
+<div class="ewPager">
+<input type="hidden" name="t" value="sana_station">
+<select name="<?php echo EW_TABLE_REC_PER_PAGE ?>" class="form-control input-sm" onchange="this.form.submit();">
+<option value="20"<?php if ($sana_station_list->DisplayRecs == 20) { ?> selected="selected"<?php } ?>>20</option>
+<option value="50"<?php if ($sana_station_list->DisplayRecs == 50) { ?> selected="selected"<?php } ?>>50</option>
+<option value="100"<?php if ($sana_station_list->DisplayRecs == 100) { ?> selected="selected"<?php } ?>>100</option>
+<option value="500"<?php if ($sana_station_list->DisplayRecs == 500) { ?> selected="selected"<?php } ?>>500</option>
+</select>
 </div>
 <?php } ?>
 </form>

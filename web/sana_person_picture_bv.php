@@ -6,6 +6,7 @@ ob_start(); // Turn on output buffering
 <?php include_once ((EW_USE_ADODB) ? "adodb5/adodb.inc.php" : "ewmysql12.php") ?>
 <?php include_once "phpfn12.php" ?>
 <?php include_once "sana_personinfo.php" ?>
+<?php include_once "sana_userinfo.php" ?>
 <?php include_once "userfn12.php" ?>
 <?php
 
@@ -70,6 +71,7 @@ class csana_person_picture_blobview extends csana_person {
 	//
 	function __construct() {
 		global $conn, $Language;
+		global $UserTable, $UserTableConn;
 		$GLOBALS["Page"] = &$this;
 		$this->TokenTimeout = ew_SessionTimeoutTime();
 
@@ -85,6 +87,9 @@ class csana_person_picture_blobview extends csana_person {
 			$GLOBALS["Table"] = &$GLOBALS["sana_person"];
 		}
 
+		// Table object (sana_user)
+		if (!isset($GLOBALS['sana_user'])) $GLOBALS['sana_user'] = new csana_user();
+
 		// Page ID
 		if (!defined("EW_PAGE_ID"))
 			define("EW_PAGE_ID", 'blobview', TRUE);
@@ -98,6 +103,12 @@ class csana_person_picture_blobview extends csana_person {
 
 		// Open connection
 		if (!isset($conn)) $conn = ew_Connect($this->DBID);
+
+		// User table object (sana_user)
+		if (!isset($UserTable)) {
+			$UserTable = new csana_user();
+			$UserTableConn = Conn($UserTable->DBID);
+		}
 	}
 
 	// 
@@ -105,6 +116,21 @@ class csana_person_picture_blobview extends csana_person {
 	//
 	function Page_Init() {
 		global $gsExport, $gsCustomExport, $gsExportFile, $UserProfile, $Language, $Security, $objForm;
+
+		// Security
+		$Security = new cAdvancedSecurity();
+		if (!$Security->IsLoggedIn()) $Security->AutoLogin();
+		if ($Security->IsLoggedIn()) $Security->TablePermission_Loading();
+		$Security->LoadCurrentUserLevel(CurrentProjectID() . 'sana_person');
+		if ($Security->IsLoggedIn()) $Security->TablePermission_Loaded();
+		if (!$Security->CanList()) {
+			$this->Page_Terminate();
+		}
+		if ($Security->IsLoggedIn()) {
+			$Security->UserID_Loading();
+			$Security->LoadUserID();
+			$Security->UserID_Loaded();
+		}
 		$this->CurrentAction = (@$_GET["a"] <> "") ? $_GET["a"] : @$_POST["a_list"]; // Set up current action
 
 		// Global Page Loading event (in userfn*.php)

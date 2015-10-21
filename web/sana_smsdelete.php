@@ -5,7 +5,7 @@ ob_start(); // Turn on output buffering
 <?php include_once "ewcfg12.php" ?>
 <?php include_once ((EW_USE_ADODB) ? "adodb5/adodb.inc.php" : "ewmysql12.php") ?>
 <?php include_once "phpfn12.php" ?>
-<?php include_once "sana_location_level1info.php" ?>
+<?php include_once "sana_smsinfo.php" ?>
 <?php include_once "sana_userinfo.php" ?>
 <?php include_once "userfn12.php" ?>
 <?php
@@ -14,9 +14,9 @@ ob_start(); // Turn on output buffering
 // Page class
 //
 
-$sana_location_level1_delete = NULL; // Initialize page object first
+$sana_sms_delete = NULL; // Initialize page object first
 
-class csana_location_level1_delete extends csana_location_level1 {
+class csana_sms_delete extends csana_sms {
 
 	// Page ID
 	var $PageID = 'delete';
@@ -25,10 +25,10 @@ class csana_location_level1_delete extends csana_location_level1 {
 	var $ProjectID = "{07091A10-D58A-4784-942B-0E21010F5DFC}";
 
 	// Table name
-	var $TableName = 'sana_location_level1';
+	var $TableName = 'sana_sms';
 
 	// Page object name
-	var $PageObjName = 'sana_location_level1_delete';
+	var $PageObjName = 'sana_sms_delete';
 
 	// Page name
 	function PageName() {
@@ -143,7 +143,7 @@ class csana_location_level1_delete extends csana_location_level1 {
 			$html .= "<div class=\"alert alert-danger ewError\">" . $sErrorMessage . "</div>";
 			$_SESSION[EW_SESSION_FAILURE_MESSAGE] = ""; // Clear message in Session
 		}
-		echo "<br><div class=\"ewMessageDialog\"" . (($hidden) ? " style=\"display: none;\"" : "") . ">" . $html . "</div>";
+		echo "<div class=\"ewMessageDialog\"" . (($hidden) ? " style=\"display: none;\"" : "") . ">" . $html . "</div>";
 	}
 	var $PageHeader;
 	var $PageFooter;
@@ -222,10 +222,10 @@ class csana_location_level1_delete extends csana_location_level1 {
 		// Parent constuctor
 		parent::__construct();
 
-		// Table object (sana_location_level1)
-		if (!isset($GLOBALS["sana_location_level1"]) || get_class($GLOBALS["sana_location_level1"]) == "csana_location_level1") {
-			$GLOBALS["sana_location_level1"] = &$this;
-			$GLOBALS["Table"] = &$GLOBALS["sana_location_level1"];
+		// Table object (sana_sms)
+		if (!isset($GLOBALS["sana_sms"]) || get_class($GLOBALS["sana_sms"]) == "csana_sms") {
+			$GLOBALS["sana_sms"] = &$this;
+			$GLOBALS["Table"] = &$GLOBALS["sana_sms"];
 		}
 
 		// Table object (sana_user)
@@ -237,7 +237,7 @@ class csana_location_level1_delete extends csana_location_level1 {
 
 		// Table name (for backward compatibility)
 		if (!defined("EW_TABLE_NAME"))
-			define("EW_TABLE_NAME", 'sana_location_level1', TRUE);
+			define("EW_TABLE_NAME", 'sana_sms', TRUE);
 
 		// Start timer
 		if (!isset($GLOBALS["gTimer"])) $GLOBALS["gTimer"] = new cTimer();
@@ -268,7 +268,7 @@ class csana_location_level1_delete extends csana_location_level1 {
 			$Security->SaveLastUrl();
 			$this->setFailureMessage($Language->Phrase("NoPermission")); // Set no permission
 			if ($Security->CanList())
-				$this->Page_Terminate(ew_GetUrl("sana_location_level1list.php"));
+				$this->Page_Terminate(ew_GetUrl("sana_smslist.php"));
 			else
 				$this->Page_Terminate(ew_GetUrl("login.php"));
 		}
@@ -278,7 +278,7 @@ class csana_location_level1_delete extends csana_location_level1 {
 			$Security->UserID_Loaded();
 		}
 		$this->CurrentAction = (@$_GET["a"] <> "") ? $_GET["a"] : @$_POST["a_list"]; // Set up current action
-		$this->locationLevel1ID->Visible = !$this->IsAdd() && !$this->IsCopy() && !$this->IsGridAdd();
+		$this->smsID->Visible = !$this->IsAdd() && !$this->IsCopy() && !$this->IsGridAdd();
 
 		// Global Page Loading event (in userfn*.php)
 		Page_Loading();
@@ -310,13 +310,13 @@ class csana_location_level1_delete extends csana_location_level1 {
 		Page_Unloaded();
 
 		// Export
-		global $EW_EXPORT, $sana_location_level1;
+		global $EW_EXPORT, $sana_sms;
 		if ($this->CustomExport <> "" && $this->CustomExport == $this->Export && array_key_exists($this->CustomExport, $EW_EXPORT)) {
 				$sContent = ob_get_contents();
 			if ($gsExportFile == "") $gsExportFile = $this->TableVar;
 			$class = $EW_EXPORT[$this->CustomExport];
 			if (class_exists($class)) {
-				$doc = new $class($sana_location_level1);
+				$doc = new $class($sana_sms);
 				$doc->Text = $sContent;
 				if ($this->Export == "email")
 					echo $this->ExportEmail($doc->Text);
@@ -362,10 +362,10 @@ class csana_location_level1_delete extends csana_location_level1 {
 		$this->RecKeys = $this->GetRecordKeys(); // Load record keys
 		$sFilter = $this->GetKeyFilter();
 		if ($sFilter == "")
-			$this->Page_Terminate("sana_location_level1list.php"); // Prevent SQL injection, return to list
+			$this->Page_Terminate("sana_smslist.php"); // Prevent SQL injection, return to list
 
 		// Set up filter (SQL WHHERE clause) and get return SQL
-		// SQL constructor in sana_location_level1 class, sana_location_level1info.php
+		// SQL constructor in sana_sms class, sana_smsinfo.php
 
 		$this->CurrentFilter = $sFilter;
 
@@ -441,16 +441,24 @@ class csana_location_level1_delete extends csana_location_level1 {
 		// Call Row Selected event
 		$row = &$rs->fields;
 		$this->Row_Selected($row);
-		$this->locationLevel1ID->setDbValue($rs->fields('locationLevel1ID'));
-		$this->locationName->setDbValue($rs->fields('locationName'));
+		$this->smsID->setDbValue($rs->fields('smsID'));
+		$this->_userID->setDbValue($rs->fields('userID'));
+		$this->mobilePhone->setDbValue($rs->fields('mobilePhone'));
+		$this->message->setDbValue($rs->fields('message'));
+		$this->result->setDbValue($rs->fields('result'));
+		$this->description->setDbValue($rs->fields('description'));
 	}
 
 	// Load DbValue from recordset
 	function LoadDbValues(&$rs) {
 		if (!$rs || !is_array($rs) && $rs->EOF) return;
 		$row = is_array($rs) ? $rs : $rs->fields;
-		$this->locationLevel1ID->DbValue = $row['locationLevel1ID'];
-		$this->locationName->DbValue = $row['locationName'];
+		$this->smsID->DbValue = $row['smsID'];
+		$this->_userID->DbValue = $row['userID'];
+		$this->mobilePhone->DbValue = $row['mobilePhone'];
+		$this->message->DbValue = $row['message'];
+		$this->result->DbValue = $row['result'];
+		$this->description->DbValue = $row['description'];
 	}
 
 	// Render row values based on field settings
@@ -463,28 +471,68 @@ class csana_location_level1_delete extends csana_location_level1 {
 		$this->Row_Rendering();
 
 		// Common render codes for all row types
-		// locationLevel1ID
-		// locationName
+		// smsID
+		// userID
+		// mobilePhone
+		// message
+		// result
+		// description
 
 		if ($this->RowType == EW_ROWTYPE_VIEW) { // View row
 
-		// locationLevel1ID
-		$this->locationLevel1ID->ViewValue = $this->locationLevel1ID->CurrentValue;
-		$this->locationLevel1ID->ViewCustomAttributes = "";
+		// smsID
+		$this->smsID->ViewValue = $this->smsID->CurrentValue;
+		$this->smsID->ViewCustomAttributes = "";
 
-		// locationName
-		$this->locationName->ViewValue = $this->locationName->CurrentValue;
-		$this->locationName->ViewCustomAttributes = "";
+		// userID
+		$this->_userID->ViewValue = $this->_userID->CurrentValue;
+		$this->_userID->ViewCustomAttributes = "";
 
-			// locationLevel1ID
-			$this->locationLevel1ID->LinkCustomAttributes = "";
-			$this->locationLevel1ID->HrefValue = "";
-			$this->locationLevel1ID->TooltipValue = "";
+		// mobilePhone
+		$this->mobilePhone->ViewValue = $this->mobilePhone->CurrentValue;
+		$this->mobilePhone->ViewCustomAttributes = "";
 
-			// locationName
-			$this->locationName->LinkCustomAttributes = "";
-			$this->locationName->HrefValue = "";
-			$this->locationName->TooltipValue = "";
+		// message
+		$this->message->ViewValue = $this->message->CurrentValue;
+		$this->message->ViewCustomAttributes = "";
+
+		// result
+		$this->result->ViewValue = $this->result->CurrentValue;
+		$this->result->ViewCustomAttributes = "";
+
+		// description
+		$this->description->ViewValue = $this->description->CurrentValue;
+		$this->description->ViewCustomAttributes = "";
+
+			// smsID
+			$this->smsID->LinkCustomAttributes = "";
+			$this->smsID->HrefValue = "";
+			$this->smsID->TooltipValue = "";
+
+			// userID
+			$this->_userID->LinkCustomAttributes = "";
+			$this->_userID->HrefValue = "";
+			$this->_userID->TooltipValue = "";
+
+			// mobilePhone
+			$this->mobilePhone->LinkCustomAttributes = "";
+			$this->mobilePhone->HrefValue = "";
+			$this->mobilePhone->TooltipValue = "";
+
+			// message
+			$this->message->LinkCustomAttributes = "";
+			$this->message->HrefValue = "";
+			$this->message->TooltipValue = "";
+
+			// result
+			$this->result->LinkCustomAttributes = "";
+			$this->result->HrefValue = "";
+			$this->result->TooltipValue = "";
+
+			// description
+			$this->description->LinkCustomAttributes = "";
+			$this->description->HrefValue = "";
+			$this->description->TooltipValue = "";
 		}
 
 		// Call Row Rendered event
@@ -538,7 +586,7 @@ class csana_location_level1_delete extends csana_location_level1 {
 			foreach ($rsold as $row) {
 				$sThisKey = "";
 				if ($sThisKey <> "") $sThisKey .= $GLOBALS["EW_COMPOSITE_KEY_SEPARATOR"];
-				$sThisKey .= $row['locationLevel1ID'];
+				$sThisKey .= $row['smsID'];
 				$this->LoadDbValues($row);
 				$conn->raiseErrorFn = $GLOBALS["EW_ERROR_FN"];
 				$DeleteRows = $this->Delete($row); // Delete
@@ -581,7 +629,7 @@ class csana_location_level1_delete extends csana_location_level1 {
 		global $Breadcrumb, $Language;
 		$Breadcrumb = new cBreadcrumb();
 		$url = substr(ew_CurrentUrl(), strrpos(ew_CurrentUrl(), "/")+1);
-		$Breadcrumb->Add("list", $this->TableVar, $this->AddMasterUrl("sana_location_level1list.php"), "", $this->TableVar, TRUE);
+		$Breadcrumb->Add("list", $this->TableVar, $this->AddMasterUrl("sana_smslist.php"), "", $this->TableVar, TRUE);
 		$PageId = "delete";
 		$Breadcrumb->Add("delete", $PageId, $url);
 	}
@@ -651,29 +699,29 @@ class csana_location_level1_delete extends csana_location_level1 {
 <?php
 
 // Create page object
-if (!isset($sana_location_level1_delete)) $sana_location_level1_delete = new csana_location_level1_delete();
+if (!isset($sana_sms_delete)) $sana_sms_delete = new csana_sms_delete();
 
 // Page init
-$sana_location_level1_delete->Page_Init();
+$sana_sms_delete->Page_Init();
 
 // Page main
-$sana_location_level1_delete->Page_Main();
+$sana_sms_delete->Page_Main();
 
 // Global Page Rendering event (in userfn*.php)
 Page_Rendering();
 
 // Page Rendering event
-$sana_location_level1_delete->Page_Render();
+$sana_sms_delete->Page_Render();
 ?>
 <?php include_once "header.php" ?>
 <script type="text/javascript">
 
 // Form object
 var CurrentPageID = EW_PAGE_ID = "delete";
-var CurrentForm = fsana_location_level1delete = new ew_Form("fsana_location_level1delete", "delete");
+var CurrentForm = fsana_smsdelete = new ew_Form("fsana_smsdelete", "delete");
 
 // Form_CustomValidate event
-fsana_location_level1delete.Form_CustomValidate = 
+fsana_smsdelete.Form_CustomValidate = 
  function(fobj) { // DO NOT CHANGE THIS LINE!
 
  	// Your custom validation code here, return false if invalid. 
@@ -682,9 +730,9 @@ fsana_location_level1delete.Form_CustomValidate =
 
 // Use JavaScript validation or not
 <?php if (EW_CLIENT_VALIDATE) { ?>
-fsana_location_level1delete.ValidateRequired = true;
+fsana_smsdelete.ValidateRequired = true;
 <?php } else { ?>
-fsana_location_level1delete.ValidateRequired = false; 
+fsana_smsdelete.ValidateRequired = false; 
 <?php } ?>
 
 // Dynamic selection lists
@@ -698,12 +746,12 @@ fsana_location_level1delete.ValidateRequired = false;
 <?php
 
 // Load records for display
-if ($sana_location_level1_delete->Recordset = $sana_location_level1_delete->LoadRecordset())
-	$sana_location_level1_deleteTotalRecs = $sana_location_level1_delete->Recordset->RecordCount(); // Get record count
-if ($sana_location_level1_deleteTotalRecs <= 0) { // No record found, exit
-	if ($sana_location_level1_delete->Recordset)
-		$sana_location_level1_delete->Recordset->Close();
-	$sana_location_level1_delete->Page_Terminate("sana_location_level1list.php"); // Return to list
+if ($sana_sms_delete->Recordset = $sana_sms_delete->LoadRecordset())
+	$sana_sms_deleteTotalRecs = $sana_sms_delete->Recordset->RecordCount(); // Get record count
+if ($sana_sms_deleteTotalRecs <= 0) { // No record found, exit
+	if ($sana_sms_delete->Recordset)
+		$sana_sms_delete->Recordset->Close();
+	$sana_sms_delete->Page_Terminate("sana_smslist.php"); // Return to list
 }
 ?>
 <div class="ewToolbar">
@@ -711,74 +759,118 @@ if ($sana_location_level1_deleteTotalRecs <= 0) { // No record found, exit
 <?php echo $Language->SelectionForm(); ?>
 <div class="clearfix"></div>
 </div>
-<?php $sana_location_level1_delete->ShowPageHeader(); ?>
+<?php $sana_sms_delete->ShowPageHeader(); ?>
 <?php
-$sana_location_level1_delete->ShowMessage();
+$sana_sms_delete->ShowMessage();
 ?>
-<form name="fsana_location_level1delete" id="fsana_location_level1delete" class="form-inline ewForm ewDeleteForm" action="<?php echo ew_CurrentPage() ?>" method="post">
-<?php if ($sana_location_level1_delete->CheckToken) { ?>
-<input type="hidden" name="<?php echo EW_TOKEN_NAME ?>" value="<?php echo $sana_location_level1_delete->Token ?>">
+<form name="fsana_smsdelete" id="fsana_smsdelete" class="form-inline ewForm ewDeleteForm" action="<?php echo ew_CurrentPage() ?>" method="post">
+<?php if ($sana_sms_delete->CheckToken) { ?>
+<input type="hidden" name="<?php echo EW_TOKEN_NAME ?>" value="<?php echo $sana_sms_delete->Token ?>">
 <?php } ?>
-<input type="hidden" name="t" value="sana_location_level1">
+<input type="hidden" name="t" value="sana_sms">
 <input type="hidden" name="a_delete" id="a_delete" value="D">
-<?php foreach ($sana_location_level1_delete->RecKeys as $key) { ?>
+<?php foreach ($sana_sms_delete->RecKeys as $key) { ?>
 <?php $keyvalue = is_array($key) ? implode($EW_COMPOSITE_KEY_SEPARATOR, $key) : $key; ?>
 <input type="hidden" name="key_m[]" value="<?php echo ew_HtmlEncode($keyvalue) ?>">
 <?php } ?>
 <div class="ewGrid">
 <div class="<?php if (ew_IsResponsiveLayout()) { echo "table-responsive "; } ?>ewGridMiddlePanel">
 <table class="table ewTable">
-<?php echo $sana_location_level1->TableCustomInnerHtml ?>
+<?php echo $sana_sms->TableCustomInnerHtml ?>
 	<thead>
 	<tr class="ewTableHeader">
-<?php if ($sana_location_level1->locationLevel1ID->Visible) { // locationLevel1ID ?>
-		<th><span id="elh_sana_location_level1_locationLevel1ID" class="sana_location_level1_locationLevel1ID"><?php echo $sana_location_level1->locationLevel1ID->FldCaption() ?></span></th>
+<?php if ($sana_sms->smsID->Visible) { // smsID ?>
+		<th><span id="elh_sana_sms_smsID" class="sana_sms_smsID"><?php echo $sana_sms->smsID->FldCaption() ?></span></th>
 <?php } ?>
-<?php if ($sana_location_level1->locationName->Visible) { // locationName ?>
-		<th><span id="elh_sana_location_level1_locationName" class="sana_location_level1_locationName"><?php echo $sana_location_level1->locationName->FldCaption() ?></span></th>
+<?php if ($sana_sms->_userID->Visible) { // userID ?>
+		<th><span id="elh_sana_sms__userID" class="sana_sms__userID"><?php echo $sana_sms->_userID->FldCaption() ?></span></th>
+<?php } ?>
+<?php if ($sana_sms->mobilePhone->Visible) { // mobilePhone ?>
+		<th><span id="elh_sana_sms_mobilePhone" class="sana_sms_mobilePhone"><?php echo $sana_sms->mobilePhone->FldCaption() ?></span></th>
+<?php } ?>
+<?php if ($sana_sms->message->Visible) { // message ?>
+		<th><span id="elh_sana_sms_message" class="sana_sms_message"><?php echo $sana_sms->message->FldCaption() ?></span></th>
+<?php } ?>
+<?php if ($sana_sms->result->Visible) { // result ?>
+		<th><span id="elh_sana_sms_result" class="sana_sms_result"><?php echo $sana_sms->result->FldCaption() ?></span></th>
+<?php } ?>
+<?php if ($sana_sms->description->Visible) { // description ?>
+		<th><span id="elh_sana_sms_description" class="sana_sms_description"><?php echo $sana_sms->description->FldCaption() ?></span></th>
 <?php } ?>
 	</tr>
 	</thead>
 	<tbody>
 <?php
-$sana_location_level1_delete->RecCnt = 0;
+$sana_sms_delete->RecCnt = 0;
 $i = 0;
-while (!$sana_location_level1_delete->Recordset->EOF) {
-	$sana_location_level1_delete->RecCnt++;
-	$sana_location_level1_delete->RowCnt++;
+while (!$sana_sms_delete->Recordset->EOF) {
+	$sana_sms_delete->RecCnt++;
+	$sana_sms_delete->RowCnt++;
 
 	// Set row properties
-	$sana_location_level1->ResetAttrs();
-	$sana_location_level1->RowType = EW_ROWTYPE_VIEW; // View
+	$sana_sms->ResetAttrs();
+	$sana_sms->RowType = EW_ROWTYPE_VIEW; // View
 
 	// Get the field contents
-	$sana_location_level1_delete->LoadRowValues($sana_location_level1_delete->Recordset);
+	$sana_sms_delete->LoadRowValues($sana_sms_delete->Recordset);
 
 	// Render row
-	$sana_location_level1_delete->RenderRow();
+	$sana_sms_delete->RenderRow();
 ?>
-	<tr<?php echo $sana_location_level1->RowAttributes() ?>>
-<?php if ($sana_location_level1->locationLevel1ID->Visible) { // locationLevel1ID ?>
-		<td<?php echo $sana_location_level1->locationLevel1ID->CellAttributes() ?>>
-<span id="el<?php echo $sana_location_level1_delete->RowCnt ?>_sana_location_level1_locationLevel1ID" class="sana_location_level1_locationLevel1ID">
-<span<?php echo $sana_location_level1->locationLevel1ID->ViewAttributes() ?>>
-<?php echo $sana_location_level1->locationLevel1ID->ListViewValue() ?></span>
+	<tr<?php echo $sana_sms->RowAttributes() ?>>
+<?php if ($sana_sms->smsID->Visible) { // smsID ?>
+		<td<?php echo $sana_sms->smsID->CellAttributes() ?>>
+<span id="el<?php echo $sana_sms_delete->RowCnt ?>_sana_sms_smsID" class="sana_sms_smsID">
+<span<?php echo $sana_sms->smsID->ViewAttributes() ?>>
+<?php echo $sana_sms->smsID->ListViewValue() ?></span>
 </span>
 </td>
 <?php } ?>
-<?php if ($sana_location_level1->locationName->Visible) { // locationName ?>
-		<td<?php echo $sana_location_level1->locationName->CellAttributes() ?>>
-<span id="el<?php echo $sana_location_level1_delete->RowCnt ?>_sana_location_level1_locationName" class="sana_location_level1_locationName">
-<span<?php echo $sana_location_level1->locationName->ViewAttributes() ?>>
-<?php echo $sana_location_level1->locationName->ListViewValue() ?></span>
+<?php if ($sana_sms->_userID->Visible) { // userID ?>
+		<td<?php echo $sana_sms->_userID->CellAttributes() ?>>
+<span id="el<?php echo $sana_sms_delete->RowCnt ?>_sana_sms__userID" class="sana_sms__userID">
+<span<?php echo $sana_sms->_userID->ViewAttributes() ?>>
+<?php echo $sana_sms->_userID->ListViewValue() ?></span>
+</span>
+</td>
+<?php } ?>
+<?php if ($sana_sms->mobilePhone->Visible) { // mobilePhone ?>
+		<td<?php echo $sana_sms->mobilePhone->CellAttributes() ?>>
+<span id="el<?php echo $sana_sms_delete->RowCnt ?>_sana_sms_mobilePhone" class="sana_sms_mobilePhone">
+<span<?php echo $sana_sms->mobilePhone->ViewAttributes() ?>>
+<?php echo $sana_sms->mobilePhone->ListViewValue() ?></span>
+</span>
+</td>
+<?php } ?>
+<?php if ($sana_sms->message->Visible) { // message ?>
+		<td<?php echo $sana_sms->message->CellAttributes() ?>>
+<span id="el<?php echo $sana_sms_delete->RowCnt ?>_sana_sms_message" class="sana_sms_message">
+<span<?php echo $sana_sms->message->ViewAttributes() ?>>
+<?php echo $sana_sms->message->ListViewValue() ?></span>
+</span>
+</td>
+<?php } ?>
+<?php if ($sana_sms->result->Visible) { // result ?>
+		<td<?php echo $sana_sms->result->CellAttributes() ?>>
+<span id="el<?php echo $sana_sms_delete->RowCnt ?>_sana_sms_result" class="sana_sms_result">
+<span<?php echo $sana_sms->result->ViewAttributes() ?>>
+<?php echo $sana_sms->result->ListViewValue() ?></span>
+</span>
+</td>
+<?php } ?>
+<?php if ($sana_sms->description->Visible) { // description ?>
+		<td<?php echo $sana_sms->description->CellAttributes() ?>>
+<span id="el<?php echo $sana_sms_delete->RowCnt ?>_sana_sms_description" class="sana_sms_description">
+<span<?php echo $sana_sms->description->ViewAttributes() ?>>
+<?php echo $sana_sms->description->ListViewValue() ?></span>
 </span>
 </td>
 <?php } ?>
 	</tr>
 <?php
-	$sana_location_level1_delete->Recordset->MoveNext();
+	$sana_sms_delete->Recordset->MoveNext();
 }
-$sana_location_level1_delete->Recordset->Close();
+$sana_sms_delete->Recordset->Close();
 ?>
 </tbody>
 </table>
@@ -786,14 +878,14 @@ $sana_location_level1_delete->Recordset->Close();
 </div>
 <div>
 <button class="btn btn-primary ewButton" name="btnAction" id="btnAction" type="submit"><?php echo $Language->Phrase("DeleteBtn") ?></button>
-<button class="btn btn-default ewButton" name="btnCancel" id="btnCancel" type="button" data-href="<?php echo $sana_location_level1_delete->getReturnUrl() ?>"><?php echo $Language->Phrase("CancelBtn") ?></button>
+<button class="btn btn-default ewButton" name="btnCancel" id="btnCancel" type="button" data-href="<?php echo $sana_sms_delete->getReturnUrl() ?>"><?php echo $Language->Phrase("CancelBtn") ?></button>
 </div>
 </form>
 <script type="text/javascript">
-fsana_location_level1delete.Init();
+fsana_smsdelete.Init();
 </script>
 <?php
-$sana_location_level1_delete->ShowPageFooter();
+$sana_sms_delete->ShowPageFooter();
 if (EW_DEBUG_ENABLED)
 	echo ew_DebugMsg();
 ?>
@@ -805,5 +897,5 @@ if (EW_DEBUG_ENABLED)
 </script>
 <?php include_once "footer.php" ?>
 <?php
-$sana_location_level1_delete->Page_Terminate();
+$sana_sms_delete->Page_Terminate();
 ?>

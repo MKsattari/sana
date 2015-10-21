@@ -5,7 +5,7 @@ ob_start(); // Turn on output buffering
 <?php include_once "ewcfg12.php" ?>
 <?php include_once ((EW_USE_ADODB) ? "adodb5/adodb.inc.php" : "ewmysql12.php") ?>
 <?php include_once "phpfn12.php" ?>
-<?php include_once "sana_projectinfo.php" ?>
+<?php include_once "sana_smsinfo.php" ?>
 <?php include_once "sana_userinfo.php" ?>
 <?php include_once "userfn12.php" ?>
 <?php
@@ -14,9 +14,9 @@ ob_start(); // Turn on output buffering
 // Page class
 //
 
-$sana_project_edit = NULL; // Initialize page object first
+$sana_sms_edit = NULL; // Initialize page object first
 
-class csana_project_edit extends csana_project {
+class csana_sms_edit extends csana_sms {
 
 	// Page ID
 	var $PageID = 'edit';
@@ -25,10 +25,10 @@ class csana_project_edit extends csana_project {
 	var $ProjectID = "{07091A10-D58A-4784-942B-0E21010F5DFC}";
 
 	// Table name
-	var $TableName = 'sana_project';
+	var $TableName = 'sana_sms';
 
 	// Page object name
-	var $PageObjName = 'sana_project_edit';
+	var $PageObjName = 'sana_sms_edit';
 
 	// Page name
 	function PageName() {
@@ -143,7 +143,7 @@ class csana_project_edit extends csana_project {
 			$html .= "<div class=\"alert alert-danger ewError\">" . $sErrorMessage . "</div>";
 			$_SESSION[EW_SESSION_FAILURE_MESSAGE] = ""; // Clear message in Session
 		}
-		echo "<br><div class=\"ewMessageDialog\"" . (($hidden) ? " style=\"display: none;\"" : "") . ">" . $html . "</div>";
+		echo "<div class=\"ewMessageDialog\"" . (($hidden) ? " style=\"display: none;\"" : "") . ">" . $html . "</div>";
 	}
 	var $PageHeader;
 	var $PageFooter;
@@ -222,10 +222,10 @@ class csana_project_edit extends csana_project {
 		// Parent constuctor
 		parent::__construct();
 
-		// Table object (sana_project)
-		if (!isset($GLOBALS["sana_project"]) || get_class($GLOBALS["sana_project"]) == "csana_project") {
-			$GLOBALS["sana_project"] = &$this;
-			$GLOBALS["Table"] = &$GLOBALS["sana_project"];
+		// Table object (sana_sms)
+		if (!isset($GLOBALS["sana_sms"]) || get_class($GLOBALS["sana_sms"]) == "csana_sms") {
+			$GLOBALS["sana_sms"] = &$this;
+			$GLOBALS["Table"] = &$GLOBALS["sana_sms"];
 		}
 
 		// Table object (sana_user)
@@ -237,7 +237,7 @@ class csana_project_edit extends csana_project {
 
 		// Table name (for backward compatibility)
 		if (!defined("EW_TABLE_NAME"))
-			define("EW_TABLE_NAME", 'sana_project', TRUE);
+			define("EW_TABLE_NAME", 'sana_sms', TRUE);
 
 		// Start timer
 		if (!isset($GLOBALS["gTimer"])) $GLOBALS["gTimer"] = new cTimer();
@@ -268,7 +268,7 @@ class csana_project_edit extends csana_project {
 			$Security->SaveLastUrl();
 			$this->setFailureMessage($Language->Phrase("NoPermission")); // Set no permission
 			if ($Security->CanList())
-				$this->Page_Terminate(ew_GetUrl("sana_projectlist.php"));
+				$this->Page_Terminate(ew_GetUrl("sana_smslist.php"));
 			else
 				$this->Page_Terminate(ew_GetUrl("login.php"));
 		}
@@ -281,7 +281,7 @@ class csana_project_edit extends csana_project {
 		// Create form object
 		$objForm = new cFormObj();
 		$this->CurrentAction = (@$_GET["a"] <> "") ? $_GET["a"] : @$_POST["a_list"]; // Set up current action
-		$this->projectID->Visible = !$this->IsAdd() && !$this->IsCopy() && !$this->IsGridAdd();
+		$this->smsID->Visible = !$this->IsAdd() && !$this->IsCopy() && !$this->IsGridAdd();
 
 		// Global Page Loading event (in userfn*.php)
 		Page_Loading();
@@ -327,13 +327,13 @@ class csana_project_edit extends csana_project {
 		Page_Unloaded();
 
 		// Export
-		global $EW_EXPORT, $sana_project;
+		global $EW_EXPORT, $sana_sms;
 		if ($this->CustomExport <> "" && $this->CustomExport == $this->Export && array_key_exists($this->CustomExport, $EW_EXPORT)) {
 				$sContent = ob_get_contents();
 			if ($gsExportFile == "") $gsExportFile = $this->TableVar;
 			$class = $EW_EXPORT[$this->CustomExport];
 			if (class_exists($class)) {
-				$doc = new $class($sana_project);
+				$doc = new $class($sana_sms);
 				$doc->Text = $sContent;
 				if ($this->Export == "email")
 					echo $this->ExportEmail($doc->Text);
@@ -367,8 +367,8 @@ class csana_project_edit extends csana_project {
 		global $objForm, $Language, $gsFormError;
 
 		// Load key from QueryString
-		if (@$_GET["projectID"] <> "") {
-			$this->projectID->setQueryStringValue($_GET["projectID"]);
+		if (@$_GET["smsID"] <> "") {
+			$this->smsID->setQueryStringValue($_GET["smsID"]);
 		}
 
 		// Set up Breadcrumb
@@ -383,8 +383,8 @@ class csana_project_edit extends csana_project {
 		}
 
 		// Check if valid key
-		if ($this->projectID->CurrentValue == "")
-			$this->Page_Terminate("sana_projectlist.php"); // Invalid key, return to list
+		if ($this->smsID->CurrentValue == "")
+			$this->Page_Terminate("sana_smslist.php"); // Invalid key, return to list
 
 		// Validate form if post back
 		if (@$_POST["a_edit"] <> "") {
@@ -399,12 +399,12 @@ class csana_project_edit extends csana_project {
 			case "I": // Get a record to display
 				if (!$this->LoadRow()) { // Load record based on key
 					if ($this->getFailureMessage() == "") $this->setFailureMessage($Language->Phrase("NoRecord")); // No record found
-					$this->Page_Terminate("sana_projectlist.php"); // No matching record, return to list
+					$this->Page_Terminate("sana_smslist.php"); // No matching record, return to list
 				}
 				break;
 			Case "U": // Update
 				$sReturnUrl = $this->getReturnUrl();
-				if (ew_GetPageName($sReturnUrl) == "sana_projectlist.php")
+				if (ew_GetPageName($sReturnUrl) == "sana_smslist.php")
 					$sReturnUrl = $this->AddMasterUrl($this->GetListUrl()); // List page, return to list page with correct master key if necessary
 				$this->SendEmail = TRUE; // Send email on update success
 				if ($this->EditRow()) { // Update record based on key
@@ -473,10 +473,13 @@ class csana_project_edit extends csana_project {
 
 		// Load from form
 		global $objForm;
-		if (!$this->projectID->FldIsDetailKey)
-			$this->projectID->setFormValue($objForm->GetValue("x_projectID"));
-		if (!$this->projectName->FldIsDetailKey) {
-			$this->projectName->setFormValue($objForm->GetValue("x_projectName"));
+		if (!$this->smsID->FldIsDetailKey)
+			$this->smsID->setFormValue($objForm->GetValue("x_smsID"));
+		if (!$this->mobilePhone->FldIsDetailKey) {
+			$this->mobilePhone->setFormValue($objForm->GetValue("x_mobilePhone"));
+		}
+		if (!$this->message->FldIsDetailKey) {
+			$this->message->setFormValue($objForm->GetValue("x_message"));
 		}
 		if (!$this->description->FldIsDetailKey) {
 			$this->description->setFormValue($objForm->GetValue("x_description"));
@@ -487,8 +490,9 @@ class csana_project_edit extends csana_project {
 	function RestoreFormValues() {
 		global $objForm;
 		$this->LoadRow();
-		$this->projectID->CurrentValue = $this->projectID->FormValue;
-		$this->projectName->CurrentValue = $this->projectName->FormValue;
+		$this->smsID->CurrentValue = $this->smsID->FormValue;
+		$this->mobilePhone->CurrentValue = $this->mobilePhone->FormValue;
+		$this->message->CurrentValue = $this->message->FormValue;
 		$this->description->CurrentValue = $this->description->FormValue;
 	}
 
@@ -521,8 +525,11 @@ class csana_project_edit extends csana_project {
 		// Call Row Selected event
 		$row = &$rs->fields;
 		$this->Row_Selected($row);
-		$this->projectID->setDbValue($rs->fields('projectID'));
-		$this->projectName->setDbValue($rs->fields('projectName'));
+		$this->smsID->setDbValue($rs->fields('smsID'));
+		$this->_userID->setDbValue($rs->fields('userID'));
+		$this->mobilePhone->setDbValue($rs->fields('mobilePhone'));
+		$this->message->setDbValue($rs->fields('message'));
+		$this->result->setDbValue($rs->fields('result'));
 		$this->description->setDbValue($rs->fields('description'));
 	}
 
@@ -530,8 +537,11 @@ class csana_project_edit extends csana_project {
 	function LoadDbValues(&$rs) {
 		if (!$rs || !is_array($rs) && $rs->EOF) return;
 		$row = is_array($rs) ? $rs : $rs->fields;
-		$this->projectID->DbValue = $row['projectID'];
-		$this->projectName->DbValue = $row['projectName'];
+		$this->smsID->DbValue = $row['smsID'];
+		$this->_userID->DbValue = $row['userID'];
+		$this->mobilePhone->DbValue = $row['mobilePhone'];
+		$this->message->DbValue = $row['message'];
+		$this->result->DbValue = $row['result'];
 		$this->description->DbValue = $row['description'];
 	}
 
@@ -545,33 +555,53 @@ class csana_project_edit extends csana_project {
 		$this->Row_Rendering();
 
 		// Common render codes for all row types
-		// projectID
-		// projectName
+		// smsID
+		// userID
+		// mobilePhone
+		// message
+		// result
 		// description
 
 		if ($this->RowType == EW_ROWTYPE_VIEW) { // View row
 
-		// projectID
-		$this->projectID->ViewValue = $this->projectID->CurrentValue;
-		$this->projectID->ViewCustomAttributes = "";
+		// smsID
+		$this->smsID->ViewValue = $this->smsID->CurrentValue;
+		$this->smsID->ViewCustomAttributes = "";
 
-		// projectName
-		$this->projectName->ViewValue = $this->projectName->CurrentValue;
-		$this->projectName->ViewCustomAttributes = "";
+		// userID
+		$this->_userID->ViewValue = $this->_userID->CurrentValue;
+		$this->_userID->ViewCustomAttributes = "";
+
+		// mobilePhone
+		$this->mobilePhone->ViewValue = $this->mobilePhone->CurrentValue;
+		$this->mobilePhone->ViewCustomAttributes = "";
+
+		// message
+		$this->message->ViewValue = $this->message->CurrentValue;
+		$this->message->ViewCustomAttributes = "";
+
+		// result
+		$this->result->ViewValue = $this->result->CurrentValue;
+		$this->result->ViewCustomAttributes = "";
 
 		// description
 		$this->description->ViewValue = $this->description->CurrentValue;
 		$this->description->ViewCustomAttributes = "";
 
-			// projectID
-			$this->projectID->LinkCustomAttributes = "";
-			$this->projectID->HrefValue = "";
-			$this->projectID->TooltipValue = "";
+			// smsID
+			$this->smsID->LinkCustomAttributes = "";
+			$this->smsID->HrefValue = "";
+			$this->smsID->TooltipValue = "";
 
-			// projectName
-			$this->projectName->LinkCustomAttributes = "";
-			$this->projectName->HrefValue = "";
-			$this->projectName->TooltipValue = "";
+			// mobilePhone
+			$this->mobilePhone->LinkCustomAttributes = "";
+			$this->mobilePhone->HrefValue = "";
+			$this->mobilePhone->TooltipValue = "";
+
+			// message
+			$this->message->LinkCustomAttributes = "";
+			$this->message->HrefValue = "";
+			$this->message->TooltipValue = "";
 
 			// description
 			$this->description->LinkCustomAttributes = "";
@@ -579,17 +609,23 @@ class csana_project_edit extends csana_project {
 			$this->description->TooltipValue = "";
 		} elseif ($this->RowType == EW_ROWTYPE_EDIT) { // Edit row
 
-			// projectID
-			$this->projectID->EditAttrs["class"] = "form-control";
-			$this->projectID->EditCustomAttributes = "";
-			$this->projectID->EditValue = $this->projectID->CurrentValue;
-			$this->projectID->ViewCustomAttributes = "";
+			// smsID
+			$this->smsID->EditAttrs["class"] = "form-control";
+			$this->smsID->EditCustomAttributes = "";
+			$this->smsID->EditValue = $this->smsID->CurrentValue;
+			$this->smsID->ViewCustomAttributes = "";
 
-			// projectName
-			$this->projectName->EditAttrs["class"] = "form-control";
-			$this->projectName->EditCustomAttributes = "";
-			$this->projectName->EditValue = ew_HtmlEncode($this->projectName->CurrentValue);
-			$this->projectName->PlaceHolder = ew_RemoveHtml($this->projectName->FldCaption());
+			// mobilePhone
+			$this->mobilePhone->EditAttrs["class"] = "form-control";
+			$this->mobilePhone->EditCustomAttributes = "";
+			$this->mobilePhone->EditValue = ew_HtmlEncode($this->mobilePhone->CurrentValue);
+			$this->mobilePhone->PlaceHolder = ew_RemoveHtml($this->mobilePhone->FldCaption());
+
+			// message
+			$this->message->EditAttrs["class"] = "form-control";
+			$this->message->EditCustomAttributes = "";
+			$this->message->EditValue = ew_HtmlEncode($this->message->CurrentValue);
+			$this->message->PlaceHolder = ew_RemoveHtml($this->message->FldCaption());
 
 			// description
 			$this->description->EditAttrs["class"] = "form-control";
@@ -598,14 +634,18 @@ class csana_project_edit extends csana_project {
 			$this->description->PlaceHolder = ew_RemoveHtml($this->description->FldCaption());
 
 			// Edit refer script
-			// projectID
+			// smsID
 
-			$this->projectID->LinkCustomAttributes = "";
-			$this->projectID->HrefValue = "";
+			$this->smsID->LinkCustomAttributes = "";
+			$this->smsID->HrefValue = "";
 
-			// projectName
-			$this->projectName->LinkCustomAttributes = "";
-			$this->projectName->HrefValue = "";
+			// mobilePhone
+			$this->mobilePhone->LinkCustomAttributes = "";
+			$this->mobilePhone->HrefValue = "";
+
+			// message
+			$this->message->LinkCustomAttributes = "";
+			$this->message->HrefValue = "";
 
 			// description
 			$this->description->LinkCustomAttributes = "";
@@ -632,8 +672,11 @@ class csana_project_edit extends csana_project {
 		// Check if validation required
 		if (!EW_SERVER_VALIDATE)
 			return ($gsFormError == "");
-		if (!$this->projectName->FldIsDetailKey && !is_null($this->projectName->FormValue) && $this->projectName->FormValue == "") {
-			ew_AddMessage($gsFormError, str_replace("%s", $this->projectName->FldCaption(), $this->projectName->ReqErrMsg));
+		if (!$this->mobilePhone->FldIsDetailKey && !is_null($this->mobilePhone->FormValue) && $this->mobilePhone->FormValue == "") {
+			ew_AddMessage($gsFormError, str_replace("%s", $this->mobilePhone->FldCaption(), $this->mobilePhone->ReqErrMsg));
+		}
+		if (!$this->message->FldIsDetailKey && !is_null($this->message->FormValue) && $this->message->FormValue == "") {
+			ew_AddMessage($gsFormError, str_replace("%s", $this->message->FldCaption(), $this->message->ReqErrMsg));
 		}
 
 		// Return validate result
@@ -671,8 +714,11 @@ class csana_project_edit extends csana_project {
 			$this->LoadDbValues($rsold);
 			$rsnew = array();
 
-			// projectName
-			$this->projectName->SetDbValueDef($rsnew, $this->projectName->CurrentValue, "", $this->projectName->ReadOnly);
+			// mobilePhone
+			$this->mobilePhone->SetDbValueDef($rsnew, $this->mobilePhone->CurrentValue, "", $this->mobilePhone->ReadOnly);
+
+			// message
+			$this->message->SetDbValueDef($rsnew, $this->message->CurrentValue, "", $this->message->ReadOnly);
 
 			// description
 			$this->description->SetDbValueDef($rsnew, $this->description->CurrentValue, NULL, $this->description->ReadOnly);
@@ -714,7 +760,7 @@ class csana_project_edit extends csana_project {
 		global $Breadcrumb, $Language;
 		$Breadcrumb = new cBreadcrumb();
 		$url = substr(ew_CurrentUrl(), strrpos(ew_CurrentUrl(), "/")+1);
-		$Breadcrumb->Add("list", $this->TableVar, $this->AddMasterUrl("sana_projectlist.php"), "", $this->TableVar, TRUE);
+		$Breadcrumb->Add("list", $this->TableVar, $this->AddMasterUrl("sana_smslist.php"), "", $this->TableVar, TRUE);
 		$PageId = "edit";
 		$Breadcrumb->Add("edit", $PageId, $url);
 	}
@@ -791,29 +837,29 @@ class csana_project_edit extends csana_project {
 <?php
 
 // Create page object
-if (!isset($sana_project_edit)) $sana_project_edit = new csana_project_edit();
+if (!isset($sana_sms_edit)) $sana_sms_edit = new csana_sms_edit();
 
 // Page init
-$sana_project_edit->Page_Init();
+$sana_sms_edit->Page_Init();
 
 // Page main
-$sana_project_edit->Page_Main();
+$sana_sms_edit->Page_Main();
 
 // Global Page Rendering event (in userfn*.php)
 Page_Rendering();
 
 // Page Rendering event
-$sana_project_edit->Page_Render();
+$sana_sms_edit->Page_Render();
 ?>
 <?php include_once "header.php" ?>
 <script type="text/javascript">
 
 // Form object
 var CurrentPageID = EW_PAGE_ID = "edit";
-var CurrentForm = fsana_projectedit = new ew_Form("fsana_projectedit", "edit");
+var CurrentForm = fsana_smsedit = new ew_Form("fsana_smsedit", "edit");
 
 // Validate form
-fsana_projectedit.Validate = function() {
+fsana_smsedit.Validate = function() {
 	if (!this.ValidateRequired)
 		return true; // Ignore validation
 	var $ = jQuery, fobj = this.GetForm(), $fobj = $(fobj);
@@ -827,9 +873,12 @@ fsana_projectedit.Validate = function() {
 	for (var i = startcnt; i <= rowcnt; i++) {
 		var infix = ($k[0]) ? String(i) : "";
 		$fobj.data("rowindex", infix);
-			elm = this.GetElements("x" + infix + "_projectName");
+			elm = this.GetElements("x" + infix + "_mobilePhone");
 			if (elm && !ew_IsHidden(elm) && !ew_HasValue(elm))
-				return this.OnError(elm, "<?php echo ew_JsEncode2(str_replace("%s", $sana_project->projectName->FldCaption(), $sana_project->projectName->ReqErrMsg)) ?>");
+				return this.OnError(elm, "<?php echo ew_JsEncode2(str_replace("%s", $sana_sms->mobilePhone->FldCaption(), $sana_sms->mobilePhone->ReqErrMsg)) ?>");
+			elm = this.GetElements("x" + infix + "_message");
+			if (elm && !ew_IsHidden(elm) && !ew_HasValue(elm))
+				return this.OnError(elm, "<?php echo ew_JsEncode2(str_replace("%s", $sana_sms->message->FldCaption(), $sana_sms->message->ReqErrMsg)) ?>");
 
 			// Fire Form_CustomValidate event
 			if (!this.Form_CustomValidate(fobj))
@@ -848,7 +897,7 @@ fsana_projectedit.Validate = function() {
 }
 
 // Form_CustomValidate event
-fsana_projectedit.Form_CustomValidate = 
+fsana_smsedit.Form_CustomValidate = 
  function(fobj) { // DO NOT CHANGE THIS LINE!
 
  	// Your custom validation code here, return false if invalid. 
@@ -857,9 +906,9 @@ fsana_projectedit.Form_CustomValidate =
 
 // Use JavaScript validation or not
 <?php if (EW_CLIENT_VALIDATE) { ?>
-fsana_projectedit.ValidateRequired = true;
+fsana_smsedit.ValidateRequired = true;
 <?php } else { ?>
-fsana_projectedit.ValidateRequired = false; 
+fsana_smsedit.ValidateRequired = false; 
 <?php } ?>
 
 // Dynamic selection lists
@@ -875,62 +924,72 @@ fsana_projectedit.ValidateRequired = false;
 <?php echo $Language->SelectionForm(); ?>
 <div class="clearfix"></div>
 </div>
-<?php $sana_project_edit->ShowPageHeader(); ?>
+<?php $sana_sms_edit->ShowPageHeader(); ?>
 <?php
-$sana_project_edit->ShowMessage();
+$sana_sms_edit->ShowMessage();
 ?>
-<form name="fsana_projectedit" id="fsana_projectedit" class="<?php echo $sana_project_edit->FormClassName ?>" action="<?php echo ew_CurrentPage() ?>" method="post">
-<?php if ($sana_project_edit->CheckToken) { ?>
-<input type="hidden" name="<?php echo EW_TOKEN_NAME ?>" value="<?php echo $sana_project_edit->Token ?>">
+<form name="fsana_smsedit" id="fsana_smsedit" class="<?php echo $sana_sms_edit->FormClassName ?>" action="<?php echo ew_CurrentPage() ?>" method="post">
+<?php if ($sana_sms_edit->CheckToken) { ?>
+<input type="hidden" name="<?php echo EW_TOKEN_NAME ?>" value="<?php echo $sana_sms_edit->Token ?>">
 <?php } ?>
-<input type="hidden" name="t" value="sana_project">
+<input type="hidden" name="t" value="sana_sms">
 <input type="hidden" name="a_edit" id="a_edit" value="U">
 <div>
-<?php if ($sana_project->projectID->Visible) { // projectID ?>
-	<div id="r_projectID" class="form-group">
-		<label id="elh_sana_project_projectID" class="col-sm-2 control-label ewLabel"><?php echo $sana_project->projectID->FldCaption() ?></label>
-		<div class="col-sm-10"><div<?php echo $sana_project->projectID->CellAttributes() ?>>
-<span id="el_sana_project_projectID">
-<span<?php echo $sana_project->projectID->ViewAttributes() ?>>
-<p class="form-control-static"><?php echo $sana_project->projectID->EditValue ?></p></span>
+<?php if ($sana_sms->smsID->Visible) { // smsID ?>
+	<div id="r_smsID" class="form-group">
+		<label id="elh_sana_sms_smsID" class="col-sm-2 control-label ewLabel"><?php echo $sana_sms->smsID->FldCaption() ?></label>
+		<div class="col-sm-10"><div<?php echo $sana_sms->smsID->CellAttributes() ?>>
+<span id="el_sana_sms_smsID">
+<span<?php echo $sana_sms->smsID->ViewAttributes() ?>>
+<p class="form-control-static"><?php echo $sana_sms->smsID->EditValue ?></p></span>
 </span>
-<input type="hidden" data-table="sana_project" data-field="x_projectID" name="x_projectID" id="x_projectID" value="<?php echo ew_HtmlEncode($sana_project->projectID->CurrentValue) ?>">
-<?php echo $sana_project->projectID->CustomMsg ?></div></div>
+<input type="hidden" data-table="sana_sms" data-field="x_smsID" name="x_smsID" id="x_smsID" value="<?php echo ew_HtmlEncode($sana_sms->smsID->CurrentValue) ?>">
+<?php echo $sana_sms->smsID->CustomMsg ?></div></div>
 	</div>
 <?php } ?>
-<?php if ($sana_project->projectName->Visible) { // projectName ?>
-	<div id="r_projectName" class="form-group">
-		<label id="elh_sana_project_projectName" for="x_projectName" class="col-sm-2 control-label ewLabel"><?php echo $sana_project->projectName->FldCaption() ?><?php echo $Language->Phrase("FieldRequiredIndicator") ?></label>
-		<div class="col-sm-10"><div<?php echo $sana_project->projectName->CellAttributes() ?>>
-<span id="el_sana_project_projectName">
-<input type="text" data-table="sana_project" data-field="x_projectName" name="x_projectName" id="x_projectName" size="30" maxlength="255" placeholder="<?php echo ew_HtmlEncode($sana_project->projectName->getPlaceHolder()) ?>" value="<?php echo $sana_project->projectName->EditValue ?>"<?php echo $sana_project->projectName->EditAttributes() ?>>
+<?php if ($sana_sms->mobilePhone->Visible) { // mobilePhone ?>
+	<div id="r_mobilePhone" class="form-group">
+		<label id="elh_sana_sms_mobilePhone" for="x_mobilePhone" class="col-sm-2 control-label ewLabel"><?php echo $sana_sms->mobilePhone->FldCaption() ?><?php echo $Language->Phrase("FieldRequiredIndicator") ?></label>
+		<div class="col-sm-10"><div<?php echo $sana_sms->mobilePhone->CellAttributes() ?>>
+<span id="el_sana_sms_mobilePhone">
+<input type="text" data-table="sana_sms" data-field="x_mobilePhone" name="x_mobilePhone" id="x_mobilePhone" size="30" maxlength="15" placeholder="<?php echo ew_HtmlEncode($sana_sms->mobilePhone->getPlaceHolder()) ?>" value="<?php echo $sana_sms->mobilePhone->EditValue ?>"<?php echo $sana_sms->mobilePhone->EditAttributes() ?>>
 </span>
-<?php echo $sana_project->projectName->CustomMsg ?></div></div>
+<?php echo $sana_sms->mobilePhone->CustomMsg ?></div></div>
 	</div>
 <?php } ?>
-<?php if ($sana_project->description->Visible) { // description ?>
+<?php if ($sana_sms->message->Visible) { // message ?>
+	<div id="r_message" class="form-group">
+		<label id="elh_sana_sms_message" for="x_message" class="col-sm-2 control-label ewLabel"><?php echo $sana_sms->message->FldCaption() ?><?php echo $Language->Phrase("FieldRequiredIndicator") ?></label>
+		<div class="col-sm-10"><div<?php echo $sana_sms->message->CellAttributes() ?>>
+<span id="el_sana_sms_message">
+<input type="text" data-table="sana_sms" data-field="x_message" name="x_message" id="x_message" size="30" maxlength="255" placeholder="<?php echo ew_HtmlEncode($sana_sms->message->getPlaceHolder()) ?>" value="<?php echo $sana_sms->message->EditValue ?>"<?php echo $sana_sms->message->EditAttributes() ?>>
+</span>
+<?php echo $sana_sms->message->CustomMsg ?></div></div>
+	</div>
+<?php } ?>
+<?php if ($sana_sms->description->Visible) { // description ?>
 	<div id="r_description" class="form-group">
-		<label id="elh_sana_project_description" for="x_description" class="col-sm-2 control-label ewLabel"><?php echo $sana_project->description->FldCaption() ?></label>
-		<div class="col-sm-10"><div<?php echo $sana_project->description->CellAttributes() ?>>
-<span id="el_sana_project_description">
-<textarea data-table="sana_project" data-field="x_description" name="x_description" id="x_description" cols="35" rows="4" placeholder="<?php echo ew_HtmlEncode($sana_project->description->getPlaceHolder()) ?>"<?php echo $sana_project->description->EditAttributes() ?>><?php echo $sana_project->description->EditValue ?></textarea>
+		<label id="elh_sana_sms_description" for="x_description" class="col-sm-2 control-label ewLabel"><?php echo $sana_sms->description->FldCaption() ?></label>
+		<div class="col-sm-10"><div<?php echo $sana_sms->description->CellAttributes() ?>>
+<span id="el_sana_sms_description">
+<input type="text" data-table="sana_sms" data-field="x_description" name="x_description" id="x_description" size="30" maxlength="255" placeholder="<?php echo ew_HtmlEncode($sana_sms->description->getPlaceHolder()) ?>" value="<?php echo $sana_sms->description->EditValue ?>"<?php echo $sana_sms->description->EditAttributes() ?>>
 </span>
-<?php echo $sana_project->description->CustomMsg ?></div></div>
+<?php echo $sana_sms->description->CustomMsg ?></div></div>
 	</div>
 <?php } ?>
 </div>
 <div class="form-group">
 	<div class="col-sm-offset-2 col-sm-10">
 <button class="btn btn-primary ewButton" name="btnAction" id="btnAction" type="submit"><?php echo $Language->Phrase("SaveBtn") ?></button>
-<button class="btn btn-default ewButton" name="btnCancel" id="btnCancel" type="button" data-href="<?php echo $sana_project_edit->getReturnUrl() ?>"><?php echo $Language->Phrase("CancelBtn") ?></button>
+<button class="btn btn-default ewButton" name="btnCancel" id="btnCancel" type="button" data-href="<?php echo $sana_sms_edit->getReturnUrl() ?>"><?php echo $Language->Phrase("CancelBtn") ?></button>
 	</div>
 </div>
 </form>
 <script type="text/javascript">
-fsana_projectedit.Init();
+fsana_smsedit.Init();
 </script>
 <?php
-$sana_project_edit->ShowPageFooter();
+$sana_sms_edit->ShowPageFooter();
 if (EW_DEBUG_ENABLED)
 	echo ew_DebugMsg();
 ?>
@@ -942,5 +1001,5 @@ if (EW_DEBUG_ENABLED)
 </script>
 <?php include_once "footer.php" ?>
 <?php
-$sana_project_edit->Page_Terminate();
+$sana_sms_edit->Page_Terminate();
 ?>

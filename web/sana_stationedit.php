@@ -6,6 +6,7 @@ ob_start(); // Turn on output buffering
 <?php include_once ((EW_USE_ADODB) ? "adodb5/adodb.inc.php" : "ewmysql12.php") ?>
 <?php include_once "phpfn12.php" ?>
 <?php include_once "sana_stationinfo.php" ?>
+<?php include_once "sana_userinfo.php" ?>
 <?php include_once "userfn12.php" ?>
 <?php
 
@@ -142,7 +143,7 @@ class csana_station_edit extends csana_station {
 			$html .= "<div class=\"alert alert-danger ewError\">" . $sErrorMessage . "</div>";
 			$_SESSION[EW_SESSION_FAILURE_MESSAGE] = ""; // Clear message in Session
 		}
-		echo "<div class=\"ewMessageDialog\"" . (($hidden) ? " style=\"display: none;\"" : "") . ">" . $html . "</div>";
+		echo "<br><div class=\"ewMessageDialog\"" . (($hidden) ? " style=\"display: none;\"" : "") . ">" . $html . "</div>";
 	}
 	var $PageHeader;
 	var $PageFooter;
@@ -211,6 +212,7 @@ class csana_station_edit extends csana_station {
 	//
 	function __construct() {
 		global $conn, $Language;
+		global $UserTable, $UserTableConn;
 		$GLOBALS["Page"] = &$this;
 		$this->TokenTimeout = ew_SessionTimeoutTime();
 
@@ -226,6 +228,9 @@ class csana_station_edit extends csana_station {
 			$GLOBALS["Table"] = &$GLOBALS["sana_station"];
 		}
 
+		// Table object (sana_user)
+		if (!isset($GLOBALS['sana_user'])) $GLOBALS['sana_user'] = new csana_user();
+
 		// Page ID
 		if (!defined("EW_PAGE_ID"))
 			define("EW_PAGE_ID", 'edit', TRUE);
@@ -239,6 +244,12 @@ class csana_station_edit extends csana_station {
 
 		// Open connection
 		if (!isset($conn)) $conn = ew_Connect($this->DBID);
+
+		// User table object (sana_user)
+		if (!isset($UserTable)) {
+			$UserTable = new csana_user();
+			$UserTableConn = Conn($UserTable->DBID);
+		}
 	}
 
 	// 
@@ -246,6 +257,26 @@ class csana_station_edit extends csana_station {
 	//
 	function Page_Init() {
 		global $gsExport, $gsCustomExport, $gsExportFile, $UserProfile, $Language, $Security, $objForm;
+
+		// Security
+		$Security = new cAdvancedSecurity();
+		if (!$Security->IsLoggedIn()) $Security->AutoLogin();
+		if ($Security->IsLoggedIn()) $Security->TablePermission_Loading();
+		$Security->LoadCurrentUserLevel($this->ProjectID . $this->TableName);
+		if ($Security->IsLoggedIn()) $Security->TablePermission_Loaded();
+		if (!$Security->CanEdit()) {
+			$Security->SaveLastUrl();
+			$this->setFailureMessage($Language->Phrase("NoPermission")); // Set no permission
+			if ($Security->CanList())
+				$this->Page_Terminate(ew_GetUrl("sana_stationlist.php"));
+			else
+				$this->Page_Terminate(ew_GetUrl("login.php"));
+		}
+		if ($Security->IsLoggedIn()) {
+			$Security->UserID_Loading();
+			$Security->LoadUserID();
+			$Security->UserID_Loaded();
+		}
 
 		// Create form object
 		$objForm = new cFormObj();
@@ -453,6 +484,21 @@ class csana_station_edit extends csana_station {
 		if (!$this->description->FldIsDetailKey) {
 			$this->description->setFormValue($objForm->GetValue("x_description"));
 		}
+		if (!$this->address->FldIsDetailKey) {
+			$this->address->setFormValue($objForm->GetValue("x_address"));
+		}
+		if (!$this->GPS1->FldIsDetailKey) {
+			$this->GPS1->setFormValue($objForm->GetValue("x_GPS1"));
+		}
+		if (!$this->GPS2->FldIsDetailKey) {
+			$this->GPS2->setFormValue($objForm->GetValue("x_GPS2"));
+		}
+		if (!$this->GPS3->FldIsDetailKey) {
+			$this->GPS3->setFormValue($objForm->GetValue("x_GPS3"));
+		}
+		if (!$this->stationType->FldIsDetailKey) {
+			$this->stationType->setFormValue($objForm->GetValue("x_stationType"));
+		}
 	}
 
 	// Restore form values
@@ -463,6 +509,11 @@ class csana_station_edit extends csana_station {
 		$this->stationName->CurrentValue = $this->stationName->FormValue;
 		$this->projectID->CurrentValue = $this->projectID->FormValue;
 		$this->description->CurrentValue = $this->description->FormValue;
+		$this->address->CurrentValue = $this->address->FormValue;
+		$this->GPS1->CurrentValue = $this->GPS1->FormValue;
+		$this->GPS2->CurrentValue = $this->GPS2->FormValue;
+		$this->GPS3->CurrentValue = $this->GPS3->FormValue;
+		$this->stationType->CurrentValue = $this->stationType->FormValue;
 	}
 
 	// Load row based on key values
@@ -498,6 +549,11 @@ class csana_station_edit extends csana_station {
 		$this->stationName->setDbValue($rs->fields('stationName'));
 		$this->projectID->setDbValue($rs->fields('projectID'));
 		$this->description->setDbValue($rs->fields('description'));
+		$this->address->setDbValue($rs->fields('address'));
+		$this->GPS1->setDbValue($rs->fields('GPS1'));
+		$this->GPS2->setDbValue($rs->fields('GPS2'));
+		$this->GPS3->setDbValue($rs->fields('GPS3'));
+		$this->stationType->setDbValue($rs->fields('stationType'));
 	}
 
 	// Load DbValue from recordset
@@ -508,6 +564,11 @@ class csana_station_edit extends csana_station {
 		$this->stationName->DbValue = $row['stationName'];
 		$this->projectID->DbValue = $row['projectID'];
 		$this->description->DbValue = $row['description'];
+		$this->address->DbValue = $row['address'];
+		$this->GPS1->DbValue = $row['GPS1'];
+		$this->GPS2->DbValue = $row['GPS2'];
+		$this->GPS3->DbValue = $row['GPS3'];
+		$this->stationType->DbValue = $row['stationType'];
 	}
 
 	// Render row values based on field settings
@@ -524,6 +585,11 @@ class csana_station_edit extends csana_station {
 		// stationName
 		// projectID
 		// description
+		// address
+		// GPS1
+		// GPS2
+		// GPS3
+		// stationType
 
 		if ($this->RowType == EW_ROWTYPE_VIEW) { // View row
 
@@ -573,6 +639,26 @@ class csana_station_edit extends csana_station {
 		$this->description->ViewValue = $this->description->CurrentValue;
 		$this->description->ViewCustomAttributes = "";
 
+		// address
+		$this->address->ViewValue = $this->address->CurrentValue;
+		$this->address->ViewCustomAttributes = "";
+
+		// GPS1
+		$this->GPS1->ViewValue = $this->GPS1->CurrentValue;
+		$this->GPS1->ViewCustomAttributes = "";
+
+		// GPS2
+		$this->GPS2->ViewValue = $this->GPS2->CurrentValue;
+		$this->GPS2->ViewCustomAttributes = "";
+
+		// GPS3
+		$this->GPS3->ViewValue = $this->GPS3->CurrentValue;
+		$this->GPS3->ViewCustomAttributes = "";
+
+		// stationType
+		$this->stationType->ViewValue = $this->stationType->CurrentValue;
+		$this->stationType->ViewCustomAttributes = "";
+
 			// stationID
 			$this->stationID->LinkCustomAttributes = "";
 			$this->stationID->HrefValue = "";
@@ -592,6 +678,31 @@ class csana_station_edit extends csana_station {
 			$this->description->LinkCustomAttributes = "";
 			$this->description->HrefValue = "";
 			$this->description->TooltipValue = "";
+
+			// address
+			$this->address->LinkCustomAttributes = "";
+			$this->address->HrefValue = "";
+			$this->address->TooltipValue = "";
+
+			// GPS1
+			$this->GPS1->LinkCustomAttributes = "";
+			$this->GPS1->HrefValue = "";
+			$this->GPS1->TooltipValue = "";
+
+			// GPS2
+			$this->GPS2->LinkCustomAttributes = "";
+			$this->GPS2->HrefValue = "";
+			$this->GPS2->TooltipValue = "";
+
+			// GPS3
+			$this->GPS3->LinkCustomAttributes = "";
+			$this->GPS3->HrefValue = "";
+			$this->GPS3->TooltipValue = "";
+
+			// stationType
+			$this->stationType->LinkCustomAttributes = "";
+			$this->stationType->HrefValue = "";
+			$this->stationType->TooltipValue = "";
 		} elseif ($this->RowType == EW_ROWTYPE_EDIT) { // Edit row
 
 			// stationID
@@ -643,6 +754,36 @@ class csana_station_edit extends csana_station {
 			$this->description->EditValue = ew_HtmlEncode($this->description->CurrentValue);
 			$this->description->PlaceHolder = ew_RemoveHtml($this->description->FldCaption());
 
+			// address
+			$this->address->EditAttrs["class"] = "form-control";
+			$this->address->EditCustomAttributes = "";
+			$this->address->EditValue = ew_HtmlEncode($this->address->CurrentValue);
+			$this->address->PlaceHolder = ew_RemoveHtml($this->address->FldCaption());
+
+			// GPS1
+			$this->GPS1->EditAttrs["class"] = "form-control";
+			$this->GPS1->EditCustomAttributes = "";
+			$this->GPS1->EditValue = ew_HtmlEncode($this->GPS1->CurrentValue);
+			$this->GPS1->PlaceHolder = ew_RemoveHtml($this->GPS1->FldCaption());
+
+			// GPS2
+			$this->GPS2->EditAttrs["class"] = "form-control";
+			$this->GPS2->EditCustomAttributes = "";
+			$this->GPS2->EditValue = ew_HtmlEncode($this->GPS2->CurrentValue);
+			$this->GPS2->PlaceHolder = ew_RemoveHtml($this->GPS2->FldCaption());
+
+			// GPS3
+			$this->GPS3->EditAttrs["class"] = "form-control";
+			$this->GPS3->EditCustomAttributes = "";
+			$this->GPS3->EditValue = ew_HtmlEncode($this->GPS3->CurrentValue);
+			$this->GPS3->PlaceHolder = ew_RemoveHtml($this->GPS3->FldCaption());
+
+			// stationType
+			$this->stationType->EditAttrs["class"] = "form-control";
+			$this->stationType->EditCustomAttributes = "";
+			$this->stationType->EditValue = ew_HtmlEncode($this->stationType->CurrentValue);
+			$this->stationType->PlaceHolder = ew_RemoveHtml($this->stationType->FldCaption());
+
 			// Edit refer script
 			// stationID
 
@@ -660,6 +801,26 @@ class csana_station_edit extends csana_station {
 			// description
 			$this->description->LinkCustomAttributes = "";
 			$this->description->HrefValue = "";
+
+			// address
+			$this->address->LinkCustomAttributes = "";
+			$this->address->HrefValue = "";
+
+			// GPS1
+			$this->GPS1->LinkCustomAttributes = "";
+			$this->GPS1->HrefValue = "";
+
+			// GPS2
+			$this->GPS2->LinkCustomAttributes = "";
+			$this->GPS2->HrefValue = "";
+
+			// GPS3
+			$this->GPS3->LinkCustomAttributes = "";
+			$this->GPS3->HrefValue = "";
+
+			// stationType
+			$this->stationType->LinkCustomAttributes = "";
+			$this->stationType->HrefValue = "";
 		}
 		if ($this->RowType == EW_ROWTYPE_ADD ||
 			$this->RowType == EW_ROWTYPE_EDIT ||
@@ -684,6 +845,18 @@ class csana_station_edit extends csana_station {
 			return ($gsFormError == "");
 		if (!$this->stationName->FldIsDetailKey && !is_null($this->stationName->FormValue) && $this->stationName->FormValue == "") {
 			ew_AddMessage($gsFormError, str_replace("%s", $this->stationName->FldCaption(), $this->stationName->ReqErrMsg));
+		}
+		if (!$this->GPS1->FldIsDetailKey && !is_null($this->GPS1->FormValue) && $this->GPS1->FormValue == "") {
+			ew_AddMessage($gsFormError, str_replace("%s", $this->GPS1->FldCaption(), $this->GPS1->ReqErrMsg));
+		}
+		if (!$this->GPS2->FldIsDetailKey && !is_null($this->GPS2->FormValue) && $this->GPS2->FormValue == "") {
+			ew_AddMessage($gsFormError, str_replace("%s", $this->GPS2->FldCaption(), $this->GPS2->ReqErrMsg));
+		}
+		if (!$this->GPS3->FldIsDetailKey && !is_null($this->GPS3->FormValue) && $this->GPS3->FormValue == "") {
+			ew_AddMessage($gsFormError, str_replace("%s", $this->GPS3->FldCaption(), $this->GPS3->ReqErrMsg));
+		}
+		if (!$this->stationType->FldIsDetailKey && !is_null($this->stationType->FormValue) && $this->stationType->FormValue == "") {
+			ew_AddMessage($gsFormError, str_replace("%s", $this->stationType->FldCaption(), $this->stationType->ReqErrMsg));
 		}
 
 		// Return validate result
@@ -729,6 +902,21 @@ class csana_station_edit extends csana_station {
 
 			// description
 			$this->description->SetDbValueDef($rsnew, $this->description->CurrentValue, NULL, $this->description->ReadOnly);
+
+			// address
+			$this->address->SetDbValueDef($rsnew, $this->address->CurrentValue, NULL, $this->address->ReadOnly);
+
+			// GPS1
+			$this->GPS1->SetDbValueDef($rsnew, $this->GPS1->CurrentValue, "", $this->GPS1->ReadOnly);
+
+			// GPS2
+			$this->GPS2->SetDbValueDef($rsnew, $this->GPS2->CurrentValue, "", $this->GPS2->ReadOnly);
+
+			// GPS3
+			$this->GPS3->SetDbValueDef($rsnew, $this->GPS3->CurrentValue, "", $this->GPS3->ReadOnly);
+
+			// stationType
+			$this->stationType->SetDbValueDef($rsnew, $this->stationType->CurrentValue, "", $this->stationType->ReadOnly);
 
 			// Call Row Updating event
 			$bUpdateRow = $this->Row_Updating($rsold, $rsnew);
@@ -883,6 +1071,18 @@ fsana_stationedit.Validate = function() {
 			elm = this.GetElements("x" + infix + "_stationName");
 			if (elm && !ew_IsHidden(elm) && !ew_HasValue(elm))
 				return this.OnError(elm, "<?php echo ew_JsEncode2(str_replace("%s", $sana_station->stationName->FldCaption(), $sana_station->stationName->ReqErrMsg)) ?>");
+			elm = this.GetElements("x" + infix + "_GPS1");
+			if (elm && !ew_IsHidden(elm) && !ew_HasValue(elm))
+				return this.OnError(elm, "<?php echo ew_JsEncode2(str_replace("%s", $sana_station->GPS1->FldCaption(), $sana_station->GPS1->ReqErrMsg)) ?>");
+			elm = this.GetElements("x" + infix + "_GPS2");
+			if (elm && !ew_IsHidden(elm) && !ew_HasValue(elm))
+				return this.OnError(elm, "<?php echo ew_JsEncode2(str_replace("%s", $sana_station->GPS2->FldCaption(), $sana_station->GPS2->ReqErrMsg)) ?>");
+			elm = this.GetElements("x" + infix + "_GPS3");
+			if (elm && !ew_IsHidden(elm) && !ew_HasValue(elm))
+				return this.OnError(elm, "<?php echo ew_JsEncode2(str_replace("%s", $sana_station->GPS3->FldCaption(), $sana_station->GPS3->ReqErrMsg)) ?>");
+			elm = this.GetElements("x" + infix + "_stationType");
+			if (elm && !ew_IsHidden(elm) && !ew_HasValue(elm))
+				return this.OnError(elm, "<?php echo ew_JsEncode2(str_replace("%s", $sana_station->stationType->FldCaption(), $sana_station->stationType->ReqErrMsg)) ?>");
 
 			// Fire Form_CustomValidate event
 			if (!this.Form_CustomValidate(fobj))
@@ -1025,6 +1225,56 @@ if ($sSqlWrk <> "") $sana_station->projectID->LookupFilters["s"] .= $sSqlWrk;
 <textarea data-table="sana_station" data-field="x_description" name="x_description" id="x_description" cols="35" rows="4" placeholder="<?php echo ew_HtmlEncode($sana_station->description->getPlaceHolder()) ?>"<?php echo $sana_station->description->EditAttributes() ?>><?php echo $sana_station->description->EditValue ?></textarea>
 </span>
 <?php echo $sana_station->description->CustomMsg ?></div></div>
+	</div>
+<?php } ?>
+<?php if ($sana_station->address->Visible) { // address ?>
+	<div id="r_address" class="form-group">
+		<label id="elh_sana_station_address" for="x_address" class="col-sm-2 control-label ewLabel"><?php echo $sana_station->address->FldCaption() ?></label>
+		<div class="col-sm-10"><div<?php echo $sana_station->address->CellAttributes() ?>>
+<span id="el_sana_station_address">
+<input type="text" data-table="sana_station" data-field="x_address" name="x_address" id="x_address" size="30" maxlength="255" placeholder="<?php echo ew_HtmlEncode($sana_station->address->getPlaceHolder()) ?>" value="<?php echo $sana_station->address->EditValue ?>"<?php echo $sana_station->address->EditAttributes() ?>>
+</span>
+<?php echo $sana_station->address->CustomMsg ?></div></div>
+	</div>
+<?php } ?>
+<?php if ($sana_station->GPS1->Visible) { // GPS1 ?>
+	<div id="r_GPS1" class="form-group">
+		<label id="elh_sana_station_GPS1" for="x_GPS1" class="col-sm-2 control-label ewLabel"><?php echo $sana_station->GPS1->FldCaption() ?><?php echo $Language->Phrase("FieldRequiredIndicator") ?></label>
+		<div class="col-sm-10"><div<?php echo $sana_station->GPS1->CellAttributes() ?>>
+<span id="el_sana_station_GPS1">
+<input type="text" data-table="sana_station" data-field="x_GPS1" name="x_GPS1" id="x_GPS1" size="30" maxlength="10" placeholder="<?php echo ew_HtmlEncode($sana_station->GPS1->getPlaceHolder()) ?>" value="<?php echo $sana_station->GPS1->EditValue ?>"<?php echo $sana_station->GPS1->EditAttributes() ?>>
+</span>
+<?php echo $sana_station->GPS1->CustomMsg ?></div></div>
+	</div>
+<?php } ?>
+<?php if ($sana_station->GPS2->Visible) { // GPS2 ?>
+	<div id="r_GPS2" class="form-group">
+		<label id="elh_sana_station_GPS2" for="x_GPS2" class="col-sm-2 control-label ewLabel"><?php echo $sana_station->GPS2->FldCaption() ?><?php echo $Language->Phrase("FieldRequiredIndicator") ?></label>
+		<div class="col-sm-10"><div<?php echo $sana_station->GPS2->CellAttributes() ?>>
+<span id="el_sana_station_GPS2">
+<input type="text" data-table="sana_station" data-field="x_GPS2" name="x_GPS2" id="x_GPS2" size="30" maxlength="10" placeholder="<?php echo ew_HtmlEncode($sana_station->GPS2->getPlaceHolder()) ?>" value="<?php echo $sana_station->GPS2->EditValue ?>"<?php echo $sana_station->GPS2->EditAttributes() ?>>
+</span>
+<?php echo $sana_station->GPS2->CustomMsg ?></div></div>
+	</div>
+<?php } ?>
+<?php if ($sana_station->GPS3->Visible) { // GPS3 ?>
+	<div id="r_GPS3" class="form-group">
+		<label id="elh_sana_station_GPS3" for="x_GPS3" class="col-sm-2 control-label ewLabel"><?php echo $sana_station->GPS3->FldCaption() ?><?php echo $Language->Phrase("FieldRequiredIndicator") ?></label>
+		<div class="col-sm-10"><div<?php echo $sana_station->GPS3->CellAttributes() ?>>
+<span id="el_sana_station_GPS3">
+<input type="text" data-table="sana_station" data-field="x_GPS3" name="x_GPS3" id="x_GPS3" size="30" maxlength="10" placeholder="<?php echo ew_HtmlEncode($sana_station->GPS3->getPlaceHolder()) ?>" value="<?php echo $sana_station->GPS3->EditValue ?>"<?php echo $sana_station->GPS3->EditAttributes() ?>>
+</span>
+<?php echo $sana_station->GPS3->CustomMsg ?></div></div>
+	</div>
+<?php } ?>
+<?php if ($sana_station->stationType->Visible) { // stationType ?>
+	<div id="r_stationType" class="form-group">
+		<label id="elh_sana_station_stationType" for="x_stationType" class="col-sm-2 control-label ewLabel"><?php echo $sana_station->stationType->FldCaption() ?><?php echo $Language->Phrase("FieldRequiredIndicator") ?></label>
+		<div class="col-sm-10"><div<?php echo $sana_station->stationType->CellAttributes() ?>>
+<span id="el_sana_station_stationType">
+<input type="text" data-table="sana_station" data-field="x_stationType" name="x_stationType" id="x_stationType" size="30" maxlength="255" placeholder="<?php echo ew_HtmlEncode($sana_station->stationType->getPlaceHolder()) ?>" value="<?php echo $sana_station->stationType->EditValue ?>"<?php echo $sana_station->stationType->EditAttributes() ?>>
+</span>
+<?php echo $sana_station->stationType->CustomMsg ?></div></div>
 	</div>
 <?php } ?>
 </div>

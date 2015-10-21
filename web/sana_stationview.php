@@ -6,6 +6,7 @@ ob_start(); // Turn on output buffering
 <?php include_once ((EW_USE_ADODB) ? "adodb5/adodb.inc.php" : "ewmysql12.php") ?>
 <?php include_once "phpfn12.php" ?>
 <?php include_once "sana_stationinfo.php" ?>
+<?php include_once "sana_userinfo.php" ?>
 <?php include_once "userfn12.php" ?>
 <?php
 
@@ -174,7 +175,7 @@ class csana_station_view extends csana_station {
 			$html .= "<div class=\"alert alert-danger ewError\">" . $sErrorMessage . "</div>";
 			$_SESSION[EW_SESSION_FAILURE_MESSAGE] = ""; // Clear message in Session
 		}
-		echo "<div class=\"ewMessageDialog\"" . (($hidden) ? " style=\"display: none;\"" : "") . ">" . $html . "</div>";
+		echo "<br><div class=\"ewMessageDialog\"" . (($hidden) ? " style=\"display: none;\"" : "") . ">" . $html . "</div>";
 	}
 	var $PageHeader;
 	var $PageFooter;
@@ -243,6 +244,7 @@ class csana_station_view extends csana_station {
 	//
 	function __construct() {
 		global $conn, $Language;
+		global $UserTable, $UserTableConn;
 		$GLOBALS["Page"] = &$this;
 		$this->TokenTimeout = ew_SessionTimeoutTime();
 
@@ -270,6 +272,9 @@ class csana_station_view extends csana_station {
 		$this->ExportCsvUrl = $this->PageUrl() . "export=csv" . $KeyUrl;
 		$this->ExportPdfUrl = $this->PageUrl() . "export=pdf" . $KeyUrl;
 
+		// Table object (sana_user)
+		if (!isset($GLOBALS['sana_user'])) $GLOBALS['sana_user'] = new csana_user();
+
 		// Page ID
 		if (!defined("EW_PAGE_ID"))
 			define("EW_PAGE_ID", 'view', TRUE);
@@ -283,6 +288,12 @@ class csana_station_view extends csana_station {
 
 		// Open connection
 		if (!isset($conn)) $conn = ew_Connect($this->DBID);
+
+		// User table object (sana_user)
+		if (!isset($UserTable)) {
+			$UserTable = new csana_user();
+			$UserTableConn = Conn($UserTable->DBID);
+		}
 
 		// Export options
 		$this->ExportOptions = new cListOptions();
@@ -303,6 +314,26 @@ class csana_station_view extends csana_station {
 	//
 	function Page_Init() {
 		global $gsExport, $gsCustomExport, $gsExportFile, $UserProfile, $Language, $Security, $objForm;
+
+		// Security
+		$Security = new cAdvancedSecurity();
+		if (!$Security->IsLoggedIn()) $Security->AutoLogin();
+		if ($Security->IsLoggedIn()) $Security->TablePermission_Loading();
+		$Security->LoadCurrentUserLevel($this->ProjectID . $this->TableName);
+		if ($Security->IsLoggedIn()) $Security->TablePermission_Loaded();
+		if (!$Security->CanView()) {
+			$Security->SaveLastUrl();
+			$this->setFailureMessage($Language->Phrase("NoPermission")); // Set no permission
+			if ($Security->CanList())
+				$this->Page_Terminate(ew_GetUrl("sana_stationlist.php"));
+			else
+				$this->Page_Terminate(ew_GetUrl("login.php"));
+		}
+		if ($Security->IsLoggedIn()) {
+			$Security->UserID_Loading();
+			$Security->LoadUserID();
+			$Security->UserID_Loaded();
+		}
 		$this->CurrentAction = (@$_GET["a"] <> "") ? $_GET["a"] : @$_POST["a_list"]; // Set up current action
 		$this->stationID->Visible = !$this->IsAdd() && !$this->IsCopy() && !$this->IsGridAdd();
 
@@ -431,22 +462,17 @@ class csana_station_view extends csana_station {
 		// Add
 		$item = &$option->Add("add");
 		$item->Body = "<a class=\"ewAction ewAdd\" title=\"" . ew_HtmlTitle($Language->Phrase("ViewPageAddLink")) . "\" data-caption=\"" . ew_HtmlTitle($Language->Phrase("ViewPageAddLink")) . "\" href=\"" . ew_HtmlEncode($this->AddUrl) . "\">" . $Language->Phrase("ViewPageAddLink") . "</a>";
-		$item->Visible = ($this->AddUrl <> "");
+		$item->Visible = ($this->AddUrl <> "" && $Security->CanAdd());
 
 		// Edit
 		$item = &$option->Add("edit");
 		$item->Body = "<a class=\"ewAction ewEdit\" title=\"" . ew_HtmlTitle($Language->Phrase("ViewPageEditLink")) . "\" data-caption=\"" . ew_HtmlTitle($Language->Phrase("ViewPageEditLink")) . "\" href=\"" . ew_HtmlEncode($this->EditUrl) . "\">" . $Language->Phrase("ViewPageEditLink") . "</a>";
-		$item->Visible = ($this->EditUrl <> "");
-
-		// Copy
-		$item = &$option->Add("copy");
-		$item->Body = "<a class=\"ewAction ewCopy\" title=\"" . ew_HtmlTitle($Language->Phrase("ViewPageCopyLink")) . "\" data-caption=\"" . ew_HtmlTitle($Language->Phrase("ViewPageCopyLink")) . "\" href=\"" . ew_HtmlEncode($this->CopyUrl) . "\">" . $Language->Phrase("ViewPageCopyLink") . "</a>";
-		$item->Visible = ($this->CopyUrl <> "");
+		$item->Visible = ($this->EditUrl <> "" && $Security->CanEdit());
 
 		// Delete
 		$item = &$option->Add("delete");
 		$item->Body = "<a class=\"ewAction ewDelete\" title=\"" . ew_HtmlTitle($Language->Phrase("ViewPageDeleteLink")) . "\" data-caption=\"" . ew_HtmlTitle($Language->Phrase("ViewPageDeleteLink")) . "\" href=\"" . ew_HtmlEncode($this->DeleteUrl) . "\">" . $Language->Phrase("ViewPageDeleteLink") . "</a>";
-		$item->Visible = ($this->DeleteUrl <> "");
+		$item->Visible = ($this->DeleteUrl <> "" && $Security->CanDelete());
 
 		// Set up action default
 		$option = &$options["action"];
@@ -528,6 +554,11 @@ class csana_station_view extends csana_station {
 		$this->stationName->setDbValue($rs->fields('stationName'));
 		$this->projectID->setDbValue($rs->fields('projectID'));
 		$this->description->setDbValue($rs->fields('description'));
+		$this->address->setDbValue($rs->fields('address'));
+		$this->GPS1->setDbValue($rs->fields('GPS1'));
+		$this->GPS2->setDbValue($rs->fields('GPS2'));
+		$this->GPS3->setDbValue($rs->fields('GPS3'));
+		$this->stationType->setDbValue($rs->fields('stationType'));
 	}
 
 	// Load DbValue from recordset
@@ -538,6 +569,11 @@ class csana_station_view extends csana_station {
 		$this->stationName->DbValue = $row['stationName'];
 		$this->projectID->DbValue = $row['projectID'];
 		$this->description->DbValue = $row['description'];
+		$this->address->DbValue = $row['address'];
+		$this->GPS1->DbValue = $row['GPS1'];
+		$this->GPS2->DbValue = $row['GPS2'];
+		$this->GPS3->DbValue = $row['GPS3'];
+		$this->stationType->DbValue = $row['stationType'];
 	}
 
 	// Render row values based on field settings
@@ -560,6 +596,11 @@ class csana_station_view extends csana_station {
 		// stationName
 		// projectID
 		// description
+		// address
+		// GPS1
+		// GPS2
+		// GPS3
+		// stationType
 
 		if ($this->RowType == EW_ROWTYPE_VIEW) { // View row
 
@@ -609,6 +650,26 @@ class csana_station_view extends csana_station {
 		$this->description->ViewValue = $this->description->CurrentValue;
 		$this->description->ViewCustomAttributes = "";
 
+		// address
+		$this->address->ViewValue = $this->address->CurrentValue;
+		$this->address->ViewCustomAttributes = "";
+
+		// GPS1
+		$this->GPS1->ViewValue = $this->GPS1->CurrentValue;
+		$this->GPS1->ViewCustomAttributes = "";
+
+		// GPS2
+		$this->GPS2->ViewValue = $this->GPS2->CurrentValue;
+		$this->GPS2->ViewCustomAttributes = "";
+
+		// GPS3
+		$this->GPS3->ViewValue = $this->GPS3->CurrentValue;
+		$this->GPS3->ViewCustomAttributes = "";
+
+		// stationType
+		$this->stationType->ViewValue = $this->stationType->CurrentValue;
+		$this->stationType->ViewCustomAttributes = "";
+
 			// stationID
 			$this->stationID->LinkCustomAttributes = "";
 			$this->stationID->HrefValue = "";
@@ -628,6 +689,31 @@ class csana_station_view extends csana_station {
 			$this->description->LinkCustomAttributes = "";
 			$this->description->HrefValue = "";
 			$this->description->TooltipValue = "";
+
+			// address
+			$this->address->LinkCustomAttributes = "";
+			$this->address->HrefValue = "";
+			$this->address->TooltipValue = "";
+
+			// GPS1
+			$this->GPS1->LinkCustomAttributes = "";
+			$this->GPS1->HrefValue = "";
+			$this->GPS1->TooltipValue = "";
+
+			// GPS2
+			$this->GPS2->LinkCustomAttributes = "";
+			$this->GPS2->HrefValue = "";
+			$this->GPS2->TooltipValue = "";
+
+			// GPS3
+			$this->GPS3->LinkCustomAttributes = "";
+			$this->GPS3->HrefValue = "";
+			$this->GPS3->TooltipValue = "";
+
+			// stationType
+			$this->stationType->LinkCustomAttributes = "";
+			$this->stationType->HrefValue = "";
+			$this->stationType->TooltipValue = "";
 		}
 
 		// Call Row Rendered event
@@ -841,6 +927,61 @@ $sana_station_view->ShowMessage();
 <span id="el_sana_station_description">
 <span<?php echo $sana_station->description->ViewAttributes() ?>>
 <?php echo $sana_station->description->ViewValue ?></span>
+</span>
+</td>
+	</tr>
+<?php } ?>
+<?php if ($sana_station->address->Visible) { // address ?>
+	<tr id="r_address">
+		<td><span id="elh_sana_station_address"><?php echo $sana_station->address->FldCaption() ?></span></td>
+		<td data-name="address"<?php echo $sana_station->address->CellAttributes() ?>>
+<span id="el_sana_station_address">
+<span<?php echo $sana_station->address->ViewAttributes() ?>>
+<?php echo $sana_station->address->ViewValue ?></span>
+</span>
+</td>
+	</tr>
+<?php } ?>
+<?php if ($sana_station->GPS1->Visible) { // GPS1 ?>
+	<tr id="r_GPS1">
+		<td><span id="elh_sana_station_GPS1"><?php echo $sana_station->GPS1->FldCaption() ?></span></td>
+		<td data-name="GPS1"<?php echo $sana_station->GPS1->CellAttributes() ?>>
+<span id="el_sana_station_GPS1">
+<span<?php echo $sana_station->GPS1->ViewAttributes() ?>>
+<?php echo $sana_station->GPS1->ViewValue ?></span>
+</span>
+</td>
+	</tr>
+<?php } ?>
+<?php if ($sana_station->GPS2->Visible) { // GPS2 ?>
+	<tr id="r_GPS2">
+		<td><span id="elh_sana_station_GPS2"><?php echo $sana_station->GPS2->FldCaption() ?></span></td>
+		<td data-name="GPS2"<?php echo $sana_station->GPS2->CellAttributes() ?>>
+<span id="el_sana_station_GPS2">
+<span<?php echo $sana_station->GPS2->ViewAttributes() ?>>
+<?php echo $sana_station->GPS2->ViewValue ?></span>
+</span>
+</td>
+	</tr>
+<?php } ?>
+<?php if ($sana_station->GPS3->Visible) { // GPS3 ?>
+	<tr id="r_GPS3">
+		<td><span id="elh_sana_station_GPS3"><?php echo $sana_station->GPS3->FldCaption() ?></span></td>
+		<td data-name="GPS3"<?php echo $sana_station->GPS3->CellAttributes() ?>>
+<span id="el_sana_station_GPS3">
+<span<?php echo $sana_station->GPS3->ViewAttributes() ?>>
+<?php echo $sana_station->GPS3->ViewValue ?></span>
+</span>
+</td>
+	</tr>
+<?php } ?>
+<?php if ($sana_station->stationType->Visible) { // stationType ?>
+	<tr id="r_stationType">
+		<td><span id="elh_sana_station_stationType"><?php echo $sana_station->stationType->FldCaption() ?></span></td>
+		<td data-name="stationType"<?php echo $sana_station->stationType->CellAttributes() ?>>
+<span id="el_sana_station_stationType">
+<span<?php echo $sana_station->stationType->ViewAttributes() ?>>
+<?php echo $sana_station->stationType->ViewValue ?></span>
 </span>
 </td>
 	</tr>

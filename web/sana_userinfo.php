@@ -140,7 +140,7 @@ class csana_user extends cTable {
 		$this->fields['mobilePhone'] = &$this->mobilePhone;
 
 		// userPassword
-		$this->userPassword = new cField('sana_user', 'sana_user', 'x_userPassword', 'userPassword', '`userPassword`', '`userPassword`', 200, -1, FALSE, '`userPassword`', FALSE, FALSE, FALSE, 'FORMATTED TEXT', 'TEXT');
+		$this->userPassword = new cField('sana_user', 'sana_user', 'x_userPassword', 'userPassword', '`userPassword`', '`userPassword`', 200, -1, FALSE, '`userPassword`', FALSE, FALSE, FALSE, 'FORMATTED TEXT', 'PASSWORD');
 		$this->fields['userPassword'] = &$this->userPassword;
 
 		// email
@@ -152,7 +152,7 @@ class csana_user extends cTable {
 		$this->fields['picture'] = &$this->picture;
 
 		// registrationUser
-		$this->registrationUser = new cField('sana_user', 'sana_user', 'x_registrationUser', 'registrationUser', '`registrationUser`', '`registrationUser`', 3, -1, FALSE, '`registrationUser`', FALSE, FALSE, FALSE, 'FORMATTED TEXT', 'TEXT');
+		$this->registrationUser = new cField('sana_user', 'sana_user', 'x_registrationUser', 'registrationUser', '`registrationUser`', '`registrationUser`', 3, -1, FALSE, '`registrationUser`', FALSE, FALSE, FALSE, 'FORMATTED TEXT', 'SELECT');
 		$this->registrationUser->FldDefaultErrMsg = $Language->Phrase("IncorrectInteger");
 		$this->fields['registrationUser'] = &$this->registrationUser;
 
@@ -803,7 +803,7 @@ class csana_user extends cTable {
 		$this->mobilePhone->ViewCustomAttributes = "";
 
 		// userPassword
-		$this->userPassword->ViewValue = $this->userPassword->CurrentValue;
+		$this->userPassword->ViewValue = $Language->Phrase("PasswordMask");
 		$this->userPassword->ViewCustomAttributes = "";
 
 		// email
@@ -819,7 +819,6 @@ class csana_user extends cTable {
 		$this->picture->ViewCustomAttributes = "";
 
 		// registrationUser
-		$this->registrationUser->ViewValue = $this->registrationUser->CurrentValue;
 		$this->registrationUser->ViewCustomAttributes = "";
 
 		// registrationDateTime
@@ -1157,55 +1156,10 @@ class csana_user extends cTable {
 			$this->picture->Upload->FileName = $this->picture->CurrentValue;
 
 		// registrationUser
-		$this->registrationUser->EditAttrs["class"] = "form-control";
-		$this->registrationUser->EditCustomAttributes = "";
-		$this->registrationUser->EditValue = $this->registrationUser->CurrentValue;
-		$this->registrationUser->PlaceHolder = ew_RemoveHtml($this->registrationUser->FldCaption());
-
 		// registrationDateTime
-		$this->registrationDateTime->EditAttrs["class"] = "form-control";
-		$this->registrationDateTime->EditCustomAttributes = "";
-		$this->registrationDateTime->EditValue = ew_FormatDateTime($this->registrationDateTime->CurrentValue, 5);
-		$this->registrationDateTime->PlaceHolder = ew_RemoveHtml($this->registrationDateTime->FldCaption());
-
 		// stationID
-		$this->stationID->EditAttrs["class"] = "form-control";
-		$this->stationID->EditCustomAttributes = "";
-		if (!$Security->IsAdmin() && $Security->IsLoggedIn()) { // Non system admin
-			if (strval($this->_userID->CurrentValue) == strval(CurrentUserID())) {
-		$this->stationID->EditValue = $this->stationID->CurrentValue;
-		$this->stationID->ViewCustomAttributes = "";
-			} else {
-		$sFilterWrk = "";
-		$sFilterWrk = $GLOBALS["sana_user"]->AddParentUserIDFilter("", $this->_userID->CurrentValue);
-		switch (@$gsLanguage) {
-			case "en":
-				$sSqlWrk = "SELECT `userID`, `userID` AS `DispFld`, '' AS `Disp2Fld`, '' AS `Disp3Fld`, '' AS `Disp4Fld`, '' AS `SelectFilterFld`, '' AS `SelectFilterFld2`, '' AS `SelectFilterFld3`, '' AS `SelectFilterFld4` FROM `sana_user`";
-				$sWhereWrk = "";
-				break;
-			case "fa":
-				$sSqlWrk = "SELECT `userID`, `userID` AS `DispFld`, '' AS `Disp2Fld`, '' AS `Disp3Fld`, '' AS `Disp4Fld`, '' AS `SelectFilterFld`, '' AS `SelectFilterFld2`, '' AS `SelectFilterFld3`, '' AS `SelectFilterFld4` FROM `sana_user`";
-				$sWhereWrk = "";
-				break;
-			default:
-				$sSqlWrk = "SELECT `userID`, `userID` AS `DispFld`, '' AS `Disp2Fld`, '' AS `Disp3Fld`, '' AS `Disp4Fld`, '' AS `SelectFilterFld`, '' AS `SelectFilterFld2`, '' AS `SelectFilterFld3`, '' AS `SelectFilterFld4` FROM `sana_user`";
-				$sWhereWrk = "";
-				break;
-		}
-		ew_AddFilter($sWhereWrk, $sFilterWrk);
-		$this->Lookup_Selecting($this->stationID, $sWhereWrk); // Call Lookup selecting
-		if ($sWhereWrk <> "") $sSqlWrk .= " WHERE " . $sWhereWrk;
-		$rswrk = Conn()->Execute($sSqlWrk);
-		$arwrk = ($rswrk) ? $rswrk->GetRows() : array();
-		if ($rswrk) $rswrk->Close();
-		$this->stationID->EditValue = $arwrk;
-			}
-		} else {
-		$this->stationID->EditValue = $this->stationID->CurrentValue;
-		$this->stationID->PlaceHolder = ew_RemoveHtml($this->stationID->FldCaption());
-		}
-
 		// isolatedDateTime
+
 		$this->isolatedDateTime->EditAttrs["class"] = "form-control";
 		$this->isolatedDateTime->EditCustomAttributes = "";
 		$this->isolatedDateTime->EditValue = ew_FormatDateTime($this->isolatedDateTime->CurrentValue, 5);
@@ -1256,19 +1210,8 @@ class csana_user extends cTable {
 					if ($this->username->Exportable) $Doc->ExportCaption($this->username);
 					if ($this->personName->Exportable) $Doc->ExportCaption($this->personName);
 					if ($this->lastName->Exportable) $Doc->ExportCaption($this->lastName);
-					if ($this->nationalID->Exportable) $Doc->ExportCaption($this->nationalID);
 					if ($this->nationalNumber->Exportable) $Doc->ExportCaption($this->nationalNumber);
-					if ($this->fatherName->Exportable) $Doc->ExportCaption($this->fatherName);
-					if ($this->country->Exportable) $Doc->ExportCaption($this->country);
-					if ($this->province->Exportable) $Doc->ExportCaption($this->province);
-					if ($this->county->Exportable) $Doc->ExportCaption($this->county);
-					if ($this->district->Exportable) $Doc->ExportCaption($this->district);
-					if ($this->city_ruralDistrict->Exportable) $Doc->ExportCaption($this->city_ruralDistrict);
-					if ($this->region_village->Exportable) $Doc->ExportCaption($this->region_village);
-					if ($this->address->Exportable) $Doc->ExportCaption($this->address);
-					if ($this->birthDate->Exportable) $Doc->ExportCaption($this->birthDate);
 					if ($this->ageRange->Exportable) $Doc->ExportCaption($this->ageRange);
-					if ($this->phone->Exportable) $Doc->ExportCaption($this->phone);
 					if ($this->mobilePhone->Exportable) $Doc->ExportCaption($this->mobilePhone);
 					if ($this->userPassword->Exportable) $Doc->ExportCaption($this->userPassword);
 					if ($this->_email->Exportable) $Doc->ExportCaption($this->_email);
@@ -1276,7 +1219,6 @@ class csana_user extends cTable {
 					if ($this->registrationUser->Exportable) $Doc->ExportCaption($this->registrationUser);
 					if ($this->registrationDateTime->Exportable) $Doc->ExportCaption($this->registrationDateTime);
 					if ($this->stationID->Exportable) $Doc->ExportCaption($this->stationID);
-					if ($this->isolatedDateTime->Exportable) $Doc->ExportCaption($this->isolatedDateTime);
 					if ($this->acl->Exportable) $Doc->ExportCaption($this->acl);
 					if ($this->description->Exportable) $Doc->ExportCaption($this->description);
 				} else {
@@ -1341,19 +1283,8 @@ class csana_user extends cTable {
 						if ($this->username->Exportable) $Doc->ExportField($this->username);
 						if ($this->personName->Exportable) $Doc->ExportField($this->personName);
 						if ($this->lastName->Exportable) $Doc->ExportField($this->lastName);
-						if ($this->nationalID->Exportable) $Doc->ExportField($this->nationalID);
 						if ($this->nationalNumber->Exportable) $Doc->ExportField($this->nationalNumber);
-						if ($this->fatherName->Exportable) $Doc->ExportField($this->fatherName);
-						if ($this->country->Exportable) $Doc->ExportField($this->country);
-						if ($this->province->Exportable) $Doc->ExportField($this->province);
-						if ($this->county->Exportable) $Doc->ExportField($this->county);
-						if ($this->district->Exportable) $Doc->ExportField($this->district);
-						if ($this->city_ruralDistrict->Exportable) $Doc->ExportField($this->city_ruralDistrict);
-						if ($this->region_village->Exportable) $Doc->ExportField($this->region_village);
-						if ($this->address->Exportable) $Doc->ExportField($this->address);
-						if ($this->birthDate->Exportable) $Doc->ExportField($this->birthDate);
 						if ($this->ageRange->Exportable) $Doc->ExportField($this->ageRange);
-						if ($this->phone->Exportable) $Doc->ExportField($this->phone);
 						if ($this->mobilePhone->Exportable) $Doc->ExportField($this->mobilePhone);
 						if ($this->userPassword->Exportable) $Doc->ExportField($this->userPassword);
 						if ($this->_email->Exportable) $Doc->ExportField($this->_email);
@@ -1361,7 +1292,6 @@ class csana_user extends cTable {
 						if ($this->registrationUser->Exportable) $Doc->ExportField($this->registrationUser);
 						if ($this->registrationDateTime->Exportable) $Doc->ExportField($this->registrationDateTime);
 						if ($this->stationID->Exportable) $Doc->ExportField($this->stationID);
-						if ($this->isolatedDateTime->Exportable) $Doc->ExportField($this->isolatedDateTime);
 						if ($this->acl->Exportable) $Doc->ExportField($this->acl);
 						if ($this->description->Exportable) $Doc->ExportField($this->description);
 					} else {

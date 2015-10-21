@@ -1,21 +1,18 @@
 <?php
 
 // Global variable for table object
-$sana_station = NULL;
+$sana_sms = NULL;
 
 //
-// Table class for sana_station
+// Table class for sana_sms
 //
-class csana_station extends cTable {
-	var $stationID;
-	var $stationName;
-	var $projectID;
+class csana_sms extends cTable {
+	var $smsID;
+	var $_userID;
+	var $mobilePhone;
+	var $message;
+	var $result;
 	var $description;
-	var $address;
-	var $GPS1;
-	var $GPS2;
-	var $GPS3;
-	var $stationType;
 
 	//
 	// Table class constructor
@@ -25,12 +22,12 @@ class csana_station extends cTable {
 
 		// Language object
 		if (!isset($Language)) $Language = new cLanguage();
-		$this->TableVar = 'sana_station';
-		$this->TableName = 'sana_station';
+		$this->TableVar = 'sana_sms';
+		$this->TableName = 'sana_sms';
 		$this->TableType = 'TABLE';
 
 		// Update Table
-		$this->UpdateTable = "`sana_station`";
+		$this->UpdateTable = "`sana_sms`";
 		$this->DBID = 'DB';
 		$this->ExportAll = TRUE;
 		$this->ExportPageBreakCount = 0; // Page break per every n record (PDF only)
@@ -47,43 +44,31 @@ class csana_station extends cTable {
 		$this->UserIDAllowSecurity = 0; // User ID Allow
 		$this->BasicSearch = new cBasicSearch($this->TableVar);
 
-		// stationID
-		$this->stationID = new cField('sana_station', 'sana_station', 'x_stationID', 'stationID', '`stationID`', '`stationID`', 3, -1, FALSE, '`stationID`', FALSE, FALSE, FALSE, 'FORMATTED TEXT', 'NO');
-		$this->stationID->FldDefaultErrMsg = $Language->Phrase("IncorrectInteger");
-		$this->fields['stationID'] = &$this->stationID;
+		// smsID
+		$this->smsID = new cField('sana_sms', 'sana_sms', 'x_smsID', 'smsID', '`smsID`', '`smsID`', 3, -1, FALSE, '`smsID`', FALSE, FALSE, FALSE, 'FORMATTED TEXT', 'NO');
+		$this->smsID->FldDefaultErrMsg = $Language->Phrase("IncorrectInteger");
+		$this->fields['smsID'] = &$this->smsID;
 
-		// stationName
-		$this->stationName = new cField('sana_station', 'sana_station', 'x_stationName', 'stationName', '`stationName`', '`stationName`', 200, -1, FALSE, '`stationName`', FALSE, FALSE, FALSE, 'FORMATTED TEXT', 'TEXT');
-		$this->fields['stationName'] = &$this->stationName;
+		// userID
+		$this->_userID = new cField('sana_sms', 'sana_sms', 'x__userID', 'userID', '`userID`', '`userID`', 3, -1, FALSE, '`userID`', FALSE, FALSE, FALSE, 'FORMATTED TEXT', 'TEXT');
+		$this->_userID->FldDefaultErrMsg = $Language->Phrase("IncorrectInteger");
+		$this->fields['userID'] = &$this->_userID;
 
-		// projectID
-		$this->projectID = new cField('sana_station', 'sana_station', 'x_projectID', 'projectID', '`projectID`', '`projectID`', 3, -1, FALSE, '`projectID`', FALSE, FALSE, FALSE, 'FORMATTED TEXT', 'SELECT');
-		$this->projectID->FldDefaultErrMsg = $Language->Phrase("IncorrectInteger");
-		$this->fields['projectID'] = &$this->projectID;
+		// mobilePhone
+		$this->mobilePhone = new cField('sana_sms', 'sana_sms', 'x_mobilePhone', 'mobilePhone', '`mobilePhone`', '`mobilePhone`', 200, -1, FALSE, '`mobilePhone`', FALSE, FALSE, FALSE, 'FORMATTED TEXT', 'TEXT');
+		$this->fields['mobilePhone'] = &$this->mobilePhone;
+
+		// message
+		$this->message = new cField('sana_sms', 'sana_sms', 'x_message', 'message', '`message`', '`message`', 200, -1, FALSE, '`message`', FALSE, FALSE, FALSE, 'FORMATTED TEXT', 'TEXT');
+		$this->fields['message'] = &$this->message;
+
+		// result
+		$this->result = new cField('sana_sms', 'sana_sms', 'x_result', 'result', '`result`', '`result`', 200, -1, FALSE, '`result`', FALSE, FALSE, FALSE, 'FORMATTED TEXT', 'TEXT');
+		$this->fields['result'] = &$this->result;
 
 		// description
-		$this->description = new cField('sana_station', 'sana_station', 'x_description', 'description', '`description`', '`description`', 201, -1, FALSE, '`description`', FALSE, FALSE, FALSE, 'FORMATTED TEXT', 'TEXTAREA');
+		$this->description = new cField('sana_sms', 'sana_sms', 'x_description', 'description', '`description`', '`description`', 200, -1, FALSE, '`description`', FALSE, FALSE, FALSE, 'FORMATTED TEXT', 'TEXT');
 		$this->fields['description'] = &$this->description;
-
-		// address
-		$this->address = new cField('sana_station', 'sana_station', 'x_address', 'address', '`address`', '`address`', 200, -1, FALSE, '`address`', FALSE, FALSE, FALSE, 'FORMATTED TEXT', 'TEXT');
-		$this->fields['address'] = &$this->address;
-
-		// GPS1
-		$this->GPS1 = new cField('sana_station', 'sana_station', 'x_GPS1', 'GPS1', '`GPS1`', '`GPS1`', 200, -1, FALSE, '`GPS1`', FALSE, FALSE, FALSE, 'FORMATTED TEXT', 'TEXT');
-		$this->fields['GPS1'] = &$this->GPS1;
-
-		// GPS2
-		$this->GPS2 = new cField('sana_station', 'sana_station', 'x_GPS2', 'GPS2', '`GPS2`', '`GPS2`', 200, -1, FALSE, '`GPS2`', FALSE, FALSE, FALSE, 'FORMATTED TEXT', 'TEXT');
-		$this->fields['GPS2'] = &$this->GPS2;
-
-		// GPS3
-		$this->GPS3 = new cField('sana_station', 'sana_station', 'x_GPS3', 'GPS3', '`GPS3`', '`GPS3`', 200, -1, FALSE, '`GPS3`', FALSE, FALSE, FALSE, 'FORMATTED TEXT', 'TEXT');
-		$this->fields['GPS3'] = &$this->GPS3;
-
-		// stationType
-		$this->stationType = new cField('sana_station', 'sana_station', 'x_stationType', 'stationType', '`stationType`', '`stationType`', 200, -1, FALSE, '`stationType`', FALSE, FALSE, FALSE, 'FORMATTED TEXT', 'TEXT');
-		$this->fields['stationType'] = &$this->stationType;
 	}
 
 	// Single column sort
@@ -107,7 +92,7 @@ class csana_station extends cTable {
 	var $_SqlFrom = "";
 
 	function getSqlFrom() { // From
-		return ($this->_SqlFrom <> "") ? $this->_SqlFrom : "`sana_station`";
+		return ($this->_SqlFrom <> "") ? $this->_SqlFrom : "`sana_sms`";
 	}
 
 	function SqlFrom() { // For backward compatibility
@@ -360,8 +345,8 @@ class csana_station extends cTable {
 		if (is_array($where))
 			$where = $this->ArrayToFilter($where);
 		if ($rs) {
-			if (array_key_exists('stationID', $rs))
-				ew_AddFilter($where, ew_QuotedName('stationID', $this->DBID) . '=' . ew_QuotedValue($rs['stationID'], $this->stationID->FldDataType, $this->DBID));
+			if (array_key_exists('smsID', $rs))
+				ew_AddFilter($where, ew_QuotedName('smsID', $this->DBID) . '=' . ew_QuotedValue($rs['smsID'], $this->smsID->FldDataType, $this->DBID));
 		}
 		$filter = ($curfilter) ? $this->CurrentFilter : "";
 		ew_AddFilter($filter, $where);
@@ -380,15 +365,15 @@ class csana_station extends cTable {
 
 	// Key filter WHERE clause
 	function SqlKeyFilter() {
-		return "`stationID` = @stationID@";
+		return "`smsID` = @smsID@";
 	}
 
 	// Key filter
 	function KeyFilter() {
 		$sKeyFilter = $this->SqlKeyFilter();
-		if (!is_numeric($this->stationID->CurrentValue))
+		if (!is_numeric($this->smsID->CurrentValue))
 			$sKeyFilter = "0=1"; // Invalid key
-		$sKeyFilter = str_replace("@stationID@", ew_AdjustSql($this->stationID->CurrentValue, $this->DBID), $sKeyFilter); // Replace key value
+		$sKeyFilter = str_replace("@smsID@", ew_AdjustSql($this->smsID->CurrentValue, $this->DBID), $sKeyFilter); // Replace key value
 		return $sKeyFilter;
 	}
 
@@ -402,7 +387,7 @@ class csana_station extends cTable {
 		if (@$_SESSION[$name] <> "") {
 			return $_SESSION[$name];
 		} else {
-			return "sana_stationlist.php";
+			return "sana_smslist.php";
 		}
 	}
 
@@ -412,30 +397,30 @@ class csana_station extends cTable {
 
 	// List URL
 	function GetListUrl() {
-		return "sana_stationlist.php";
+		return "sana_smslist.php";
 	}
 
 	// View URL
 	function GetViewUrl($parm = "") {
 		if ($parm <> "")
-			$url = $this->KeyUrl("sana_stationview.php", $this->UrlParm($parm));
+			$url = $this->KeyUrl("sana_smsview.php", $this->UrlParm($parm));
 		else
-			$url = $this->KeyUrl("sana_stationview.php", $this->UrlParm(EW_TABLE_SHOW_DETAIL . "="));
+			$url = $this->KeyUrl("sana_smsview.php", $this->UrlParm(EW_TABLE_SHOW_DETAIL . "="));
 		return $this->AddMasterUrl($url);
 	}
 
 	// Add URL
 	function GetAddUrl($parm = "") {
 		if ($parm <> "")
-			$url = "sana_stationadd.php?" . $this->UrlParm($parm);
+			$url = "sana_smsadd.php?" . $this->UrlParm($parm);
 		else
-			$url = "sana_stationadd.php";
+			$url = "sana_smsadd.php";
 		return $this->AddMasterUrl($url);
 	}
 
 	// Edit URL
 	function GetEditUrl($parm = "") {
-		$url = $this->KeyUrl("sana_stationedit.php", $this->UrlParm($parm));
+		$url = $this->KeyUrl("sana_smsedit.php", $this->UrlParm($parm));
 		return $this->AddMasterUrl($url);
 	}
 
@@ -447,7 +432,7 @@ class csana_station extends cTable {
 
 	// Copy URL
 	function GetCopyUrl($parm = "") {
-		$url = $this->KeyUrl("sana_stationadd.php", $this->UrlParm($parm));
+		$url = $this->KeyUrl("sana_smsadd.php", $this->UrlParm($parm));
 		return $this->AddMasterUrl($url);
 	}
 
@@ -459,7 +444,7 @@ class csana_station extends cTable {
 
 	// Delete URL
 	function GetDeleteUrl() {
-		return $this->KeyUrl("sana_stationdelete.php", $this->UrlParm());
+		return $this->KeyUrl("sana_smsdelete.php", $this->UrlParm());
 	}
 
 	// Add master url
@@ -469,7 +454,7 @@ class csana_station extends cTable {
 
 	function KeyToJson() {
 		$json = "";
-		$json .= "stationID:" . ew_VarToJson($this->stationID->CurrentValue, "number", "'");
+		$json .= "smsID:" . ew_VarToJson($this->smsID->CurrentValue, "number", "'");
 		return "{" . $json . "}";
 	}
 
@@ -477,8 +462,8 @@ class csana_station extends cTable {
 	function KeyUrl($url, $parm = "") {
 		$sUrl = $url . "?";
 		if ($parm <> "") $sUrl .= $parm . "&";
-		if (!is_null($this->stationID->CurrentValue)) {
-			$sUrl .= "stationID=" . urlencode($this->stationID->CurrentValue);
+		if (!is_null($this->smsID->CurrentValue)) {
+			$sUrl .= "smsID=" . urlencode($this->smsID->CurrentValue);
 		} else {
 			return "javascript:ew_Alert(ewLanguage.Phrase('InvalidRecord'));";
 		}
@@ -511,10 +496,10 @@ class csana_station extends cTable {
 			$cnt = count($arKeys);
 		} elseif (!empty($_GET) || !empty($_POST)) {
 			$isPost = ew_IsHttpPost();
-			if ($isPost && isset($_POST["stationID"]))
-				$arKeys[] = ew_StripSlashes($_POST["stationID"]);
-			elseif (isset($_GET["stationID"]))
-				$arKeys[] = ew_StripSlashes($_GET["stationID"]);
+			if ($isPost && isset($_POST["smsID"]))
+				$arKeys[] = ew_StripSlashes($_POST["smsID"]);
+			elseif (isset($_GET["smsID"]))
+				$arKeys[] = ew_StripSlashes($_GET["smsID"]);
 			else
 				$arKeys = NULL; // Do not setup
 
@@ -539,7 +524,7 @@ class csana_station extends cTable {
 		$sKeyFilter = "";
 		foreach ($arKeys as $key) {
 			if ($sKeyFilter <> "") $sKeyFilter .= " OR ";
-			$this->stationID->CurrentValue = $key;
+			$this->smsID->CurrentValue = $key;
 			$sKeyFilter .= "(" . $this->KeyFilter() . ")";
 		}
 		return $sKeyFilter;
@@ -560,15 +545,12 @@ class csana_station extends cTable {
 
 	// Load row values from recordset
 	function LoadListRowValues(&$rs) {
-		$this->stationID->setDbValue($rs->fields('stationID'));
-		$this->stationName->setDbValue($rs->fields('stationName'));
-		$this->projectID->setDbValue($rs->fields('projectID'));
+		$this->smsID->setDbValue($rs->fields('smsID'));
+		$this->_userID->setDbValue($rs->fields('userID'));
+		$this->mobilePhone->setDbValue($rs->fields('mobilePhone'));
+		$this->message->setDbValue($rs->fields('message'));
+		$this->result->setDbValue($rs->fields('result'));
 		$this->description->setDbValue($rs->fields('description'));
-		$this->address->setDbValue($rs->fields('address'));
-		$this->GPS1->setDbValue($rs->fields('GPS1'));
-		$this->GPS2->setDbValue($rs->fields('GPS2'));
-		$this->GPS3->setDbValue($rs->fields('GPS3'));
-		$this->stationType->setDbValue($rs->fields('stationType'));
 	}
 
 	// Render list row values
@@ -579,126 +561,66 @@ class csana_station extends cTable {
 		$this->Row_Rendering();
 
    // Common render codes
-		// stationID
-		// stationName
-		// projectID
+		// smsID
+		// userID
+		// mobilePhone
+		// message
+		// result
 		// description
-		// address
-		// GPS1
-		// GPS2
-		// GPS3
-		// stationType
-		// stationID
+		// smsID
 
-		$this->stationID->ViewValue = $this->stationID->CurrentValue;
-		$this->stationID->ViewCustomAttributes = "";
+		$this->smsID->ViewValue = $this->smsID->CurrentValue;
+		$this->smsID->ViewCustomAttributes = "";
 
-		// stationName
-		$this->stationName->ViewValue = $this->stationName->CurrentValue;
-		$this->stationName->ViewCustomAttributes = "";
+		// userID
+		$this->_userID->ViewValue = $this->_userID->CurrentValue;
+		$this->_userID->ViewCustomAttributes = "";
 
-		// projectID
-		if (strval($this->projectID->CurrentValue) <> "") {
-			$sFilterWrk = "`projectID`" . ew_SearchString("=", $this->projectID->CurrentValue, EW_DATATYPE_NUMBER, "");
-		switch (@$gsLanguage) {
-			case "en":
-				$sSqlWrk = "SELECT `projectID`, `projectName` AS `DispFld`, '' AS `Disp2Fld`, '' AS `Disp3Fld`, '' AS `Disp4Fld` FROM `sana_project`";
-				$sWhereWrk = "";
-				break;
-			case "fa":
-				$sSqlWrk = "SELECT `projectID`, `projectName` AS `DispFld`, '' AS `Disp2Fld`, '' AS `Disp3Fld`, '' AS `Disp4Fld` FROM `sana_project`";
-				$sWhereWrk = "";
-				break;
-			default:
-				$sSqlWrk = "SELECT `projectID`, `projectName` AS `DispFld`, '' AS `Disp2Fld`, '' AS `Disp3Fld`, '' AS `Disp4Fld` FROM `sana_project`";
-				$sWhereWrk = "";
-				break;
-		}
-		ew_AddFilter($sWhereWrk, $sFilterWrk);
-		$this->Lookup_Selecting($this->projectID, $sWhereWrk); // Call Lookup selecting
-		if ($sWhereWrk <> "") $sSqlWrk .= " WHERE " . $sWhereWrk;
-			$rswrk = Conn()->Execute($sSqlWrk);
-			if ($rswrk && !$rswrk->EOF) { // Lookup values found
-				$arwrk = array();
-				$arwrk[1] = $rswrk->fields('DispFld');
-				$this->projectID->ViewValue = $this->projectID->DisplayValue($arwrk);
-				$rswrk->Close();
-			} else {
-				$this->projectID->ViewValue = $this->projectID->CurrentValue;
-			}
-		} else {
-			$this->projectID->ViewValue = NULL;
-		}
-		$this->projectID->ViewCustomAttributes = "";
+		// mobilePhone
+		$this->mobilePhone->ViewValue = $this->mobilePhone->CurrentValue;
+		$this->mobilePhone->ViewCustomAttributes = "";
+
+		// message
+		$this->message->ViewValue = $this->message->CurrentValue;
+		$this->message->ViewCustomAttributes = "";
+
+		// result
+		$this->result->ViewValue = $this->result->CurrentValue;
+		$this->result->ViewCustomAttributes = "";
 
 		// description
 		$this->description->ViewValue = $this->description->CurrentValue;
 		$this->description->ViewCustomAttributes = "";
 
-		// address
-		$this->address->ViewValue = $this->address->CurrentValue;
-		$this->address->ViewCustomAttributes = "";
+		// smsID
+		$this->smsID->LinkCustomAttributes = "";
+		$this->smsID->HrefValue = "";
+		$this->smsID->TooltipValue = "";
 
-		// GPS1
-		$this->GPS1->ViewValue = $this->GPS1->CurrentValue;
-		$this->GPS1->ViewCustomAttributes = "";
+		// userID
+		$this->_userID->LinkCustomAttributes = "";
+		$this->_userID->HrefValue = "";
+		$this->_userID->TooltipValue = "";
 
-		// GPS2
-		$this->GPS2->ViewValue = $this->GPS2->CurrentValue;
-		$this->GPS2->ViewCustomAttributes = "";
+		// mobilePhone
+		$this->mobilePhone->LinkCustomAttributes = "";
+		$this->mobilePhone->HrefValue = "";
+		$this->mobilePhone->TooltipValue = "";
 
-		// GPS3
-		$this->GPS3->ViewValue = $this->GPS3->CurrentValue;
-		$this->GPS3->ViewCustomAttributes = "";
+		// message
+		$this->message->LinkCustomAttributes = "";
+		$this->message->HrefValue = "";
+		$this->message->TooltipValue = "";
 
-		// stationType
-		$this->stationType->ViewValue = $this->stationType->CurrentValue;
-		$this->stationType->ViewCustomAttributes = "";
-
-		// stationID
-		$this->stationID->LinkCustomAttributes = "";
-		$this->stationID->HrefValue = "";
-		$this->stationID->TooltipValue = "";
-
-		// stationName
-		$this->stationName->LinkCustomAttributes = "";
-		$this->stationName->HrefValue = "";
-		$this->stationName->TooltipValue = "";
-
-		// projectID
-		$this->projectID->LinkCustomAttributes = "";
-		$this->projectID->HrefValue = "";
-		$this->projectID->TooltipValue = "";
+		// result
+		$this->result->LinkCustomAttributes = "";
+		$this->result->HrefValue = "";
+		$this->result->TooltipValue = "";
 
 		// description
 		$this->description->LinkCustomAttributes = "";
 		$this->description->HrefValue = "";
 		$this->description->TooltipValue = "";
-
-		// address
-		$this->address->LinkCustomAttributes = "";
-		$this->address->HrefValue = "";
-		$this->address->TooltipValue = "";
-
-		// GPS1
-		$this->GPS1->LinkCustomAttributes = "";
-		$this->GPS1->HrefValue = "";
-		$this->GPS1->TooltipValue = "";
-
-		// GPS2
-		$this->GPS2->LinkCustomAttributes = "";
-		$this->GPS2->HrefValue = "";
-		$this->GPS2->TooltipValue = "";
-
-		// GPS3
-		$this->GPS3->LinkCustomAttributes = "";
-		$this->GPS3->HrefValue = "";
-		$this->GPS3->TooltipValue = "";
-
-		// stationType
-		$this->stationType->LinkCustomAttributes = "";
-		$this->stationType->HrefValue = "";
-		$this->stationType->TooltipValue = "";
 
 		// Call Row Rendered event
 		$this->Row_Rendered();
@@ -711,57 +633,37 @@ class csana_station extends cTable {
 		// Call Row Rendering event
 		$this->Row_Rendering();
 
-		// stationID
-		$this->stationID->EditAttrs["class"] = "form-control";
-		$this->stationID->EditCustomAttributes = "";
-		$this->stationID->EditValue = $this->stationID->CurrentValue;
-		$this->stationID->ViewCustomAttributes = "";
+		// smsID
+		$this->smsID->EditAttrs["class"] = "form-control";
+		$this->smsID->EditCustomAttributes = "";
+		$this->smsID->EditValue = $this->smsID->CurrentValue;
+		$this->smsID->ViewCustomAttributes = "";
 
-		// stationName
-		$this->stationName->EditAttrs["class"] = "form-control";
-		$this->stationName->EditCustomAttributes = "";
-		$this->stationName->EditValue = $this->stationName->CurrentValue;
-		$this->stationName->PlaceHolder = ew_RemoveHtml($this->stationName->FldCaption());
+		// userID
+		// mobilePhone
 
-		// projectID
-		$this->projectID->EditAttrs["class"] = "form-control";
-		$this->projectID->EditCustomAttributes = "";
+		$this->mobilePhone->EditAttrs["class"] = "form-control";
+		$this->mobilePhone->EditCustomAttributes = "";
+		$this->mobilePhone->EditValue = $this->mobilePhone->CurrentValue;
+		$this->mobilePhone->PlaceHolder = ew_RemoveHtml($this->mobilePhone->FldCaption());
+
+		// message
+		$this->message->EditAttrs["class"] = "form-control";
+		$this->message->EditCustomAttributes = "";
+		$this->message->EditValue = $this->message->CurrentValue;
+		$this->message->PlaceHolder = ew_RemoveHtml($this->message->FldCaption());
+
+		// result
+		$this->result->EditAttrs["class"] = "form-control";
+		$this->result->EditCustomAttributes = "";
+		$this->result->EditValue = $this->result->CurrentValue;
+		$this->result->PlaceHolder = ew_RemoveHtml($this->result->FldCaption());
 
 		// description
 		$this->description->EditAttrs["class"] = "form-control";
 		$this->description->EditCustomAttributes = "";
 		$this->description->EditValue = $this->description->CurrentValue;
 		$this->description->PlaceHolder = ew_RemoveHtml($this->description->FldCaption());
-
-		// address
-		$this->address->EditAttrs["class"] = "form-control";
-		$this->address->EditCustomAttributes = "";
-		$this->address->EditValue = $this->address->CurrentValue;
-		$this->address->PlaceHolder = ew_RemoveHtml($this->address->FldCaption());
-
-		// GPS1
-		$this->GPS1->EditAttrs["class"] = "form-control";
-		$this->GPS1->EditCustomAttributes = "";
-		$this->GPS1->EditValue = $this->GPS1->CurrentValue;
-		$this->GPS1->PlaceHolder = ew_RemoveHtml($this->GPS1->FldCaption());
-
-		// GPS2
-		$this->GPS2->EditAttrs["class"] = "form-control";
-		$this->GPS2->EditCustomAttributes = "";
-		$this->GPS2->EditValue = $this->GPS2->CurrentValue;
-		$this->GPS2->PlaceHolder = ew_RemoveHtml($this->GPS2->FldCaption());
-
-		// GPS3
-		$this->GPS3->EditAttrs["class"] = "form-control";
-		$this->GPS3->EditCustomAttributes = "";
-		$this->GPS3->EditValue = $this->GPS3->CurrentValue;
-		$this->GPS3->PlaceHolder = ew_RemoveHtml($this->GPS3->FldCaption());
-
-		// stationType
-		$this->stationType->EditAttrs["class"] = "form-control";
-		$this->stationType->EditCustomAttributes = "";
-		$this->stationType->EditValue = $this->stationType->CurrentValue;
-		$this->stationType->PlaceHolder = ew_RemoveHtml($this->stationType->FldCaption());
 
 		// Call Row Rendered event
 		$this->Row_Rendered();
@@ -790,24 +692,19 @@ class csana_station extends cTable {
 			if ($Doc->Horizontal) { // Horizontal format, write header
 				$Doc->BeginExportRow();
 				if ($ExportPageType == "view") {
-					if ($this->stationID->Exportable) $Doc->ExportCaption($this->stationID);
-					if ($this->stationName->Exportable) $Doc->ExportCaption($this->stationName);
-					if ($this->projectID->Exportable) $Doc->ExportCaption($this->projectID);
+					if ($this->smsID->Exportable) $Doc->ExportCaption($this->smsID);
+					if ($this->_userID->Exportable) $Doc->ExportCaption($this->_userID);
+					if ($this->mobilePhone->Exportable) $Doc->ExportCaption($this->mobilePhone);
+					if ($this->message->Exportable) $Doc->ExportCaption($this->message);
+					if ($this->result->Exportable) $Doc->ExportCaption($this->result);
 					if ($this->description->Exportable) $Doc->ExportCaption($this->description);
-					if ($this->address->Exportable) $Doc->ExportCaption($this->address);
-					if ($this->GPS1->Exportable) $Doc->ExportCaption($this->GPS1);
-					if ($this->GPS2->Exportable) $Doc->ExportCaption($this->GPS2);
-					if ($this->GPS3->Exportable) $Doc->ExportCaption($this->GPS3);
-					if ($this->stationType->Exportable) $Doc->ExportCaption($this->stationType);
 				} else {
-					if ($this->stationID->Exportable) $Doc->ExportCaption($this->stationID);
-					if ($this->stationName->Exportable) $Doc->ExportCaption($this->stationName);
-					if ($this->projectID->Exportable) $Doc->ExportCaption($this->projectID);
-					if ($this->address->Exportable) $Doc->ExportCaption($this->address);
-					if ($this->GPS1->Exportable) $Doc->ExportCaption($this->GPS1);
-					if ($this->GPS2->Exportable) $Doc->ExportCaption($this->GPS2);
-					if ($this->GPS3->Exportable) $Doc->ExportCaption($this->GPS3);
-					if ($this->stationType->Exportable) $Doc->ExportCaption($this->stationType);
+					if ($this->smsID->Exportable) $Doc->ExportCaption($this->smsID);
+					if ($this->_userID->Exportable) $Doc->ExportCaption($this->_userID);
+					if ($this->mobilePhone->Exportable) $Doc->ExportCaption($this->mobilePhone);
+					if ($this->message->Exportable) $Doc->ExportCaption($this->message);
+					if ($this->result->Exportable) $Doc->ExportCaption($this->result);
+					if ($this->description->Exportable) $Doc->ExportCaption($this->description);
 				}
 				$Doc->EndExportRow();
 			}
@@ -839,24 +736,19 @@ class csana_station extends cTable {
 				if (!$Doc->ExportCustom) {
 					$Doc->BeginExportRow($RowCnt); // Allow CSS styles if enabled
 					if ($ExportPageType == "view") {
-						if ($this->stationID->Exportable) $Doc->ExportField($this->stationID);
-						if ($this->stationName->Exportable) $Doc->ExportField($this->stationName);
-						if ($this->projectID->Exportable) $Doc->ExportField($this->projectID);
+						if ($this->smsID->Exportable) $Doc->ExportField($this->smsID);
+						if ($this->_userID->Exportable) $Doc->ExportField($this->_userID);
+						if ($this->mobilePhone->Exportable) $Doc->ExportField($this->mobilePhone);
+						if ($this->message->Exportable) $Doc->ExportField($this->message);
+						if ($this->result->Exportable) $Doc->ExportField($this->result);
 						if ($this->description->Exportable) $Doc->ExportField($this->description);
-						if ($this->address->Exportable) $Doc->ExportField($this->address);
-						if ($this->GPS1->Exportable) $Doc->ExportField($this->GPS1);
-						if ($this->GPS2->Exportable) $Doc->ExportField($this->GPS2);
-						if ($this->GPS3->Exportable) $Doc->ExportField($this->GPS3);
-						if ($this->stationType->Exportable) $Doc->ExportField($this->stationType);
 					} else {
-						if ($this->stationID->Exportable) $Doc->ExportField($this->stationID);
-						if ($this->stationName->Exportable) $Doc->ExportField($this->stationName);
-						if ($this->projectID->Exportable) $Doc->ExportField($this->projectID);
-						if ($this->address->Exportable) $Doc->ExportField($this->address);
-						if ($this->GPS1->Exportable) $Doc->ExportField($this->GPS1);
-						if ($this->GPS2->Exportable) $Doc->ExportField($this->GPS2);
-						if ($this->GPS3->Exportable) $Doc->ExportField($this->GPS3);
-						if ($this->stationType->Exportable) $Doc->ExportField($this->stationType);
+						if ($this->smsID->Exportable) $Doc->ExportField($this->smsID);
+						if ($this->_userID->Exportable) $Doc->ExportField($this->_userID);
+						if ($this->mobilePhone->Exportable) $Doc->ExportField($this->mobilePhone);
+						if ($this->message->Exportable) $Doc->ExportField($this->message);
+						if ($this->result->Exportable) $Doc->ExportField($this->result);
+						if ($this->description->Exportable) $Doc->ExportField($this->description);
 					}
 					$Doc->EndExportRow();
 				}

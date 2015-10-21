@@ -6,6 +6,7 @@ ob_start(); // Turn on output buffering
 <?php include_once ((EW_USE_ADODB) ? "adodb5/adodb.inc.php" : "ewmysql12.php") ?>
 <?php include_once "phpfn12.php" ?>
 <?php include_once "sana_location_level4info.php" ?>
+<?php include_once "sana_userinfo.php" ?>
 <?php include_once "userfn12.php" ?>
 <?php
 
@@ -182,7 +183,7 @@ class csana_location_level4_list extends csana_location_level4 {
 			$html .= "<div class=\"alert alert-danger ewError\">" . $sErrorMessage . "</div>";
 			$_SESSION[EW_SESSION_FAILURE_MESSAGE] = ""; // Clear message in Session
 		}
-		echo "<div class=\"ewMessageDialog\"" . (($hidden) ? " style=\"display: none;\"" : "") . ">" . $html . "</div>";
+		echo "<br><div class=\"ewMessageDialog\"" . (($hidden) ? " style=\"display: none;\"" : "") . ">" . $html . "</div>";
 	}
 	var $PageHeader;
 	var $PageFooter;
@@ -251,6 +252,7 @@ class csana_location_level4_list extends csana_location_level4 {
 	//
 	function __construct() {
 		global $conn, $Language;
+		global $UserTable, $UserTableConn;
 		$GLOBALS["Page"] = &$this;
 		$this->TokenTimeout = ew_SessionTimeoutTime();
 
@@ -281,6 +283,9 @@ class csana_location_level4_list extends csana_location_level4 {
 		$this->MultiDeleteUrl = "sana_location_level4delete.php";
 		$this->MultiUpdateUrl = "sana_location_level4update.php";
 
+		// Table object (sana_user)
+		if (!isset($GLOBALS['sana_user'])) $GLOBALS['sana_user'] = new csana_user();
+
 		// Page ID
 		if (!defined("EW_PAGE_ID"))
 			define("EW_PAGE_ID", 'list', TRUE);
@@ -294,6 +299,12 @@ class csana_location_level4_list extends csana_location_level4 {
 
 		// Open connection
 		if (!isset($conn)) $conn = ew_Connect($this->DBID);
+
+		// User table object (sana_user)
+		if (!isset($UserTable)) {
+			$UserTable = new csana_user();
+			$UserTableConn = Conn($UserTable->DBID);
+		}
 
 		// List options
 		$this->ListOptions = new cListOptions();
@@ -329,6 +340,23 @@ class csana_location_level4_list extends csana_location_level4 {
 	//
 	function Page_Init() {
 		global $gsExport, $gsCustomExport, $gsExportFile, $UserProfile, $Language, $Security, $objForm;
+
+		// Security
+		$Security = new cAdvancedSecurity();
+		if (!$Security->IsLoggedIn()) $Security->AutoLogin();
+		if ($Security->IsLoggedIn()) $Security->TablePermission_Loading();
+		$Security->LoadCurrentUserLevel($this->ProjectID . $this->TableName);
+		if ($Security->IsLoggedIn()) $Security->TablePermission_Loaded();
+		if (!$Security->CanList()) {
+			$Security->SaveLastUrl();
+			$this->setFailureMessage($Language->Phrase("NoPermission")); // Set no permission
+			$this->Page_Terminate(ew_GetUrl("index.php"));
+		}
+		if ($Security->IsLoggedIn()) {
+			$Security->UserID_Loading();
+			$Security->LoadUserID();
+			$Security->UserID_Loaded();
+		}
 		$this->CurrentAction = (@$_GET["a"] <> "") ? $_GET["a"] : @$_POST["a_list"]; // Set up current action
 
 		// Get grid add count
@@ -491,6 +519,9 @@ class csana_location_level4_list extends csana_location_level4 {
 			if ($this->ProcessListAction()) // Ajax request
 				$this->Page_Terminate();
 
+			// Set up records per page
+			$this->SetUpDisplayRecs();
+
 			// Handle reset command
 			$this->ResetCmd();
 
@@ -582,6 +613,8 @@ class csana_location_level4_list extends csana_location_level4 {
 
 		// Build filter
 		$sFilter = "";
+		if (!$Security->CanList())
+			$sFilter = "(0=1)"; // Filter all records
 		ew_AddFilter($sFilter, $this->DbDetailFilter);
 		ew_AddFilter($sFilter, $this->SearchWhere);
 
@@ -602,6 +635,27 @@ class csana_location_level4_list extends csana_location_level4 {
 
 		// Search options
 		$this->SetupSearchOptions();
+	}
+
+	// Set up number of records displayed per page
+	function SetUpDisplayRecs() {
+		$sWrk = @$_GET[EW_TABLE_REC_PER_PAGE];
+		if ($sWrk <> "") {
+			if (is_numeric($sWrk)) {
+				$this->DisplayRecs = intval($sWrk);
+			} else {
+				if (strtolower($sWrk) == "all") { // Display all records
+					$this->DisplayRecs = -1;
+				} else {
+					$this->DisplayRecs = 50; // Non-numeric, load default
+				}
+			}
+			$this->setRecordsPerPage($this->DisplayRecs); // Save to Session
+
+			// Reset start position
+			$this->StartRec = 1;
+			$this->setStartRecordNumber($this->StartRec);
+		}
 	}
 
 	// Build filter for all keys
@@ -799,6 +853,7 @@ class csana_location_level4_list extends csana_location_level4 {
 	function BasicSearchWhere($Default = FALSE) {
 		global $Security;
 		$sSearchStr = "";
+		if (!$Security->CanSearch()) return "";
 		$sSearchKeyword = ($Default) ? $this->BasicSearch->KeywordDefault : $this->BasicSearch->Keyword;
 		$sSearchType = ($Default) ? $this->BasicSearch->TypeDefault : $this->BasicSearch->Type;
 		if ($sSearchKeyword <> "") {
@@ -955,25 +1010,19 @@ class csana_location_level4_list extends csana_location_level4 {
 		// "view"
 		$item = &$this->ListOptions->Add("view");
 		$item->CssStyle = "white-space: nowrap;";
-		$item->Visible = TRUE;
+		$item->Visible = $Security->CanView();
 		$item->OnLeft = FALSE;
 
 		// "edit"
 		$item = &$this->ListOptions->Add("edit");
 		$item->CssStyle = "white-space: nowrap;";
-		$item->Visible = TRUE;
-		$item->OnLeft = FALSE;
-
-		// "copy"
-		$item = &$this->ListOptions->Add("copy");
-		$item->CssStyle = "white-space: nowrap;";
-		$item->Visible = TRUE;
+		$item->Visible = $Security->CanEdit();
 		$item->OnLeft = FALSE;
 
 		// "delete"
 		$item = &$this->ListOptions->Add("delete");
 		$item->CssStyle = "white-space: nowrap;";
-		$item->Visible = TRUE;
+		$item->Visible = $Security->CanDelete();
 		$item->OnLeft = FALSE;
 
 		// List actions
@@ -1015,30 +1064,22 @@ class csana_location_level4_list extends csana_location_level4 {
 
 		// "view"
 		$oListOpt = &$this->ListOptions->Items["view"];
-		if (TRUE)
+		if ($Security->CanView())
 			$oListOpt->Body = "<a class=\"ewRowLink ewView\" title=\"" . ew_HtmlTitle($Language->Phrase("ViewLink")) . "\" data-caption=\"" . ew_HtmlTitle($Language->Phrase("ViewLink")) . "\" href=\"" . ew_HtmlEncode($this->ViewUrl) . "\">" . $Language->Phrase("ViewLink") . "</a>";
 		else
 			$oListOpt->Body = "";
 
 		// "edit"
 		$oListOpt = &$this->ListOptions->Items["edit"];
-		if (TRUE) {
+		if ($Security->CanEdit()) {
 			$oListOpt->Body = "<a class=\"ewRowLink ewEdit\" title=\"" . ew_HtmlTitle($Language->Phrase("EditLink")) . "\" data-caption=\"" . ew_HtmlTitle($Language->Phrase("EditLink")) . "\" href=\"" . ew_HtmlEncode($this->EditUrl) . "\">" . $Language->Phrase("EditLink") . "</a>";
-		} else {
-			$oListOpt->Body = "";
-		}
-
-		// "copy"
-		$oListOpt = &$this->ListOptions->Items["copy"];
-		if (TRUE) {
-			$oListOpt->Body = "<a class=\"ewRowLink ewCopy\" title=\"" . ew_HtmlTitle($Language->Phrase("CopyLink")) . "\" data-caption=\"" . ew_HtmlTitle($Language->Phrase("CopyLink")) . "\" href=\"" . ew_HtmlEncode($this->CopyUrl) . "\">" . $Language->Phrase("CopyLink") . "</a>";
 		} else {
 			$oListOpt->Body = "";
 		}
 
 		// "delete"
 		$oListOpt = &$this->ListOptions->Items["delete"];
-		if (TRUE)
+		if ($Security->CanDelete())
 			$oListOpt->Body = "<a class=\"ewRowLink ewDelete\"" . "" . " title=\"" . ew_HtmlTitle($Language->Phrase("DeleteLink")) . "\" data-caption=\"" . ew_HtmlTitle($Language->Phrase("DeleteLink")) . "\" href=\"" . ew_HtmlEncode($this->DeleteUrl) . "\">" . $Language->Phrase("DeleteLink") . "</a>";
 		else
 			$oListOpt->Body = "";
@@ -1090,7 +1131,7 @@ class csana_location_level4_list extends csana_location_level4 {
 		// Add
 		$item = &$option->Add("add");
 		$item->Body = "<a class=\"ewAddEdit ewAdd\" title=\"" . ew_HtmlTitle($Language->Phrase("AddLink")) . "\" data-caption=\"" . ew_HtmlTitle($Language->Phrase("AddLink")) . "\" href=\"" . ew_HtmlEncode($this->AddUrl) . "\">" . $Language->Phrase("AddLink") . "</a>";
-		$item->Visible = ($this->AddUrl <> "");
+		$item->Visible = ($this->AddUrl <> "" && $Security->CanAdd());
 		$option = $options["action"];
 
 		// Set up options default
@@ -1262,6 +1303,11 @@ class csana_location_level4_list extends csana_location_level4 {
 		// Hide search options
 		if ($this->Export <> "" || $this->CurrentAction <> "")
 			$this->SearchOptions->HideAllOptions();
+		global $Security;
+		if (!$Security->CanSearch()) {
+			$this->SearchOptions->HideAllOptions();
+			$this->FilterOptions->HideAllOptions();
+		}
 	}
 
 	function SetupListOptionsExt() {
@@ -1741,6 +1787,8 @@ var CurrentSearchForm = fsana_location_level4listsrch = new ew_Form("fsana_locat
 
 	// Set no record found message
 	if ($sana_location_level4->CurrentAction == "" && $sana_location_level4_list->TotalRecs == 0) {
+		if (!$Security->CanList())
+			$sana_location_level4_list->setWarningMessage($Language->Phrase("NoPermission"));
 		if ($sana_location_level4_list->SearchWhere == "0=101")
 			$sana_location_level4_list->setWarningMessage($Language->Phrase("EnterSearchCriteria"));
 		else
@@ -1748,6 +1796,7 @@ var CurrentSearchForm = fsana_location_level4listsrch = new ew_Form("fsana_locat
 	}
 $sana_location_level4_list->RenderOtherOptions();
 ?>
+<?php if ($Security->CanSearch()) { ?>
 <?php if ($sana_location_level4->Export == "" && $sana_location_level4->CurrentAction == "") { ?>
 <form name="fsana_location_level4listsrch" id="fsana_location_level4listsrch" class="form-inline ewForm" action="<?php echo ew_CurrentPage() ?>">
 <?php $SearchPanelClass = ($sana_location_level4_list->SearchWhere <> "") ? " in" : " in"; ?>
@@ -1774,6 +1823,7 @@ $sana_location_level4_list->RenderOtherOptions();
 	</div>
 </div>
 </form>
+<?php } ?>
 <?php } ?>
 <?php $sana_location_level4_list->ShowPageHeader(); ?>
 <?php
@@ -2022,6 +2072,17 @@ if ($sana_location_level4_list->Recordset)
 </div>
 <div class="ewPager ewRec">
 	<span><?php echo $Language->Phrase("Record") ?>&nbsp;<?php echo $sana_location_level4_list->Pager->FromIndex ?>&nbsp;<?php echo $Language->Phrase("To") ?>&nbsp;<?php echo $sana_location_level4_list->Pager->ToIndex ?>&nbsp;<?php echo $Language->Phrase("Of") ?>&nbsp;<?php echo $sana_location_level4_list->Pager->RecordCount ?></span>
+</div>
+<?php } ?>
+<?php if ($sana_location_level4_list->TotalRecs > 0) { ?>
+<div class="ewPager">
+<input type="hidden" name="t" value="sana_location_level4">
+<select name="<?php echo EW_TABLE_REC_PER_PAGE ?>" class="form-control input-sm" onchange="this.form.submit();">
+<option value="20"<?php if ($sana_location_level4_list->DisplayRecs == 20) { ?> selected="selected"<?php } ?>>20</option>
+<option value="50"<?php if ($sana_location_level4_list->DisplayRecs == 50) { ?> selected="selected"<?php } ?>>50</option>
+<option value="100"<?php if ($sana_location_level4_list->DisplayRecs == 100) { ?> selected="selected"<?php } ?>>100</option>
+<option value="500"<?php if ($sana_location_level4_list->DisplayRecs == 500) { ?> selected="selected"<?php } ?>>500</option>
+</select>
 </div>
 <?php } ?>
 </form>

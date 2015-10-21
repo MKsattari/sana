@@ -6,6 +6,7 @@ ob_start(); // Turn on output buffering
 <?php include_once ((EW_USE_ADODB) ? "adodb5/adodb.inc.php" : "ewmysql12.php") ?>
 <?php include_once "phpfn12.php" ?>
 <?php include_once "sana_stationinfo.php" ?>
+<?php include_once "sana_userinfo.php" ?>
 <?php include_once "userfn12.php" ?>
 <?php
 
@@ -142,7 +143,7 @@ class csana_station_delete extends csana_station {
 			$html .= "<div class=\"alert alert-danger ewError\">" . $sErrorMessage . "</div>";
 			$_SESSION[EW_SESSION_FAILURE_MESSAGE] = ""; // Clear message in Session
 		}
-		echo "<div class=\"ewMessageDialog\"" . (($hidden) ? " style=\"display: none;\"" : "") . ">" . $html . "</div>";
+		echo "<br><div class=\"ewMessageDialog\"" . (($hidden) ? " style=\"display: none;\"" : "") . ">" . $html . "</div>";
 	}
 	var $PageHeader;
 	var $PageFooter;
@@ -211,6 +212,7 @@ class csana_station_delete extends csana_station {
 	//
 	function __construct() {
 		global $conn, $Language;
+		global $UserTable, $UserTableConn;
 		$GLOBALS["Page"] = &$this;
 		$this->TokenTimeout = ew_SessionTimeoutTime();
 
@@ -226,6 +228,9 @@ class csana_station_delete extends csana_station {
 			$GLOBALS["Table"] = &$GLOBALS["sana_station"];
 		}
 
+		// Table object (sana_user)
+		if (!isset($GLOBALS['sana_user'])) $GLOBALS['sana_user'] = new csana_user();
+
 		// Page ID
 		if (!defined("EW_PAGE_ID"))
 			define("EW_PAGE_ID", 'delete', TRUE);
@@ -239,6 +244,12 @@ class csana_station_delete extends csana_station {
 
 		// Open connection
 		if (!isset($conn)) $conn = ew_Connect($this->DBID);
+
+		// User table object (sana_user)
+		if (!isset($UserTable)) {
+			$UserTable = new csana_user();
+			$UserTableConn = Conn($UserTable->DBID);
+		}
 	}
 
 	// 
@@ -246,6 +257,26 @@ class csana_station_delete extends csana_station {
 	//
 	function Page_Init() {
 		global $gsExport, $gsCustomExport, $gsExportFile, $UserProfile, $Language, $Security, $objForm;
+
+		// Security
+		$Security = new cAdvancedSecurity();
+		if (!$Security->IsLoggedIn()) $Security->AutoLogin();
+		if ($Security->IsLoggedIn()) $Security->TablePermission_Loading();
+		$Security->LoadCurrentUserLevel($this->ProjectID . $this->TableName);
+		if ($Security->IsLoggedIn()) $Security->TablePermission_Loaded();
+		if (!$Security->CanDelete()) {
+			$Security->SaveLastUrl();
+			$this->setFailureMessage($Language->Phrase("NoPermission")); // Set no permission
+			if ($Security->CanList())
+				$this->Page_Terminate(ew_GetUrl("sana_stationlist.php"));
+			else
+				$this->Page_Terminate(ew_GetUrl("login.php"));
+		}
+		if ($Security->IsLoggedIn()) {
+			$Security->UserID_Loading();
+			$Security->LoadUserID();
+			$Security->UserID_Loaded();
+		}
 		$this->CurrentAction = (@$_GET["a"] <> "") ? $_GET["a"] : @$_POST["a_list"]; // Set up current action
 		$this->stationID->Visible = !$this->IsAdd() && !$this->IsCopy() && !$this->IsGridAdd();
 
@@ -414,6 +445,11 @@ class csana_station_delete extends csana_station {
 		$this->stationName->setDbValue($rs->fields('stationName'));
 		$this->projectID->setDbValue($rs->fields('projectID'));
 		$this->description->setDbValue($rs->fields('description'));
+		$this->address->setDbValue($rs->fields('address'));
+		$this->GPS1->setDbValue($rs->fields('GPS1'));
+		$this->GPS2->setDbValue($rs->fields('GPS2'));
+		$this->GPS3->setDbValue($rs->fields('GPS3'));
+		$this->stationType->setDbValue($rs->fields('stationType'));
 	}
 
 	// Load DbValue from recordset
@@ -424,6 +460,11 @@ class csana_station_delete extends csana_station {
 		$this->stationName->DbValue = $row['stationName'];
 		$this->projectID->DbValue = $row['projectID'];
 		$this->description->DbValue = $row['description'];
+		$this->address->DbValue = $row['address'];
+		$this->GPS1->DbValue = $row['GPS1'];
+		$this->GPS2->DbValue = $row['GPS2'];
+		$this->GPS3->DbValue = $row['GPS3'];
+		$this->stationType->DbValue = $row['stationType'];
 	}
 
 	// Render row values based on field settings
@@ -440,6 +481,11 @@ class csana_station_delete extends csana_station {
 		// stationName
 		// projectID
 		// description
+		// address
+		// GPS1
+		// GPS2
+		// GPS3
+		// stationType
 
 		if ($this->RowType == EW_ROWTYPE_VIEW) { // View row
 
@@ -485,6 +531,26 @@ class csana_station_delete extends csana_station {
 		}
 		$this->projectID->ViewCustomAttributes = "";
 
+		// address
+		$this->address->ViewValue = $this->address->CurrentValue;
+		$this->address->ViewCustomAttributes = "";
+
+		// GPS1
+		$this->GPS1->ViewValue = $this->GPS1->CurrentValue;
+		$this->GPS1->ViewCustomAttributes = "";
+
+		// GPS2
+		$this->GPS2->ViewValue = $this->GPS2->CurrentValue;
+		$this->GPS2->ViewCustomAttributes = "";
+
+		// GPS3
+		$this->GPS3->ViewValue = $this->GPS3->CurrentValue;
+		$this->GPS3->ViewCustomAttributes = "";
+
+		// stationType
+		$this->stationType->ViewValue = $this->stationType->CurrentValue;
+		$this->stationType->ViewCustomAttributes = "";
+
 			// stationID
 			$this->stationID->LinkCustomAttributes = "";
 			$this->stationID->HrefValue = "";
@@ -499,6 +565,31 @@ class csana_station_delete extends csana_station {
 			$this->projectID->LinkCustomAttributes = "";
 			$this->projectID->HrefValue = "";
 			$this->projectID->TooltipValue = "";
+
+			// address
+			$this->address->LinkCustomAttributes = "";
+			$this->address->HrefValue = "";
+			$this->address->TooltipValue = "";
+
+			// GPS1
+			$this->GPS1->LinkCustomAttributes = "";
+			$this->GPS1->HrefValue = "";
+			$this->GPS1->TooltipValue = "";
+
+			// GPS2
+			$this->GPS2->LinkCustomAttributes = "";
+			$this->GPS2->HrefValue = "";
+			$this->GPS2->TooltipValue = "";
+
+			// GPS3
+			$this->GPS3->LinkCustomAttributes = "";
+			$this->GPS3->HrefValue = "";
+			$this->GPS3->TooltipValue = "";
+
+			// stationType
+			$this->stationType->LinkCustomAttributes = "";
+			$this->stationType->HrefValue = "";
+			$this->stationType->TooltipValue = "";
 		}
 
 		// Call Row Rendered event
@@ -511,6 +602,10 @@ class csana_station_delete extends csana_station {
 	//
 	function DeleteRows() {
 		global $Language, $Security;
+		if (!$Security->CanDelete()) {
+			$this->setFailureMessage($Language->Phrase("NoDeletePermission")); // No delete permission
+			return FALSE;
+		}
 		$DeleteRows = TRUE;
 		$sSql = $this->SQL();
 		$conn = &$this->Connection();
@@ -751,6 +846,21 @@ $sana_station_delete->ShowMessage();
 <?php if ($sana_station->projectID->Visible) { // projectID ?>
 		<th><span id="elh_sana_station_projectID" class="sana_station_projectID"><?php echo $sana_station->projectID->FldCaption() ?></span></th>
 <?php } ?>
+<?php if ($sana_station->address->Visible) { // address ?>
+		<th><span id="elh_sana_station_address" class="sana_station_address"><?php echo $sana_station->address->FldCaption() ?></span></th>
+<?php } ?>
+<?php if ($sana_station->GPS1->Visible) { // GPS1 ?>
+		<th><span id="elh_sana_station_GPS1" class="sana_station_GPS1"><?php echo $sana_station->GPS1->FldCaption() ?></span></th>
+<?php } ?>
+<?php if ($sana_station->GPS2->Visible) { // GPS2 ?>
+		<th><span id="elh_sana_station_GPS2" class="sana_station_GPS2"><?php echo $sana_station->GPS2->FldCaption() ?></span></th>
+<?php } ?>
+<?php if ($sana_station->GPS3->Visible) { // GPS3 ?>
+		<th><span id="elh_sana_station_GPS3" class="sana_station_GPS3"><?php echo $sana_station->GPS3->FldCaption() ?></span></th>
+<?php } ?>
+<?php if ($sana_station->stationType->Visible) { // stationType ?>
+		<th><span id="elh_sana_station_stationType" class="sana_station_stationType"><?php echo $sana_station->stationType->FldCaption() ?></span></th>
+<?php } ?>
 	</tr>
 	</thead>
 	<tbody>
@@ -793,6 +903,46 @@ while (!$sana_station_delete->Recordset->EOF) {
 <span id="el<?php echo $sana_station_delete->RowCnt ?>_sana_station_projectID" class="sana_station_projectID">
 <span<?php echo $sana_station->projectID->ViewAttributes() ?>>
 <?php echo $sana_station->projectID->ListViewValue() ?></span>
+</span>
+</td>
+<?php } ?>
+<?php if ($sana_station->address->Visible) { // address ?>
+		<td<?php echo $sana_station->address->CellAttributes() ?>>
+<span id="el<?php echo $sana_station_delete->RowCnt ?>_sana_station_address" class="sana_station_address">
+<span<?php echo $sana_station->address->ViewAttributes() ?>>
+<?php echo $sana_station->address->ListViewValue() ?></span>
+</span>
+</td>
+<?php } ?>
+<?php if ($sana_station->GPS1->Visible) { // GPS1 ?>
+		<td<?php echo $sana_station->GPS1->CellAttributes() ?>>
+<span id="el<?php echo $sana_station_delete->RowCnt ?>_sana_station_GPS1" class="sana_station_GPS1">
+<span<?php echo $sana_station->GPS1->ViewAttributes() ?>>
+<?php echo $sana_station->GPS1->ListViewValue() ?></span>
+</span>
+</td>
+<?php } ?>
+<?php if ($sana_station->GPS2->Visible) { // GPS2 ?>
+		<td<?php echo $sana_station->GPS2->CellAttributes() ?>>
+<span id="el<?php echo $sana_station_delete->RowCnt ?>_sana_station_GPS2" class="sana_station_GPS2">
+<span<?php echo $sana_station->GPS2->ViewAttributes() ?>>
+<?php echo $sana_station->GPS2->ListViewValue() ?></span>
+</span>
+</td>
+<?php } ?>
+<?php if ($sana_station->GPS3->Visible) { // GPS3 ?>
+		<td<?php echo $sana_station->GPS3->CellAttributes() ?>>
+<span id="el<?php echo $sana_station_delete->RowCnt ?>_sana_station_GPS3" class="sana_station_GPS3">
+<span<?php echo $sana_station->GPS3->ViewAttributes() ?>>
+<?php echo $sana_station->GPS3->ListViewValue() ?></span>
+</span>
+</td>
+<?php } ?>
+<?php if ($sana_station->stationType->Visible) { // stationType ?>
+		<td<?php echo $sana_station->stationType->CellAttributes() ?>>
+<span id="el<?php echo $sana_station_delete->RowCnt ?>_sana_station_stationType" class="sana_station_stationType">
+<span<?php echo $sana_station->stationType->ViewAttributes() ?>>
+<?php echo $sana_station->stationType->ListViewValue() ?></span>
 </span>
 </td>
 <?php } ?>

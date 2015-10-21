@@ -6,6 +6,7 @@ ob_start(); // Turn on output buffering
 <?php include_once ((EW_USE_ADODB) ? "adodb5/adodb.inc.php" : "ewmysql12.php") ?>
 <?php include_once "phpfn12.php" ?>
 <?php include_once "sana_personinfo.php" ?>
+<?php include_once "sana_userinfo.php" ?>
 <?php include_once "sana_messagegridcls.php" ?>
 <?php include_once "userfn12.php" ?>
 <?php
@@ -252,6 +253,7 @@ class csana_person_list extends csana_person {
 	//
 	function __construct() {
 		global $conn, $Language;
+		global $UserTable, $UserTableConn;
 		$GLOBALS["Page"] = &$this;
 		$this->TokenTimeout = ew_SessionTimeoutTime();
 
@@ -282,6 +284,9 @@ class csana_person_list extends csana_person {
 		$this->MultiDeleteUrl = "sana_persondelete.php";
 		$this->MultiUpdateUrl = "sana_personupdate.php";
 
+		// Table object (sana_user)
+		if (!isset($GLOBALS['sana_user'])) $GLOBALS['sana_user'] = new csana_user();
+
 		// Page ID
 		if (!defined("EW_PAGE_ID"))
 			define("EW_PAGE_ID", 'list', TRUE);
@@ -295,6 +300,12 @@ class csana_person_list extends csana_person {
 
 		// Open connection
 		if (!isset($conn)) $conn = ew_Connect($this->DBID);
+
+		// User table object (sana_user)
+		if (!isset($UserTable)) {
+			$UserTable = new csana_user();
+			$UserTableConn = Conn($UserTable->DBID);
+		}
 
 		// List options
 		$this->ListOptions = new cListOptions();
@@ -330,6 +341,23 @@ class csana_person_list extends csana_person {
 	//
 	function Page_Init() {
 		global $gsExport, $gsCustomExport, $gsExportFile, $UserProfile, $Language, $Security, $objForm;
+
+		// Security
+		$Security = new cAdvancedSecurity();
+		if (!$Security->IsLoggedIn()) $Security->AutoLogin();
+		if ($Security->IsLoggedIn()) $Security->TablePermission_Loading();
+		$Security->LoadCurrentUserLevel($this->ProjectID . $this->TableName);
+		if ($Security->IsLoggedIn()) $Security->TablePermission_Loaded();
+		if (!$Security->CanList()) {
+			$Security->SaveLastUrl();
+			$this->setFailureMessage($Language->Phrase("NoPermission")); // Set no permission
+			$this->Page_Terminate(ew_GetUrl("index.php"));
+		}
+		if ($Security->IsLoggedIn()) {
+			$Security->UserID_Loading();
+			$Security->LoadUserID();
+			$Security->UserID_Loaded();
+		}
 		$this->CurrentAction = (@$_GET["a"] <> "") ? $_GET["a"] : @$_POST["a_list"]; // Set up current action
 
 		// Get grid add count
@@ -340,6 +368,7 @@ class csana_person_list extends csana_person {
 		// Set up list options
 		$this->SetupListOptions();
 		$this->personID->Visible = !$this->IsAdd() && !$this->IsCopy() && !$this->IsGridAdd();
+		$this->registrationStation->Visible = !$this->IsAddOrEdit();
 
 		// Global Page Loading event (in userfn*.php)
 		Page_Loading();
@@ -500,6 +529,9 @@ class csana_person_list extends csana_person {
 			if ($this->ProcessListAction()) // Ajax request
 				$this->Page_Terminate();
 
+			// Set up records per page
+			$this->SetUpDisplayRecs();
+
 			// Handle reset command
 			$this->ResetCmd();
 
@@ -606,6 +638,8 @@ class csana_person_list extends csana_person {
 
 		// Build filter
 		$sFilter = "";
+		if (!$Security->CanList())
+			$sFilter = "(0=1)"; // Filter all records
 		ew_AddFilter($sFilter, $this->DbDetailFilter);
 		ew_AddFilter($sFilter, $this->SearchWhere);
 
@@ -626,6 +660,27 @@ class csana_person_list extends csana_person {
 
 		// Search options
 		$this->SetupSearchOptions();
+	}
+
+	// Set up number of records displayed per page
+	function SetUpDisplayRecs() {
+		$sWrk = @$_GET[EW_TABLE_REC_PER_PAGE];
+		if ($sWrk <> "") {
+			if (is_numeric($sWrk)) {
+				$this->DisplayRecs = intval($sWrk);
+			} else {
+				if (strtolower($sWrk) == "all") { // Display all records
+					$this->DisplayRecs = -1;
+				} else {
+					$this->DisplayRecs = 50; // Non-numeric, load default
+				}
+			}
+			$this->setRecordsPerPage($this->DisplayRecs); // Save to Session
+
+			// Reset start position
+			$this->StartRec = 1;
+			$this->setStartRecordNumber($this->StartRec);
+		}
 	}
 
 	// Build filter for all keys
@@ -675,6 +730,7 @@ class csana_person_list extends csana_person {
 		$sFilterList = ew_Concat($sFilterList, $this->personName->AdvancedSearch->ToJSON(), ","); // Field personName
 		$sFilterList = ew_Concat($sFilterList, $this->lastName->AdvancedSearch->ToJSON(), ","); // Field lastName
 		$sFilterList = ew_Concat($sFilterList, $this->nationalID->AdvancedSearch->ToJSON(), ","); // Field nationalID
+		$sFilterList = ew_Concat($sFilterList, $this->mobilePhone->AdvancedSearch->ToJSON(), ","); // Field mobilePhone
 		$sFilterList = ew_Concat($sFilterList, $this->nationalNumber->AdvancedSearch->ToJSON(), ","); // Field nationalNumber
 		$sFilterList = ew_Concat($sFilterList, $this->passportNumber->AdvancedSearch->ToJSON(), ","); // Field passportNumber
 		$sFilterList = ew_Concat($sFilterList, $this->fatherName->AdvancedSearch->ToJSON(), ","); // Field fatherName
@@ -697,7 +753,6 @@ class csana_person_list extends csana_person {
 		$sFilterList = ew_Concat($sFilterList, $this->dress2->AdvancedSearch->ToJSON(), ","); // Field dress2
 		$sFilterList = ew_Concat($sFilterList, $this->signTags->AdvancedSearch->ToJSON(), ","); // Field signTags
 		$sFilterList = ew_Concat($sFilterList, $this->phone->AdvancedSearch->ToJSON(), ","); // Field phone
-		$sFilterList = ew_Concat($sFilterList, $this->mobilePhone->AdvancedSearch->ToJSON(), ","); // Field mobilePhone
 		$sFilterList = ew_Concat($sFilterList, $this->_email->AdvancedSearch->ToJSON(), ","); // Field email
 		$sFilterList = ew_Concat($sFilterList, $this->temporaryResidence->AdvancedSearch->ToJSON(), ","); // Field temporaryResidence
 		$sFilterList = ew_Concat($sFilterList, $this->visitsCount->AdvancedSearch->ToJSON(), ","); // Field visitsCount
@@ -756,6 +811,14 @@ class csana_person_list extends csana_person {
 		$this->nationalID->AdvancedSearch->SearchValue2 = @$filter["y_nationalID"];
 		$this->nationalID->AdvancedSearch->SearchOperator2 = @$filter["w_nationalID"];
 		$this->nationalID->AdvancedSearch->Save();
+
+		// Field mobilePhone
+		$this->mobilePhone->AdvancedSearch->SearchValue = @$filter["x_mobilePhone"];
+		$this->mobilePhone->AdvancedSearch->SearchOperator = @$filter["z_mobilePhone"];
+		$this->mobilePhone->AdvancedSearch->SearchCondition = @$filter["v_mobilePhone"];
+		$this->mobilePhone->AdvancedSearch->SearchValue2 = @$filter["y_mobilePhone"];
+		$this->mobilePhone->AdvancedSearch->SearchOperator2 = @$filter["w_mobilePhone"];
+		$this->mobilePhone->AdvancedSearch->Save();
 
 		// Field nationalNumber
 		$this->nationalNumber->AdvancedSearch->SearchValue = @$filter["x_nationalNumber"];
@@ -933,14 +996,6 @@ class csana_person_list extends csana_person {
 		$this->phone->AdvancedSearch->SearchOperator2 = @$filter["w_phone"];
 		$this->phone->AdvancedSearch->Save();
 
-		// Field mobilePhone
-		$this->mobilePhone->AdvancedSearch->SearchValue = @$filter["x_mobilePhone"];
-		$this->mobilePhone->AdvancedSearch->SearchOperator = @$filter["z_mobilePhone"];
-		$this->mobilePhone->AdvancedSearch->SearchCondition = @$filter["v_mobilePhone"];
-		$this->mobilePhone->AdvancedSearch->SearchValue2 = @$filter["y_mobilePhone"];
-		$this->mobilePhone->AdvancedSearch->SearchOperator2 = @$filter["w_mobilePhone"];
-		$this->mobilePhone->AdvancedSearch->Save();
-
 		// Field email
 		$this->_email->AdvancedSearch->SearchValue = @$filter["x__email"];
 		$this->_email->AdvancedSearch->SearchOperator = @$filter["z__email"];
@@ -1020,10 +1075,12 @@ class csana_person_list extends csana_person {
 	function AdvancedSearchWhere($Default = FALSE) {
 		global $Security;
 		$sWhere = "";
+		if (!$Security->CanSearch()) return "";
 		$this->BuildSearchSql($sWhere, $this->personID, $Default, FALSE); // personID
 		$this->BuildSearchSql($sWhere, $this->personName, $Default, FALSE); // personName
 		$this->BuildSearchSql($sWhere, $this->lastName, $Default, FALSE); // lastName
 		$this->BuildSearchSql($sWhere, $this->nationalID, $Default, FALSE); // nationalID
+		$this->BuildSearchSql($sWhere, $this->mobilePhone, $Default, FALSE); // mobilePhone
 		$this->BuildSearchSql($sWhere, $this->nationalNumber, $Default, FALSE); // nationalNumber
 		$this->BuildSearchSql($sWhere, $this->passportNumber, $Default, FALSE); // passportNumber
 		$this->BuildSearchSql($sWhere, $this->fatherName, $Default, FALSE); // fatherName
@@ -1046,7 +1103,6 @@ class csana_person_list extends csana_person {
 		$this->BuildSearchSql($sWhere, $this->dress2, $Default, FALSE); // dress2
 		$this->BuildSearchSql($sWhere, $this->signTags, $Default, FALSE); // signTags
 		$this->BuildSearchSql($sWhere, $this->phone, $Default, FALSE); // phone
-		$this->BuildSearchSql($sWhere, $this->mobilePhone, $Default, FALSE); // mobilePhone
 		$this->BuildSearchSql($sWhere, $this->_email, $Default, FALSE); // email
 		$this->BuildSearchSql($sWhere, $this->temporaryResidence, $Default, FALSE); // temporaryResidence
 		$this->BuildSearchSql($sWhere, $this->visitsCount, $Default, FALSE); // visitsCount
@@ -1066,6 +1122,7 @@ class csana_person_list extends csana_person {
 			$this->personName->AdvancedSearch->Save(); // personName
 			$this->lastName->AdvancedSearch->Save(); // lastName
 			$this->nationalID->AdvancedSearch->Save(); // nationalID
+			$this->mobilePhone->AdvancedSearch->Save(); // mobilePhone
 			$this->nationalNumber->AdvancedSearch->Save(); // nationalNumber
 			$this->passportNumber->AdvancedSearch->Save(); // passportNumber
 			$this->fatherName->AdvancedSearch->Save(); // fatherName
@@ -1088,7 +1145,6 @@ class csana_person_list extends csana_person {
 			$this->dress2->AdvancedSearch->Save(); // dress2
 			$this->signTags->AdvancedSearch->Save(); // signTags
 			$this->phone->AdvancedSearch->Save(); // phone
-			$this->mobilePhone->AdvancedSearch->Save(); // mobilePhone
 			$this->_email->AdvancedSearch->Save(); // email
 			$this->temporaryResidence->AdvancedSearch->Save(); // temporaryResidence
 			$this->visitsCount->AdvancedSearch->Save(); // visitsCount
@@ -1158,6 +1214,7 @@ class csana_person_list extends csana_person {
 		$this->BuildBasicSearchSQL($sWhere, $this->personName, $arKeywords, $type);
 		$this->BuildBasicSearchSQL($sWhere, $this->lastName, $arKeywords, $type);
 		$this->BuildBasicSearchSQL($sWhere, $this->nationalID, $arKeywords, $type);
+		$this->BuildBasicSearchSQL($sWhere, $this->mobilePhone, $arKeywords, $type);
 		$this->BuildBasicSearchSQL($sWhere, $this->nationalNumber, $arKeywords, $type);
 		$this->BuildBasicSearchSQL($sWhere, $this->passportNumber, $arKeywords, $type);
 		$this->BuildBasicSearchSQL($sWhere, $this->fatherName, $arKeywords, $type);
@@ -1179,7 +1236,6 @@ class csana_person_list extends csana_person {
 		$this->BuildBasicSearchSQL($sWhere, $this->dress2, $arKeywords, $type);
 		$this->BuildBasicSearchSQL($sWhere, $this->signTags, $arKeywords, $type);
 		$this->BuildBasicSearchSQL($sWhere, $this->phone, $arKeywords, $type);
-		$this->BuildBasicSearchSQL($sWhere, $this->mobilePhone, $arKeywords, $type);
 		$this->BuildBasicSearchSQL($sWhere, $this->_email, $arKeywords, $type);
 		$this->BuildBasicSearchSQL($sWhere, $this->temporaryResidence, $arKeywords, $type);
 		$this->BuildBasicSearchSQL($sWhere, $this->picture, $arKeywords, $type);
@@ -1256,6 +1312,7 @@ class csana_person_list extends csana_person {
 	function BasicSearchWhere($Default = FALSE) {
 		global $Security;
 		$sSearchStr = "";
+		if (!$Security->CanSearch()) return "";
 		$sSearchKeyword = ($Default) ? $this->BasicSearch->KeywordDefault : $this->BasicSearch->Keyword;
 		$sSearchType = ($Default) ? $this->BasicSearch->TypeDefault : $this->BasicSearch->Type;
 		if ($sSearchKeyword <> "") {
@@ -1316,6 +1373,8 @@ class csana_person_list extends csana_person {
 			return TRUE;
 		if ($this->nationalID->AdvancedSearch->IssetSession())
 			return TRUE;
+		if ($this->mobilePhone->AdvancedSearch->IssetSession())
+			return TRUE;
 		if ($this->nationalNumber->AdvancedSearch->IssetSession())
 			return TRUE;
 		if ($this->passportNumber->AdvancedSearch->IssetSession())
@@ -1359,8 +1418,6 @@ class csana_person_list extends csana_person {
 		if ($this->signTags->AdvancedSearch->IssetSession())
 			return TRUE;
 		if ($this->phone->AdvancedSearch->IssetSession())
-			return TRUE;
-		if ($this->mobilePhone->AdvancedSearch->IssetSession())
 			return TRUE;
 		if ($this->_email->AdvancedSearch->IssetSession())
 			return TRUE;
@@ -1413,6 +1470,7 @@ class csana_person_list extends csana_person {
 		$this->personName->AdvancedSearch->UnsetSession();
 		$this->lastName->AdvancedSearch->UnsetSession();
 		$this->nationalID->AdvancedSearch->UnsetSession();
+		$this->mobilePhone->AdvancedSearch->UnsetSession();
 		$this->nationalNumber->AdvancedSearch->UnsetSession();
 		$this->passportNumber->AdvancedSearch->UnsetSession();
 		$this->fatherName->AdvancedSearch->UnsetSession();
@@ -1435,7 +1493,6 @@ class csana_person_list extends csana_person {
 		$this->dress2->AdvancedSearch->UnsetSession();
 		$this->signTags->AdvancedSearch->UnsetSession();
 		$this->phone->AdvancedSearch->UnsetSession();
-		$this->mobilePhone->AdvancedSearch->UnsetSession();
 		$this->_email->AdvancedSearch->UnsetSession();
 		$this->temporaryResidence->AdvancedSearch->UnsetSession();
 		$this->visitsCount->AdvancedSearch->UnsetSession();
@@ -1459,6 +1516,7 @@ class csana_person_list extends csana_person {
 		$this->personName->AdvancedSearch->Load();
 		$this->lastName->AdvancedSearch->Load();
 		$this->nationalID->AdvancedSearch->Load();
+		$this->mobilePhone->AdvancedSearch->Load();
 		$this->nationalNumber->AdvancedSearch->Load();
 		$this->passportNumber->AdvancedSearch->Load();
 		$this->fatherName->AdvancedSearch->Load();
@@ -1481,7 +1539,6 @@ class csana_person_list extends csana_person {
 		$this->dress2->AdvancedSearch->Load();
 		$this->signTags->AdvancedSearch->Load();
 		$this->phone->AdvancedSearch->Load();
-		$this->mobilePhone->AdvancedSearch->Load();
 		$this->_email->AdvancedSearch->Load();
 		$this->temporaryResidence->AdvancedSearch->Load();
 		$this->visitsCount->AdvancedSearch->Load();
@@ -1504,14 +1561,13 @@ class csana_person_list extends csana_person {
 			$this->UpdateSort($this->personName); // personName
 			$this->UpdateSort($this->lastName); // lastName
 			$this->UpdateSort($this->nationalID); // nationalID
+			$this->UpdateSort($this->mobilePhone); // mobilePhone
 			$this->UpdateSort($this->nationalNumber); // nationalNumber
-			$this->UpdateSort($this->passportNumber); // passportNumber
 			$this->UpdateSort($this->fatherName); // fatherName
 			$this->UpdateSort($this->gender); // gender
 			$this->UpdateSort($this->locationLevel1); // locationLevel1
-			$this->UpdateSort($this->locationLevel2); // locationLevel2
-			$this->UpdateSort($this->mobilePhone); // mobilePhone
 			$this->UpdateSort($this->picture); // picture
+			$this->UpdateSort($this->registrationStation); // registrationStation
 			$this->setStartRecordNumber(1); // Reset start position
 		}
 	}
@@ -1548,14 +1604,13 @@ class csana_person_list extends csana_person {
 				$this->personName->setSort("");
 				$this->lastName->setSort("");
 				$this->nationalID->setSort("");
+				$this->mobilePhone->setSort("");
 				$this->nationalNumber->setSort("");
-				$this->passportNumber->setSort("");
 				$this->fatherName->setSort("");
 				$this->gender->setSort("");
 				$this->locationLevel1->setSort("");
-				$this->locationLevel2->setSort("");
-				$this->mobilePhone->setSort("");
 				$this->picture->setSort("");
+				$this->registrationStation->setSort("");
 			}
 
 			// Reset start position
@@ -1577,31 +1632,25 @@ class csana_person_list extends csana_person {
 		// "view"
 		$item = &$this->ListOptions->Add("view");
 		$item->CssStyle = "white-space: nowrap;";
-		$item->Visible = TRUE;
+		$item->Visible = $Security->CanView();
 		$item->OnLeft = FALSE;
 
 		// "edit"
 		$item = &$this->ListOptions->Add("edit");
 		$item->CssStyle = "white-space: nowrap;";
-		$item->Visible = TRUE;
-		$item->OnLeft = FALSE;
-
-		// "copy"
-		$item = &$this->ListOptions->Add("copy");
-		$item->CssStyle = "white-space: nowrap;";
-		$item->Visible = TRUE;
+		$item->Visible = $Security->CanEdit();
 		$item->OnLeft = FALSE;
 
 		// "delete"
 		$item = &$this->ListOptions->Add("delete");
 		$item->CssStyle = "white-space: nowrap;";
-		$item->Visible = TRUE;
+		$item->Visible = $Security->CanDelete();
 		$item->OnLeft = FALSE;
 
 		// "detail_sana_message"
 		$item = &$this->ListOptions->Add("detail_sana_message");
 		$item->CssStyle = "white-space: nowrap;";
-		$item->Visible = TRUE && !$this->ShowMultipleDetails;
+		$item->Visible = $Security->AllowList(CurrentProjectID() . 'sana_message') && !$this->ShowMultipleDetails;
 		$item->OnLeft = FALSE;
 		$item->ShowInButtonGroup = FALSE;
 		if (!isset($GLOBALS["sana_message_grid"])) $GLOBALS["sana_message_grid"] = new csana_message_grid;
@@ -1659,30 +1708,22 @@ class csana_person_list extends csana_person {
 
 		// "view"
 		$oListOpt = &$this->ListOptions->Items["view"];
-		if (TRUE)
+		if ($Security->CanView())
 			$oListOpt->Body = "<a class=\"ewRowLink ewView\" title=\"" . ew_HtmlTitle($Language->Phrase("ViewLink")) . "\" data-caption=\"" . ew_HtmlTitle($Language->Phrase("ViewLink")) . "\" href=\"" . ew_HtmlEncode($this->ViewUrl) . "\">" . $Language->Phrase("ViewLink") . "</a>";
 		else
 			$oListOpt->Body = "";
 
 		// "edit"
 		$oListOpt = &$this->ListOptions->Items["edit"];
-		if (TRUE) {
+		if ($Security->CanEdit()) {
 			$oListOpt->Body = "<a class=\"ewRowLink ewEdit\" title=\"" . ew_HtmlTitle($Language->Phrase("EditLink")) . "\" data-caption=\"" . ew_HtmlTitle($Language->Phrase("EditLink")) . "\" href=\"" . ew_HtmlEncode($this->EditUrl) . "\">" . $Language->Phrase("EditLink") . "</a>";
-		} else {
-			$oListOpt->Body = "";
-		}
-
-		// "copy"
-		$oListOpt = &$this->ListOptions->Items["copy"];
-		if (TRUE) {
-			$oListOpt->Body = "<a class=\"ewRowLink ewCopy\" title=\"" . ew_HtmlTitle($Language->Phrase("CopyLink")) . "\" data-caption=\"" . ew_HtmlTitle($Language->Phrase("CopyLink")) . "\" href=\"" . ew_HtmlEncode($this->CopyUrl) . "\">" . $Language->Phrase("CopyLink") . "</a>";
 		} else {
 			$oListOpt->Body = "";
 		}
 
 		// "delete"
 		$oListOpt = &$this->ListOptions->Items["delete"];
-		if (TRUE)
+		if ($Security->CanDelete())
 			$oListOpt->Body = "<a class=\"ewRowLink ewDelete\"" . "" . " title=\"" . ew_HtmlTitle($Language->Phrase("DeleteLink")) . "\" data-caption=\"" . ew_HtmlTitle($Language->Phrase("DeleteLink")) . "\" href=\"" . ew_HtmlEncode($this->DeleteUrl) . "\">" . $Language->Phrase("DeleteLink") . "</a>";
 		else
 			$oListOpt->Body = "";
@@ -1721,24 +1762,19 @@ class csana_person_list extends csana_person {
 
 		// "detail_sana_message"
 		$oListOpt = &$this->ListOptions->Items["detail_sana_message"];
-		if (TRUE) {
+		if ($Security->AllowList(CurrentProjectID() . 'sana_message')) {
 			$body = $Language->Phrase("DetailLink") . $Language->TablePhrase("sana_message", "TblCaption");
 			$body = "<a class=\"btn btn-default btn-sm ewRowLink ewDetail\" data-action=\"list\" href=\"" . ew_HtmlEncode("sana_messagelist.php?" . EW_TABLE_SHOW_MASTER . "=sana_person&fk_personID=" . urlencode(strval($this->personID->CurrentValue)) . "") . "\">" . $body . "</a>";
 			$links = "";
-			if ($GLOBALS["sana_message_grid"]->DetailView) {
+			if ($GLOBALS["sana_message_grid"]->DetailView && $Security->CanView() && $Security->AllowView(CurrentProjectID() . 'sana_message')) {
 				$links .= "<li><a class=\"ewRowLink ewDetailView\" data-action=\"view\" data-caption=\"" . ew_HtmlTitle($Language->Phrase("MasterDetailViewLink")) . "\" href=\"" . ew_HtmlEncode($this->GetViewUrl(EW_TABLE_SHOW_DETAIL . "=sana_message")) . "\">" . ew_HtmlImageAndText($Language->Phrase("MasterDetailViewLink")) . "</a></li>";
 				if ($DetailViewTblVar <> "") $DetailViewTblVar .= ",";
 				$DetailViewTblVar .= "sana_message";
 			}
-			if ($GLOBALS["sana_message_grid"]->DetailEdit) {
+			if ($GLOBALS["sana_message_grid"]->DetailEdit && $Security->CanEdit() && $Security->AllowEdit(CurrentProjectID() . 'sana_message')) {
 				$links .= "<li><a class=\"ewRowLink ewDetailEdit\" data-action=\"edit\" data-caption=\"" . ew_HtmlTitle($Language->Phrase("MasterDetailEditLink")) . "\" href=\"" . ew_HtmlEncode($this->GetEditUrl(EW_TABLE_SHOW_DETAIL . "=sana_message")) . "\">" . ew_HtmlImageAndText($Language->Phrase("MasterDetailEditLink")) . "</a></li>";
 				if ($DetailEditTblVar <> "") $DetailEditTblVar .= ",";
 				$DetailEditTblVar .= "sana_message";
-			}
-			if ($GLOBALS["sana_message_grid"]->DetailAdd) {
-				$links .= "<li><a class=\"ewRowLink ewDetailCopy\" data-action=\"add\" data-caption=\"" . ew_HtmlTitle($Language->Phrase("MasterDetailCopyLink")) . "\" href=\"" . ew_HtmlEncode($this->GetCopyUrl(EW_TABLE_SHOW_DETAIL . "=sana_message")) . "\">" . ew_HtmlImageAndText($Language->Phrase("MasterDetailCopyLink")) . "</a></li>";
-				if ($DetailCopyTblVar <> "") $DetailCopyTblVar .= ",";
-				$DetailCopyTblVar .= "sana_message";
 			}
 			if ($links <> "") {
 				$body .= "<button class=\"dropdown-toggle btn btn-default btn-sm ewDetail\" data-toggle=\"dropdown\"><b class=\"caret\"></b></button>";
@@ -1790,13 +1826,13 @@ class csana_person_list extends csana_person {
 		// Add
 		$item = &$option->Add("add");
 		$item->Body = "<a class=\"ewAddEdit ewAdd\" title=\"" . ew_HtmlTitle($Language->Phrase("AddLink")) . "\" data-caption=\"" . ew_HtmlTitle($Language->Phrase("AddLink")) . "\" href=\"" . ew_HtmlEncode($this->AddUrl) . "\">" . $Language->Phrase("AddLink") . "</a>";
-		$item->Visible = ($this->AddUrl <> "");
+		$item->Visible = ($this->AddUrl <> "" && $Security->CanAdd());
 		$option = $options["detail"];
 		$DetailTableLink = "";
 		$item = &$option->Add("detailadd_sana_message");
 		$caption = $Language->Phrase("Add") . "&nbsp;" . $this->TableCaption() . "/" . $GLOBALS["sana_message"]->TableCaption();
 		$item->Body = "<a class=\"ewDetailAddGroup ewDetailAdd\" title=\"" . ew_HtmlTitle($caption) . "\" data-caption=\"" . ew_HtmlTitle($caption) . "\" href=\"" . ew_HtmlEncode($this->GetAddUrl() . "?" . EW_TABLE_SHOW_DETAIL . "=sana_message") . "\">" . $caption . "</a>";
-		$item->Visible = ($GLOBALS["sana_message"]->DetailAdd);
+		$item->Visible = ($GLOBALS["sana_message"]->DetailAdd && $Security->AllowAdd(CurrentProjectID() . 'sana_message') && $Security->CanAdd());
 		if ($item->Visible) {
 			if ($DetailTableLink <> "") $DetailTableLink .= ",";
 			$DetailTableLink .= "sana_message";
@@ -1806,7 +1842,7 @@ class csana_person_list extends csana_person {
 		if ($this->ShowMultipleDetails) {
 			$item = &$option->Add("detailsadd");
 			$item->Body = "<a class=\"ewDetailAddGroup ewDetailAdd\" title=\"" . ew_HtmlTitle($Language->Phrase("AddMasterDetailLink")) . "\" data-caption=\"" . ew_HtmlTitle($Language->Phrase("AddMasterDetailLink")) . "\" href=\"" . ew_HtmlEncode($this->GetAddUrl() . "?" . EW_TABLE_SHOW_DETAIL . "=" . $DetailTableLink) . "\">" . $Language->Phrase("AddMasterDetailLink") . "</a>";
-			$item->Visible = ($DetailTableLink <> "");
+			$item->Visible = ($DetailTableLink <> "" && $Security->CanAdd());
 
 			// Hide single master/detail items
 			$ar = explode(",", $DetailTableLink);
@@ -1992,6 +2028,11 @@ class csana_person_list extends csana_person {
 		// Hide search options
 		if ($this->Export <> "" || $this->CurrentAction <> "")
 			$this->SearchOptions->HideAllOptions();
+		global $Security;
+		if (!$Security->CanSearch()) {
+			$this->SearchOptions->HideAllOptions();
+			$this->FilterOptions->HideAllOptions();
+		}
 	}
 
 	function SetupListOptionsExt() {
@@ -2070,6 +2111,11 @@ class csana_person_list extends csana_person {
 		$this->nationalID->AdvancedSearch->SearchValue = ew_StripSlashes(@$_GET["x_nationalID"]);
 		if ($this->nationalID->AdvancedSearch->SearchValue <> "") $this->Command = "search";
 		$this->nationalID->AdvancedSearch->SearchOperator = @$_GET["z_nationalID"];
+
+		// mobilePhone
+		$this->mobilePhone->AdvancedSearch->SearchValue = ew_StripSlashes(@$_GET["x_mobilePhone"]);
+		if ($this->mobilePhone->AdvancedSearch->SearchValue <> "") $this->Command = "search";
+		$this->mobilePhone->AdvancedSearch->SearchOperator = @$_GET["z_mobilePhone"];
 
 		// nationalNumber
 		$this->nationalNumber->AdvancedSearch->SearchValue = ew_StripSlashes(@$_GET["x_nationalNumber"]);
@@ -2181,11 +2227,6 @@ class csana_person_list extends csana_person {
 		if ($this->phone->AdvancedSearch->SearchValue <> "") $this->Command = "search";
 		$this->phone->AdvancedSearch->SearchOperator = @$_GET["z_phone"];
 
-		// mobilePhone
-		$this->mobilePhone->AdvancedSearch->SearchValue = ew_StripSlashes(@$_GET["x_mobilePhone"]);
-		if ($this->mobilePhone->AdvancedSearch->SearchValue <> "") $this->Command = "search";
-		$this->mobilePhone->AdvancedSearch->SearchOperator = @$_GET["z_mobilePhone"];
-
 		// email
 		$this->_email->AdvancedSearch->SearchValue = ew_StripSlashes(@$_GET["x__email"]);
 		if ($this->_email->AdvancedSearch->SearchValue <> "") $this->Command = "search";
@@ -2291,6 +2332,7 @@ class csana_person_list extends csana_person {
 		$this->personName->setDbValue($rs->fields('personName'));
 		$this->lastName->setDbValue($rs->fields('lastName'));
 		$this->nationalID->setDbValue($rs->fields('nationalID'));
+		$this->mobilePhone->setDbValue($rs->fields('mobilePhone'));
 		$this->nationalNumber->setDbValue($rs->fields('nationalNumber'));
 		$this->passportNumber->setDbValue($rs->fields('passportNumber'));
 		$this->fatherName->setDbValue($rs->fields('fatherName'));
@@ -2313,7 +2355,6 @@ class csana_person_list extends csana_person {
 		$this->dress2->setDbValue($rs->fields('dress2'));
 		$this->signTags->setDbValue($rs->fields('signTags'));
 		$this->phone->setDbValue($rs->fields('phone'));
-		$this->mobilePhone->setDbValue($rs->fields('mobilePhone'));
 		$this->_email->setDbValue($rs->fields('email'));
 		$this->temporaryResidence->setDbValue($rs->fields('temporaryResidence'));
 		$this->visitsCount->setDbValue($rs->fields('visitsCount'));
@@ -2334,6 +2375,7 @@ class csana_person_list extends csana_person {
 		$this->personName->DbValue = $row['personName'];
 		$this->lastName->DbValue = $row['lastName'];
 		$this->nationalID->DbValue = $row['nationalID'];
+		$this->mobilePhone->DbValue = $row['mobilePhone'];
 		$this->nationalNumber->DbValue = $row['nationalNumber'];
 		$this->passportNumber->DbValue = $row['passportNumber'];
 		$this->fatherName->DbValue = $row['fatherName'];
@@ -2356,7 +2398,6 @@ class csana_person_list extends csana_person {
 		$this->dress2->DbValue = $row['dress2'];
 		$this->signTags->DbValue = $row['signTags'];
 		$this->phone->DbValue = $row['phone'];
-		$this->mobilePhone->DbValue = $row['mobilePhone'];
 		$this->_email->DbValue = $row['email'];
 		$this->temporaryResidence->DbValue = $row['temporaryResidence'];
 		$this->visitsCount->DbValue = $row['visitsCount'];
@@ -2408,9 +2449,13 @@ class csana_person_list extends csana_person {
 
 		// Common render codes for all row types
 		// personID
+
+		$this->personID->CellCssStyle = "white-space: nowrap;";
+
 		// personName
 		// lastName
 		// nationalID
+		// mobilePhone
 		// nationalNumber
 		// passportNumber
 		// fatherName
@@ -2433,7 +2478,6 @@ class csana_person_list extends csana_person {
 		// dress2
 		// signTags
 		// phone
-		// mobilePhone
 		// email
 		// temporaryResidence
 		// visitsCount
@@ -2461,6 +2505,10 @@ class csana_person_list extends csana_person {
 		// nationalID
 		$this->nationalID->ViewValue = $this->nationalID->CurrentValue;
 		$this->nationalID->ViewCustomAttributes = "";
+
+		// mobilePhone
+		$this->mobilePhone->ViewValue = $this->mobilePhone->CurrentValue;
+		$this->mobilePhone->ViewCustomAttributes = "";
 
 		// nationalNumber
 		$this->nationalNumber->ViewValue = $this->nationalNumber->CurrentValue;
@@ -2736,10 +2784,6 @@ class csana_person_list extends csana_person {
 		$this->phone->ViewValue = $this->phone->CurrentValue;
 		$this->phone->ViewCustomAttributes = "";
 
-		// mobilePhone
-		$this->mobilePhone->ViewValue = $this->mobilePhone->CurrentValue;
-		$this->mobilePhone->ViewCustomAttributes = "";
-
 		// email
 		$this->_email->ViewValue = $this->_email->CurrentValue;
 		$this->_email->ViewCustomAttributes = "";
@@ -2773,7 +2817,38 @@ class csana_person_list extends csana_person {
 		$this->registrationDateTime->ViewCustomAttributes = "";
 
 		// registrationStation
-		$this->registrationStation->ViewValue = $this->registrationStation->CurrentValue;
+		if (strval($this->registrationStation->CurrentValue) <> "") {
+			$sFilterWrk = "`stationID`" . ew_SearchString("=", $this->registrationStation->CurrentValue, EW_DATATYPE_NUMBER, "");
+		switch (@$gsLanguage) {
+			case "en":
+				$sSqlWrk = "SELECT `stationID`, `stationID` AS `DispFld`, `stationName` AS `Disp2Fld`, '' AS `Disp3Fld`, '' AS `Disp4Fld` FROM `sana_station`";
+				$sWhereWrk = "";
+				break;
+			case "fa":
+				$sSqlWrk = "SELECT `stationID`, `stationID` AS `DispFld`, `stationName` AS `Disp2Fld`, '' AS `Disp3Fld`, '' AS `Disp4Fld` FROM `sana_station`";
+				$sWhereWrk = "";
+				break;
+			default:
+				$sSqlWrk = "SELECT `stationID`, `stationID` AS `DispFld`, `stationName` AS `Disp2Fld`, '' AS `Disp3Fld`, '' AS `Disp4Fld` FROM `sana_station`";
+				$sWhereWrk = "";
+				break;
+		}
+		ew_AddFilter($sWhereWrk, $sFilterWrk);
+		$this->Lookup_Selecting($this->registrationStation, $sWhereWrk); // Call Lookup selecting
+		if ($sWhereWrk <> "") $sSqlWrk .= " WHERE " . $sWhereWrk;
+			$rswrk = Conn()->Execute($sSqlWrk);
+			if ($rswrk && !$rswrk->EOF) { // Lookup values found
+				$arwrk = array();
+				$arwrk[1] = $rswrk->fields('DispFld');
+				$arwrk[2] = $rswrk->fields('Disp2Fld');
+				$this->registrationStation->ViewValue = $this->registrationStation->DisplayValue($arwrk);
+				$rswrk->Close();
+			} else {
+				$this->registrationStation->ViewValue = $this->registrationStation->CurrentValue;
+			}
+		} else {
+			$this->registrationStation->ViewValue = NULL;
+		}
 		$this->registrationStation->ViewCustomAttributes = "";
 
 		// isolatedDateTime
@@ -2801,15 +2876,15 @@ class csana_person_list extends csana_person {
 			$this->nationalID->HrefValue = "";
 			$this->nationalID->TooltipValue = "";
 
+			// mobilePhone
+			$this->mobilePhone->LinkCustomAttributes = "";
+			$this->mobilePhone->HrefValue = "";
+			$this->mobilePhone->TooltipValue = "";
+
 			// nationalNumber
 			$this->nationalNumber->LinkCustomAttributes = "";
 			$this->nationalNumber->HrefValue = "";
 			$this->nationalNumber->TooltipValue = "";
-
-			// passportNumber
-			$this->passportNumber->LinkCustomAttributes = "";
-			$this->passportNumber->HrefValue = "";
-			$this->passportNumber->TooltipValue = "";
 
 			// fatherName
 			$this->fatherName->LinkCustomAttributes = "";
@@ -2825,16 +2900,6 @@ class csana_person_list extends csana_person {
 			$this->locationLevel1->LinkCustomAttributes = "";
 			$this->locationLevel1->HrefValue = "";
 			$this->locationLevel1->TooltipValue = "";
-
-			// locationLevel2
-			$this->locationLevel2->LinkCustomAttributes = "";
-			$this->locationLevel2->HrefValue = "";
-			$this->locationLevel2->TooltipValue = "";
-
-			// mobilePhone
-			$this->mobilePhone->LinkCustomAttributes = "";
-			$this->mobilePhone->HrefValue = "";
-			$this->mobilePhone->TooltipValue = "";
 
 			// picture
 			$this->picture->LinkCustomAttributes = "";
@@ -2857,6 +2922,11 @@ class csana_person_list extends csana_person {
 
 				$this->picture->LinkAttrs["class"] = "ewLightbox img-thumbnail";
 			}
+
+			// registrationStation
+			$this->registrationStation->LinkCustomAttributes = "";
+			$this->registrationStation->HrefValue = "";
+			$this->registrationStation->TooltipValue = "";
 		} elseif ($this->RowType == EW_ROWTYPE_SEARCH) { // Search row
 
 			// personID
@@ -2883,17 +2953,17 @@ class csana_person_list extends csana_person {
 			$this->nationalID->EditValue = ew_HtmlEncode($this->nationalID->AdvancedSearch->SearchValue);
 			$this->nationalID->PlaceHolder = ew_RemoveHtml($this->nationalID->FldCaption());
 
+			// mobilePhone
+			$this->mobilePhone->EditAttrs["class"] = "form-control";
+			$this->mobilePhone->EditCustomAttributes = "";
+			$this->mobilePhone->EditValue = ew_HtmlEncode($this->mobilePhone->AdvancedSearch->SearchValue);
+			$this->mobilePhone->PlaceHolder = ew_RemoveHtml($this->mobilePhone->FldCaption());
+
 			// nationalNumber
 			$this->nationalNumber->EditAttrs["class"] = "form-control";
 			$this->nationalNumber->EditCustomAttributes = "";
 			$this->nationalNumber->EditValue = ew_HtmlEncode($this->nationalNumber->AdvancedSearch->SearchValue);
 			$this->nationalNumber->PlaceHolder = ew_RemoveHtml($this->nationalNumber->FldCaption());
-
-			// passportNumber
-			$this->passportNumber->EditAttrs["class"] = "form-control";
-			$this->passportNumber->EditCustomAttributes = "";
-			$this->passportNumber->EditValue = ew_HtmlEncode($this->passportNumber->AdvancedSearch->SearchValue);
-			$this->passportNumber->PlaceHolder = ew_RemoveHtml($this->passportNumber->FldCaption());
 
 			// fatherName
 			$this->fatherName->EditAttrs["class"] = "form-control";
@@ -2909,21 +2979,15 @@ class csana_person_list extends csana_person {
 			$this->locationLevel1->EditAttrs["class"] = "form-control";
 			$this->locationLevel1->EditCustomAttributes = "";
 
-			// locationLevel2
-			$this->locationLevel2->EditAttrs["class"] = "form-control";
-			$this->locationLevel2->EditCustomAttributes = "";
-
-			// mobilePhone
-			$this->mobilePhone->EditAttrs["class"] = "form-control";
-			$this->mobilePhone->EditCustomAttributes = "";
-			$this->mobilePhone->EditValue = ew_HtmlEncode($this->mobilePhone->AdvancedSearch->SearchValue);
-			$this->mobilePhone->PlaceHolder = ew_RemoveHtml($this->mobilePhone->FldCaption());
-
 			// picture
 			$this->picture->EditAttrs["class"] = "form-control";
 			$this->picture->EditCustomAttributes = "";
 			$this->picture->EditValue = ew_HtmlEncode($this->picture->AdvancedSearch->SearchValue);
 			$this->picture->PlaceHolder = ew_RemoveHtml($this->picture->FldCaption());
+
+			// registrationStation
+			$this->registrationStation->EditAttrs["class"] = "form-control";
+			$this->registrationStation->EditCustomAttributes = "";
 		}
 		if ($this->RowType == EW_ROWTYPE_ADD ||
 			$this->RowType == EW_ROWTYPE_EDIT ||
@@ -2946,9 +3010,6 @@ class csana_person_list extends csana_person {
 		// Check if validation required
 		if (!EW_SERVER_VALIDATE)
 			return TRUE;
-		if (!ew_CheckInteger($this->personID->AdvancedSearch->SearchValue)) {
-			ew_AddMessage($gsSearchError, $this->personID->FldErrMsg());
-		}
 
 		// Return validate result
 		$ValidateSearch = ($gsSearchError == "");
@@ -2968,6 +3029,7 @@ class csana_person_list extends csana_person {
 		$this->personName->AdvancedSearch->Load();
 		$this->lastName->AdvancedSearch->Load();
 		$this->nationalID->AdvancedSearch->Load();
+		$this->mobilePhone->AdvancedSearch->Load();
 		$this->nationalNumber->AdvancedSearch->Load();
 		$this->passportNumber->AdvancedSearch->Load();
 		$this->fatherName->AdvancedSearch->Load();
@@ -2990,7 +3052,6 @@ class csana_person_list extends csana_person {
 		$this->dress2->AdvancedSearch->Load();
 		$this->signTags->AdvancedSearch->Load();
 		$this->phone->AdvancedSearch->Load();
-		$this->mobilePhone->AdvancedSearch->Load();
 		$this->_email->AdvancedSearch->Load();
 		$this->temporaryResidence->AdvancedSearch->Load();
 		$this->visitsCount->AdvancedSearch->Load();
@@ -3175,7 +3236,7 @@ fsana_personlist.ValidateRequired = false;
 // Dynamic selection lists
 fsana_personlist.Lists["x_gender"] = {"LinkField":"x_stateName","Ajax":true,"AutoFill":false,"DisplayFields":["x_stateName","","",""],"ParentFields":[],"ChildFields":[],"FilterFields":[],"Options":[],"Template":""};
 fsana_personlist.Lists["x_locationLevel1"] = {"LinkField":"x_locationName","Ajax":true,"AutoFill":false,"DisplayFields":["x_locationName","","",""],"ParentFields":[],"ChildFields":["x_locationLevel2"],"FilterFields":[],"Options":[],"Template":""};
-fsana_personlist.Lists["x_locationLevel2"] = {"LinkField":"x_locationName","Ajax":true,"AutoFill":false,"DisplayFields":["x_locationName","","",""],"ParentFields":[],"ChildFields":["x_locationLevel3"],"FilterFields":[],"Options":[],"Template":""};
+fsana_personlist.Lists["x_registrationStation"] = {"LinkField":"x_stationID","Ajax":true,"AutoFill":false,"DisplayFields":["x_stationID","x_stationName","",""],"ParentFields":[],"ChildFields":[],"FilterFields":[],"Options":[],"Template":""};
 
 // Form object for search
 var CurrentSearchForm = fsana_personlistsrch = new ew_Form("fsana_personlistsrch");
@@ -3186,9 +3247,6 @@ fsana_personlistsrch.Validate = function(fobj) {
 		return true; // Ignore validation
 	fobj = fobj || this.Form;
 	var infix = "";
-	elm = this.GetElements("x" + infix + "_personID");
-	if (elm && !ew_CheckInteger(elm.value))
-		return this.OnError(elm, "<?php echo ew_JsEncode2($sana_person->personID->FldErrMsg()) ?>");
 
 	// Fire Form_CustomValidate event
 	if (!this.Form_CustomValidate(fobj))
@@ -3250,6 +3308,8 @@ fsana_personlistsrch.ValidateRequired = false; // No JavaScript validation
 
 	// Set no record found message
 	if ($sana_person->CurrentAction == "" && $sana_person_list->TotalRecs == 0) {
+		if (!$Security->CanList())
+			$sana_person_list->setWarningMessage($Language->Phrase("NoPermission"));
 		if ($sana_person_list->SearchWhere == "0=101")
 			$sana_person_list->setWarningMessage($Language->Phrase("EnterSearchCriteria"));
 		else
@@ -3257,6 +3317,7 @@ fsana_personlistsrch.ValidateRequired = false; // No JavaScript validation
 	}
 $sana_person_list->RenderOtherOptions();
 ?>
+<?php if ($Security->CanSearch()) { ?>
 <?php if ($sana_person->Export == "" && $sana_person->CurrentAction == "") { ?>
 <form name="fsana_personlistsrch" id="fsana_personlistsrch" class="form-inline ewForm" action="<?php echo ew_CurrentPage() ?>">
 <?php $SearchPanelClass = ($sana_person_list->SearchWhere <> "") ? " in" : " in"; ?>
@@ -3276,17 +3337,6 @@ $sana_person->ResetAttrs();
 $sana_person_list->RenderRow();
 ?>
 <div id="xsr_1" class="ewRow">
-<?php if ($sana_person->personID->Visible) { // personID ?>
-	<div id="xsc_personID" class="ewCell form-group">
-		<label for="x_personID" class="ewSearchCaption ewLabel"><?php echo $sana_person->personID->FldCaption() ?></label>
-		<span class="ewSearchOperator"><?php echo $Language->Phrase("=") ?><input type="hidden" name="z_personID" id="z_personID" value="="></span>
-		<span class="ewSearchField">
-<input type="text" data-table="sana_person" data-field="x_personID" name="x_personID" id="x_personID" placeholder="<?php echo ew_HtmlEncode($sana_person->personID->getPlaceHolder()) ?>" value="<?php echo $sana_person->personID->EditValue ?>"<?php echo $sana_person->personID->EditAttributes() ?>>
-</span>
-	</div>
-<?php } ?>
-</div>
-<div id="xsr_2" class="ewRow">
 <?php if ($sana_person->personName->Visible) { // personName ?>
 	<div id="xsc_personName" class="ewCell form-group">
 		<label for="x_personName" class="ewSearchCaption ewLabel"><?php echo $sana_person->personName->FldCaption() ?></label>
@@ -3297,13 +3347,24 @@ $sana_person_list->RenderRow();
 	</div>
 <?php } ?>
 </div>
-<div id="xsr_3" class="ewRow">
+<div id="xsr_2" class="ewRow">
 <?php if ($sana_person->lastName->Visible) { // lastName ?>
 	<div id="xsc_lastName" class="ewCell form-group">
 		<label for="x_lastName" class="ewSearchCaption ewLabel"><?php echo $sana_person->lastName->FldCaption() ?></label>
 		<span class="ewSearchOperator"><?php echo $Language->Phrase("LIKE") ?><input type="hidden" name="z_lastName" id="z_lastName" value="LIKE"></span>
 		<span class="ewSearchField">
 <input type="text" data-table="sana_person" data-field="x_lastName" name="x_lastName" id="x_lastName" size="30" maxlength="200" placeholder="<?php echo ew_HtmlEncode($sana_person->lastName->getPlaceHolder()) ?>" value="<?php echo $sana_person->lastName->EditValue ?>"<?php echo $sana_person->lastName->EditAttributes() ?>>
+</span>
+	</div>
+<?php } ?>
+</div>
+<div id="xsr_3" class="ewRow">
+<?php if ($sana_person->nationalID->Visible) { // nationalID ?>
+	<div id="xsc_nationalID" class="ewCell form-group">
+		<label for="x_nationalID" class="ewSearchCaption ewLabel"><?php echo $sana_person->nationalID->FldCaption() ?></label>
+		<span class="ewSearchOperator"><?php echo $Language->Phrase("LIKE") ?><input type="hidden" name="z_nationalID" id="z_nationalID" value="LIKE"></span>
+		<span class="ewSearchField">
+<input type="text" data-table="sana_person" data-field="x_nationalID" name="x_nationalID" id="x_nationalID" size="30" maxlength="10" placeholder="<?php echo ew_HtmlEncode($sana_person->nationalID->getPlaceHolder()) ?>" value="<?php echo $sana_person->nationalID->EditValue ?>"<?php echo $sana_person->nationalID->EditAttributes() ?>>
 </span>
 	</div>
 <?php } ?>
@@ -3320,6 +3381,17 @@ $sana_person_list->RenderRow();
 <?php } ?>
 </div>
 <div id="xsr_5" class="ewRow">
+<?php if ($sana_person->nationalNumber->Visible) { // nationalNumber ?>
+	<div id="xsc_nationalNumber" class="ewCell form-group">
+		<label for="x_nationalNumber" class="ewSearchCaption ewLabel"><?php echo $sana_person->nationalNumber->FldCaption() ?></label>
+		<span class="ewSearchOperator"><?php echo $Language->Phrase("LIKE") ?><input type="hidden" name="z_nationalNumber" id="z_nationalNumber" value="LIKE"></span>
+		<span class="ewSearchField">
+<input type="text" data-table="sana_person" data-field="x_nationalNumber" name="x_nationalNumber" id="x_nationalNumber" size="30" maxlength="10" placeholder="<?php echo ew_HtmlEncode($sana_person->nationalNumber->getPlaceHolder()) ?>" value="<?php echo $sana_person->nationalNumber->EditValue ?>"<?php echo $sana_person->nationalNumber->EditAttributes() ?>>
+</span>
+	</div>
+<?php } ?>
+</div>
+<div id="xsr_6" class="ewRow">
 	<div class="ewQuickSearch input-group">
 	<input type="text" name="<?php echo EW_TABLE_BASIC_SEARCH ?>" id="<?php echo EW_TABLE_BASIC_SEARCH ?>" class="form-control" value="<?php echo ew_HtmlEncode($sana_person_list->BasicSearch->getKeyword()) ?>" placeholder="<?php echo ew_HtmlEncode($Language->Phrase("Search")) ?>">
 	<input type="hidden" name="<?php echo EW_TABLE_BASIC_SEARCH_TYPE ?>" id="<?php echo EW_TABLE_BASIC_SEARCH_TYPE ?>" value="<?php echo ew_HtmlEncode($sana_person_list->BasicSearch->getType()) ?>">
@@ -3339,12 +3411,62 @@ $sana_person_list->RenderRow();
 </div>
 </form>
 <?php } ?>
+<?php } ?>
 <?php $sana_person_list->ShowPageHeader(); ?>
 <?php
 $sana_person_list->ShowMessage();
 ?>
 <?php if ($sana_person_list->TotalRecs > 0 || $sana_person->CurrentAction <> "") { ?>
 <div class="panel panel-default ewGrid">
+<div class="panel-heading ewGridUpperPanel">
+<?php if ($sana_person->CurrentAction <> "gridadd" && $sana_person->CurrentAction <> "gridedit") { ?>
+<form name="ewPagerForm" class="form-inline ewForm ewPagerForm" action="<?php echo ew_CurrentPage() ?>">
+<?php if (!isset($sana_person_list->Pager)) $sana_person_list->Pager = new cNumericPager($sana_person_list->StartRec, $sana_person_list->DisplayRecs, $sana_person_list->TotalRecs, $sana_person_list->RecRange) ?>
+<?php if ($sana_person_list->Pager->RecordCount > 0) { ?>
+<div class="ewPager">
+<div class="ewNumericPage"><ul class="pagination">
+	<?php if ($sana_person_list->Pager->FirstButton->Enabled) { ?>
+	<li><a href="<?php echo $sana_person_list->PageUrl() ?>start=<?php echo $sana_person_list->Pager->FirstButton->Start ?>"><?php echo $Language->Phrase("PagerFirst") ?></a></li>
+	<?php } ?>
+	<?php if ($sana_person_list->Pager->PrevButton->Enabled) { ?>
+	<li><a href="<?php echo $sana_person_list->PageUrl() ?>start=<?php echo $sana_person_list->Pager->PrevButton->Start ?>"><?php echo $Language->Phrase("PagerPrevious") ?></a></li>
+	<?php } ?>
+	<?php foreach ($sana_person_list->Pager->Items as $PagerItem) { ?>
+		<li<?php if (!$PagerItem->Enabled) { echo " class=\" active\""; } ?>><a href="<?php if ($PagerItem->Enabled) { echo $sana_person_list->PageUrl() . "start=" . $PagerItem->Start; } else { echo "#"; } ?>"><?php echo $PagerItem->Text ?></a></li>
+	<?php } ?>
+	<?php if ($sana_person_list->Pager->NextButton->Enabled) { ?>
+	<li><a href="<?php echo $sana_person_list->PageUrl() ?>start=<?php echo $sana_person_list->Pager->NextButton->Start ?>"><?php echo $Language->Phrase("PagerNext") ?></a></li>
+	<?php } ?>
+	<?php if ($sana_person_list->Pager->LastButton->Enabled) { ?>
+	<li><a href="<?php echo $sana_person_list->PageUrl() ?>start=<?php echo $sana_person_list->Pager->LastButton->Start ?>"><?php echo $Language->Phrase("PagerLast") ?></a></li>
+	<?php } ?>
+</ul></div>
+</div>
+<div class="ewPager ewRec">
+	<span><?php echo $Language->Phrase("Record") ?>&nbsp;<?php echo $sana_person_list->Pager->FromIndex ?>&nbsp;<?php echo $Language->Phrase("To") ?>&nbsp;<?php echo $sana_person_list->Pager->ToIndex ?>&nbsp;<?php echo $Language->Phrase("Of") ?>&nbsp;<?php echo $sana_person_list->Pager->RecordCount ?></span>
+</div>
+<?php } ?>
+<?php if ($sana_person_list->TotalRecs > 0) { ?>
+<div class="ewPager">
+<input type="hidden" name="t" value="sana_person">
+<select name="<?php echo EW_TABLE_REC_PER_PAGE ?>" class="form-control input-sm" onchange="this.form.submit();">
+<option value="20"<?php if ($sana_person_list->DisplayRecs == 20) { ?> selected="selected"<?php } ?>>20</option>
+<option value="50"<?php if ($sana_person_list->DisplayRecs == 50) { ?> selected="selected"<?php } ?>>50</option>
+<option value="100"<?php if ($sana_person_list->DisplayRecs == 100) { ?> selected="selected"<?php } ?>>100</option>
+<option value="500"<?php if ($sana_person_list->DisplayRecs == 500) { ?> selected="selected"<?php } ?>>500</option>
+</select>
+</div>
+<?php } ?>
+</form>
+<?php } ?>
+<div class="ewListOtherOptions">
+<?php
+	foreach ($sana_person_list->OtherOptions as &$option)
+		$option->Render("body");
+?>
+</div>
+<div class="clearfix"></div>
+</div>
 <form name="fsana_personlist" id="fsana_personlist" class="form-inline ewForm ewListForm" action="<?php echo ew_CurrentPage() ?>" method="post">
 <?php if ($sana_person_list->CheckToken) { ?>
 <input type="hidden" name="<?php echo EW_TOKEN_NAME ?>" value="<?php echo $sana_person_list->Token ?>">
@@ -3369,10 +3491,10 @@ $sana_person_list->ListOptions->Render("header", "left");
 ?>
 <?php if ($sana_person->personID->Visible) { // personID ?>
 	<?php if ($sana_person->SortUrl($sana_person->personID) == "") { ?>
-		<th data-name="personID"><div id="elh_sana_person_personID" class="sana_person_personID"><div class="ewTableHeaderCaption"><?php echo $sana_person->personID->FldCaption() ?></div></div></th>
+		<th data-name="personID"><div id="elh_sana_person_personID" class="sana_person_personID"><div class="ewTableHeaderCaption" style="white-space: nowrap;"><?php echo $sana_person->personID->FldCaption() ?></div></div></th>
 	<?php } else { ?>
 		<th data-name="personID"><div class="ewPointer" onclick="ew_Sort(event,'<?php echo $sana_person->SortUrl($sana_person->personID) ?>',1);"><div id="elh_sana_person_personID" class="sana_person_personID">
-			<div class="ewTableHeaderBtn"><span class="ewTableHeaderCaption"><?php echo $sana_person->personID->FldCaption() ?><?php echo $Language->Phrase("SrchLegend") ?></span><span class="ewTableHeaderSort"><?php if ($sana_person->personID->getSort() == "ASC") { ?><span class="caret ewSortUp"></span><?php } elseif ($sana_person->personID->getSort() == "DESC") { ?><span class="caret"></span><?php } ?></span></div>
+			<div class="ewTableHeaderBtn" style="white-space: nowrap;"><span class="ewTableHeaderCaption"><?php echo $sana_person->personID->FldCaption() ?><?php echo $Language->Phrase("SrchLegend") ?></span><span class="ewTableHeaderSort"><?php if ($sana_person->personID->getSort() == "ASC") { ?><span class="caret ewSortUp"></span><?php } elseif ($sana_person->personID->getSort() == "DESC") { ?><span class="caret"></span><?php } ?></span></div>
         </div></div></th>
 	<?php } ?>
 <?php } ?>		
@@ -3403,21 +3525,21 @@ $sana_person_list->ListOptions->Render("header", "left");
         </div></div></th>
 	<?php } ?>
 <?php } ?>		
+<?php if ($sana_person->mobilePhone->Visible) { // mobilePhone ?>
+	<?php if ($sana_person->SortUrl($sana_person->mobilePhone) == "") { ?>
+		<th data-name="mobilePhone"><div id="elh_sana_person_mobilePhone" class="sana_person_mobilePhone"><div class="ewTableHeaderCaption"><?php echo $sana_person->mobilePhone->FldCaption() ?></div></div></th>
+	<?php } else { ?>
+		<th data-name="mobilePhone"><div class="ewPointer" onclick="ew_Sort(event,'<?php echo $sana_person->SortUrl($sana_person->mobilePhone) ?>',1);"><div id="elh_sana_person_mobilePhone" class="sana_person_mobilePhone">
+			<div class="ewTableHeaderBtn"><span class="ewTableHeaderCaption"><?php echo $sana_person->mobilePhone->FldCaption() ?><?php echo $Language->Phrase("SrchLegend") ?></span><span class="ewTableHeaderSort"><?php if ($sana_person->mobilePhone->getSort() == "ASC") { ?><span class="caret ewSortUp"></span><?php } elseif ($sana_person->mobilePhone->getSort() == "DESC") { ?><span class="caret"></span><?php } ?></span></div>
+        </div></div></th>
+	<?php } ?>
+<?php } ?>		
 <?php if ($sana_person->nationalNumber->Visible) { // nationalNumber ?>
 	<?php if ($sana_person->SortUrl($sana_person->nationalNumber) == "") { ?>
 		<th data-name="nationalNumber"><div id="elh_sana_person_nationalNumber" class="sana_person_nationalNumber"><div class="ewTableHeaderCaption"><?php echo $sana_person->nationalNumber->FldCaption() ?></div></div></th>
 	<?php } else { ?>
 		<th data-name="nationalNumber"><div class="ewPointer" onclick="ew_Sort(event,'<?php echo $sana_person->SortUrl($sana_person->nationalNumber) ?>',1);"><div id="elh_sana_person_nationalNumber" class="sana_person_nationalNumber">
 			<div class="ewTableHeaderBtn"><span class="ewTableHeaderCaption"><?php echo $sana_person->nationalNumber->FldCaption() ?><?php echo $Language->Phrase("SrchLegend") ?></span><span class="ewTableHeaderSort"><?php if ($sana_person->nationalNumber->getSort() == "ASC") { ?><span class="caret ewSortUp"></span><?php } elseif ($sana_person->nationalNumber->getSort() == "DESC") { ?><span class="caret"></span><?php } ?></span></div>
-        </div></div></th>
-	<?php } ?>
-<?php } ?>		
-<?php if ($sana_person->passportNumber->Visible) { // passportNumber ?>
-	<?php if ($sana_person->SortUrl($sana_person->passportNumber) == "") { ?>
-		<th data-name="passportNumber"><div id="elh_sana_person_passportNumber" class="sana_person_passportNumber"><div class="ewTableHeaderCaption"><?php echo $sana_person->passportNumber->FldCaption() ?></div></div></th>
-	<?php } else { ?>
-		<th data-name="passportNumber"><div class="ewPointer" onclick="ew_Sort(event,'<?php echo $sana_person->SortUrl($sana_person->passportNumber) ?>',1);"><div id="elh_sana_person_passportNumber" class="sana_person_passportNumber">
-			<div class="ewTableHeaderBtn"><span class="ewTableHeaderCaption"><?php echo $sana_person->passportNumber->FldCaption() ?><?php echo $Language->Phrase("SrchLegend") ?></span><span class="ewTableHeaderSort"><?php if ($sana_person->passportNumber->getSort() == "ASC") { ?><span class="caret ewSortUp"></span><?php } elseif ($sana_person->passportNumber->getSort() == "DESC") { ?><span class="caret"></span><?php } ?></span></div>
         </div></div></th>
 	<?php } ?>
 <?php } ?>		
@@ -3448,30 +3570,21 @@ $sana_person_list->ListOptions->Render("header", "left");
         </div></div></th>
 	<?php } ?>
 <?php } ?>		
-<?php if ($sana_person->locationLevel2->Visible) { // locationLevel2 ?>
-	<?php if ($sana_person->SortUrl($sana_person->locationLevel2) == "") { ?>
-		<th data-name="locationLevel2"><div id="elh_sana_person_locationLevel2" class="sana_person_locationLevel2"><div class="ewTableHeaderCaption"><?php echo $sana_person->locationLevel2->FldCaption() ?></div></div></th>
-	<?php } else { ?>
-		<th data-name="locationLevel2"><div class="ewPointer" onclick="ew_Sort(event,'<?php echo $sana_person->SortUrl($sana_person->locationLevel2) ?>',1);"><div id="elh_sana_person_locationLevel2" class="sana_person_locationLevel2">
-			<div class="ewTableHeaderBtn"><span class="ewTableHeaderCaption"><?php echo $sana_person->locationLevel2->FldCaption() ?></span><span class="ewTableHeaderSort"><?php if ($sana_person->locationLevel2->getSort() == "ASC") { ?><span class="caret ewSortUp"></span><?php } elseif ($sana_person->locationLevel2->getSort() == "DESC") { ?><span class="caret"></span><?php } ?></span></div>
-        </div></div></th>
-	<?php } ?>
-<?php } ?>		
-<?php if ($sana_person->mobilePhone->Visible) { // mobilePhone ?>
-	<?php if ($sana_person->SortUrl($sana_person->mobilePhone) == "") { ?>
-		<th data-name="mobilePhone"><div id="elh_sana_person_mobilePhone" class="sana_person_mobilePhone"><div class="ewTableHeaderCaption"><?php echo $sana_person->mobilePhone->FldCaption() ?></div></div></th>
-	<?php } else { ?>
-		<th data-name="mobilePhone"><div class="ewPointer" onclick="ew_Sort(event,'<?php echo $sana_person->SortUrl($sana_person->mobilePhone) ?>',1);"><div id="elh_sana_person_mobilePhone" class="sana_person_mobilePhone">
-			<div class="ewTableHeaderBtn"><span class="ewTableHeaderCaption"><?php echo $sana_person->mobilePhone->FldCaption() ?><?php echo $Language->Phrase("SrchLegend") ?></span><span class="ewTableHeaderSort"><?php if ($sana_person->mobilePhone->getSort() == "ASC") { ?><span class="caret ewSortUp"></span><?php } elseif ($sana_person->mobilePhone->getSort() == "DESC") { ?><span class="caret"></span><?php } ?></span></div>
-        </div></div></th>
-	<?php } ?>
-<?php } ?>		
 <?php if ($sana_person->picture->Visible) { // picture ?>
 	<?php if ($sana_person->SortUrl($sana_person->picture) == "") { ?>
 		<th data-name="picture"><div id="elh_sana_person_picture" class="sana_person_picture"><div class="ewTableHeaderCaption"><?php echo $sana_person->picture->FldCaption() ?></div></div></th>
 	<?php } else { ?>
 		<th data-name="picture"><div class="ewPointer" onclick="ew_Sort(event,'<?php echo $sana_person->SortUrl($sana_person->picture) ?>',1);"><div id="elh_sana_person_picture" class="sana_person_picture">
 			<div class="ewTableHeaderBtn"><span class="ewTableHeaderCaption"><?php echo $sana_person->picture->FldCaption() ?><?php echo $Language->Phrase("SrchLegend") ?></span><span class="ewTableHeaderSort"><?php if ($sana_person->picture->getSort() == "ASC") { ?><span class="caret ewSortUp"></span><?php } elseif ($sana_person->picture->getSort() == "DESC") { ?><span class="caret"></span><?php } ?></span></div>
+        </div></div></th>
+	<?php } ?>
+<?php } ?>		
+<?php if ($sana_person->registrationStation->Visible) { // registrationStation ?>
+	<?php if ($sana_person->SortUrl($sana_person->registrationStation) == "") { ?>
+		<th data-name="registrationStation"><div id="elh_sana_person_registrationStation" class="sana_person_registrationStation"><div class="ewTableHeaderCaption"><?php echo $sana_person->registrationStation->FldCaption() ?></div></div></th>
+	<?php } else { ?>
+		<th data-name="registrationStation"><div class="ewPointer" onclick="ew_Sort(event,'<?php echo $sana_person->SortUrl($sana_person->registrationStation) ?>',1);"><div id="elh_sana_person_registrationStation" class="sana_person_registrationStation">
+			<div class="ewTableHeaderBtn"><span class="ewTableHeaderCaption"><?php echo $sana_person->registrationStation->FldCaption() ?></span><span class="ewTableHeaderSort"><?php if ($sana_person->registrationStation->getSort() == "ASC") { ?><span class="caret ewSortUp"></span><?php } elseif ($sana_person->registrationStation->getSort() == "DESC") { ?><span class="caret"></span><?php } ?></span></div>
         </div></div></th>
 	<?php } ?>
 <?php } ?>		
@@ -3572,19 +3685,19 @@ $sana_person_list->ListOptions->Render("body", "left", $sana_person_list->RowCnt
 </span>
 </td>
 	<?php } ?>
+	<?php if ($sana_person->mobilePhone->Visible) { // mobilePhone ?>
+		<td data-name="mobilePhone"<?php echo $sana_person->mobilePhone->CellAttributes() ?>>
+<span id="el<?php echo $sana_person_list->RowCnt ?>_sana_person_mobilePhone" class="sana_person_mobilePhone">
+<span<?php echo $sana_person->mobilePhone->ViewAttributes() ?>>
+<?php echo $sana_person->mobilePhone->ListViewValue() ?></span>
+</span>
+</td>
+	<?php } ?>
 	<?php if ($sana_person->nationalNumber->Visible) { // nationalNumber ?>
 		<td data-name="nationalNumber"<?php echo $sana_person->nationalNumber->CellAttributes() ?>>
 <span id="el<?php echo $sana_person_list->RowCnt ?>_sana_person_nationalNumber" class="sana_person_nationalNumber">
 <span<?php echo $sana_person->nationalNumber->ViewAttributes() ?>>
 <?php echo $sana_person->nationalNumber->ListViewValue() ?></span>
-</span>
-</td>
-	<?php } ?>
-	<?php if ($sana_person->passportNumber->Visible) { // passportNumber ?>
-		<td data-name="passportNumber"<?php echo $sana_person->passportNumber->CellAttributes() ?>>
-<span id="el<?php echo $sana_person_list->RowCnt ?>_sana_person_passportNumber" class="sana_person_passportNumber">
-<span<?php echo $sana_person->passportNumber->ViewAttributes() ?>>
-<?php echo $sana_person->passportNumber->ListViewValue() ?></span>
 </span>
 </td>
 	<?php } ?>
@@ -3612,28 +3725,20 @@ $sana_person_list->ListOptions->Render("body", "left", $sana_person_list->RowCnt
 </span>
 </td>
 	<?php } ?>
-	<?php if ($sana_person->locationLevel2->Visible) { // locationLevel2 ?>
-		<td data-name="locationLevel2"<?php echo $sana_person->locationLevel2->CellAttributes() ?>>
-<span id="el<?php echo $sana_person_list->RowCnt ?>_sana_person_locationLevel2" class="sana_person_locationLevel2">
-<span<?php echo $sana_person->locationLevel2->ViewAttributes() ?>>
-<?php echo $sana_person->locationLevel2->ListViewValue() ?></span>
-</span>
-</td>
-	<?php } ?>
-	<?php if ($sana_person->mobilePhone->Visible) { // mobilePhone ?>
-		<td data-name="mobilePhone"<?php echo $sana_person->mobilePhone->CellAttributes() ?>>
-<span id="el<?php echo $sana_person_list->RowCnt ?>_sana_person_mobilePhone" class="sana_person_mobilePhone">
-<span<?php echo $sana_person->mobilePhone->ViewAttributes() ?>>
-<?php echo $sana_person->mobilePhone->ListViewValue() ?></span>
-</span>
-</td>
-	<?php } ?>
 	<?php if ($sana_person->picture->Visible) { // picture ?>
 		<td data-name="picture"<?php echo $sana_person->picture->CellAttributes() ?>>
 <span id="el<?php echo $sana_person_list->RowCnt ?>_sana_person_picture" class="sana_person_picture">
 <span>
 <?php echo ew_GetFileViewTag($sana_person->picture, $sana_person->picture->ListViewValue()) ?>
 </span>
+</span>
+</td>
+	<?php } ?>
+	<?php if ($sana_person->registrationStation->Visible) { // registrationStation ?>
+		<td data-name="registrationStation"<?php echo $sana_person->registrationStation->CellAttributes() ?>>
+<span id="el<?php echo $sana_person_list->RowCnt ?>_sana_person_registrationStation" class="sana_person_registrationStation">
+<span<?php echo $sana_person->registrationStation->ViewAttributes() ?>>
+<?php echo $sana_person->registrationStation->ListViewValue() ?></span>
 </span>
 </td>
 	<?php } ?>
@@ -3689,6 +3794,17 @@ if ($sana_person_list->Recordset)
 </div>
 <div class="ewPager ewRec">
 	<span><?php echo $Language->Phrase("Record") ?>&nbsp;<?php echo $sana_person_list->Pager->FromIndex ?>&nbsp;<?php echo $Language->Phrase("To") ?>&nbsp;<?php echo $sana_person_list->Pager->ToIndex ?>&nbsp;<?php echo $Language->Phrase("Of") ?>&nbsp;<?php echo $sana_person_list->Pager->RecordCount ?></span>
+</div>
+<?php } ?>
+<?php if ($sana_person_list->TotalRecs > 0) { ?>
+<div class="ewPager">
+<input type="hidden" name="t" value="sana_person">
+<select name="<?php echo EW_TABLE_REC_PER_PAGE ?>" class="form-control input-sm" onchange="this.form.submit();">
+<option value="20"<?php if ($sana_person_list->DisplayRecs == 20) { ?> selected="selected"<?php } ?>>20</option>
+<option value="50"<?php if ($sana_person_list->DisplayRecs == 50) { ?> selected="selected"<?php } ?>>50</option>
+<option value="100"<?php if ($sana_person_list->DisplayRecs == 100) { ?> selected="selected"<?php } ?>>100</option>
+<option value="500"<?php if ($sana_person_list->DisplayRecs == 500) { ?> selected="selected"<?php } ?>>500</option>
+</select>
 </div>
 <?php } ?>
 </form>

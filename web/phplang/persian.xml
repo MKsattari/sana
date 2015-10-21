@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<ew-language date="2015/10/14" version="12.0.0" id="fa" name="Persian" desc="Persian" author="e.World Technology Ltd.">
+<ew-language date="2015/10/21" version="12.0.0" id="fa" name="Persian" desc="Persian" author="e.World Technology Ltd.">
 	<locale>
 		<phrase id="locale" value=""/><!-- *** system locale for this language -->
 		<phrase id="use_system_locale" value="1"/><!-- *** change to "0" to disable system locale and use the following settings *** -->
@@ -166,7 +166,7 @@
 		<phrase id="filenotfound" value="فایل یافت نشد"/><!-- *** characters need to be supported by EW_TMP_IMAGE_FONT *** -->
 		<phrase id="filter" value="فیلتر"/><!-- v12 -->
 		<phrase id="filtername" value="نام و نام خانوادگی فیلتر" client="1"/><!-- v12 -->
-		<phrase id="filters" value="فیلترها برای تصفیه آب" class="icon-filter ewIcon"/><!-- v12 -->
+		<phrase id="filters" value="فیلترها" class="icon-filter ewIcon"/><!-- v12 -->
 		<phrase id="overwritebtn" value="بازنویسی"/>
 		<phrase id="overwritelink" value="بازنویسی"/>
 		<phrase id="forgotpwd" value="رمز عبور را فراموش کرده اید"/>
@@ -274,7 +274,7 @@
 		<phrase id="permissionlistsearchview" value="فهرست / جستجو / نمایش"/>
 		<phrase id="permissionlist" value="فهرست"/>
 		<phrase id="permissionsearch" value="جستجو کردن"/>
-		<phrase id="permissionview" value="چشم انداز"/>
+		<phrase id="permissionview" value="مشاهده"/>
 		<phrase id="pickdate" value="انتخاب کنید یک تاریخ"/>
 		<phrase id="pleaseselect" value="لطفا انتخاب کنید" client="1"/><!-- v12 -->
 		<phrase id="pleasewait" value="لطفا صبر کنید..." client="1"/>
@@ -353,7 +353,7 @@
 		<phrase id="srchlegend" value=""/>
 		<phrase id="table" value="جدول"/>
 		<phrase id="tbltypetable" value="جدول:"/>
-		<phrase id="tbltypeview" value="چشم انداز:"/>
+		<phrase id="tbltypeview" value="مشاهده:"/>
 		<phrase id="tbltypecustomview" value="نمایش سفارشی:"/>
 		<phrase id="tbltypereport" value="گزارش:"/>
 		<phrase id="to" value="به"/>
@@ -408,9 +408,9 @@
 		<phrase id="username" value="نام کاربری"/>
 		<phrase id="userprofilecorrupted" value="مشخصات کاربر خراب شده است. لطفا از سیستم خارج و دوباره وارد شوید"/>
 		<phrase id="valuenotexist" value="ارزش وجود ندارد" client="1"/><!-- v11 -->
-		<phrase id="view" value="چشم انداز"/>
+		<phrase id="view" value="مشاهده"/>
 		<phrase id="viewimagegallery" value="برای دیدن تصویر کلیک کنید"/><!-- v12 -->
-		<phrase id="viewlink" value="چشم انداز" class="icon-view ewIcon"/><!-- v11 -->
+		<phrase id="viewlink" value="مشاهده" class="icon-view ewIcon"/><!-- v11 -->
 		<phrase id="viewpageaddlink" value="اضافه کردن" class="glyphicon glyphicon-plus ewIcon"/><!-- v11 -->
 		<phrase id="viewpagecopylink" value="کپی" class="icon-copy ewIcon"/><!-- v11 -->
 		<phrase id="viewpagedeletelink" value="حذف" class="glyphicon glyphicon-trash ewIcon"/><!-- v11 -->
@@ -425,7 +425,7 @@
 		<phrase id="&lt;=" value="&amp;lt;="/>
 		<phrase id="&gt;" value="&amp;gt;"/>
 		<phrase id="&gt;=" value="&amp;gt;="/>
-		<phrase id="like" value="شامل"/>
+		<phrase id="like" value=""/>
 		<phrase id="not like" value="شامل نمی شود"/><!-- v11.0.3 -->
 		<phrase id="starts with" value="شروع می شود با"/>
 		<phrase id="ends with" value="با به پایان می رسد"/>
@@ -435,17 +435,19 @@
 		<phrase id="and" value="و"/>
 		<phrase id="or" value="یا"/>
 	</global>
-	<project><phrase id="bodytitle" value="سامانه ارتباط ناهمگام اربعین(سانا)"/>
+	<project><phrase id="bodytitle" value="سامانه اربعین(سانا)"/>
 <phrase id="footertext" value="&amp;copy;2015 e.World Technology Ltd. All rights reserved."/>
-<menu id="15"><phrase id="menutext" value="ایستگاه"/>
-</menu>
-<menu id="16"><phrase id="menutext" value="پیام و قرار"/>
+<menu id="30"><phrase id="menutext" value="صفحه اصلی"/>
 </menu>
 <menu id="3"><phrase id="menutext" value="افراد"/>
 </menu>
-<menu id="2"><phrase id="menutext" value="اشیا"/>
+<menu id="16"><phrase id="menutext" value="پیام و قرار"/>
 </menu>
 <menu id="6"><phrase id="menutext" value="کاربران"/>
+</menu>
+<menu id="15"><phrase id="menutext" value="ایستگاه"/>
+</menu>
+<menu id="2"><phrase id="menutext" value="اشیا"/>
 </menu>
 <menu id="5"><phrase id="menutext" value="وضعیت ها"/>
 </menu>
@@ -468,7 +470,11 @@
 <menu id="8"><phrase id="menutext" value="userlevels"/>
 </menu>
 <table id="sana_person"><phrase id="tblcaption" value="افراد"/>
-<field id="personid"><phrase id="fldcaption" value="شناسه"/>
+<phrase id="tblpagecaption1" value="اصلی"/>
+<phrase id="tblpagecaption2" value="موقعیت"/>
+<phrase id="tblpagecaption3" value="سایر"/>
+<phrase id="tblpagecaption4" value="سیستمی"/>
+<field id="personid"><phrase id="fldcaption" value="ردیف"/>
 </field>
 <field id="personname"><phrase id="fldcaption" value="نام"/>
 </field>
@@ -476,9 +482,9 @@
 </field>
 <field id="nationalid"><phrase id="fldcaption" value="کد ملی"/>
 </field>
-<field id="nationalnumber"><phrase id="fldcaption" value="شماره شناسنامه"/>
+<field id="nationalnumber"><phrase id="fldcaption" value="ش ش"/>
 </field>
-<field id="passportnumber"><phrase id="fldcaption" value="شماره گذرنامه"/>
+<field id="passportnumber"><phrase id="fldcaption" value="ش گذرنامه"/>
 </field>
 <field id="fathername"><phrase id="fldcaption" value="نام پدر"/>
 </field>
@@ -574,7 +580,7 @@
 </field>
 </table>
 <table id="sana_user"><phrase id="tblcaption" value="کاربران"/>
-<field id="_userid"><phrase id="fldcaption" value="شناسه"/>
+<field id="_userid"><phrase id="fldcaption" value="ردیف"/>
 </field>
 <field id="username"><phrase id="fldcaption" value="نام کاربری"/>
 </field>
@@ -584,7 +590,7 @@
 </field>
 <field id="nationalid"><phrase id="fldcaption" value="کد ملی"/>
 </field>
-<field id="nationalnumber"><phrase id="fldcaption" value="شماره شناسنامه"/>
+<field id="nationalnumber"><phrase id="fldcaption" value="ش ش"/>
 </field>
 <field id="fathername"><phrase id="fldcaption" value="نام پدر"/>
 </field>

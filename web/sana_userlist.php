@@ -519,6 +519,9 @@ class csana_user_list extends csana_user {
 			if ($this->ProcessListAction()) // Ajax request
 				$this->Page_Terminate();
 
+			// Set up records per page
+			$this->SetUpDisplayRecs();
+
 			// Handle reset command
 			$this->ResetCmd();
 
@@ -632,6 +635,27 @@ class csana_user_list extends csana_user {
 
 		// Search options
 		$this->SetupSearchOptions();
+	}
+
+	// Set up number of records displayed per page
+	function SetUpDisplayRecs() {
+		$sWrk = @$_GET[EW_TABLE_REC_PER_PAGE];
+		if ($sWrk <> "") {
+			if (is_numeric($sWrk)) {
+				$this->DisplayRecs = intval($sWrk);
+			} else {
+				if (strtolower($sWrk) == "all") { // Display all records
+					$this->DisplayRecs = -1;
+				} else {
+					$this->DisplayRecs = 50; // Non-numeric, load default
+				}
+			}
+			$this->setRecordsPerPage($this->DisplayRecs); // Save to Session
+
+			// Reset start position
+			$this->StartRec = 1;
+			$this->setStartRecordNumber($this->StartRec);
+		}
 	}
 
 	// Build filter for all keys
@@ -1133,7 +1157,7 @@ class csana_user_list extends csana_user {
 			$this->UpdateSort($this->username); // username
 			$this->UpdateSort($this->personName); // personName
 			$this->UpdateSort($this->lastName); // lastName
-			$this->UpdateSort($this->nationalID); // nationalID
+			$this->UpdateSort($this->nationalNumber); // nationalNumber
 			$this->UpdateSort($this->mobilePhone); // mobilePhone
 			$this->UpdateSort($this->_email); // email
 			$this->UpdateSort($this->picture); // picture
@@ -1173,7 +1197,7 @@ class csana_user_list extends csana_user {
 				$this->username->setSort("");
 				$this->personName->setSort("");
 				$this->lastName->setSort("");
-				$this->nationalID->setSort("");
+				$this->nationalNumber->setSort("");
 				$this->mobilePhone->setSort("");
 				$this->_email->setSort("");
 				$this->picture->setSort("");
@@ -1205,12 +1229,6 @@ class csana_user_list extends csana_user {
 		$item = &$this->ListOptions->Add("edit");
 		$item->CssStyle = "white-space: nowrap;";
 		$item->Visible = $Security->CanEdit();
-		$item->OnLeft = FALSE;
-
-		// "copy"
-		$item = &$this->ListOptions->Add("copy");
-		$item->CssStyle = "white-space: nowrap;";
-		$item->Visible = $Security->CanAdd();
 		$item->OnLeft = FALSE;
 
 		// "delete"
@@ -1267,14 +1285,6 @@ class csana_user_list extends csana_user {
 		$oListOpt = &$this->ListOptions->Items["edit"];
 		if ($Security->CanEdit() && $this->ShowOptionLink('edit')) {
 			$oListOpt->Body = "<a class=\"ewRowLink ewEdit\" title=\"" . ew_HtmlTitle($Language->Phrase("EditLink")) . "\" data-caption=\"" . ew_HtmlTitle($Language->Phrase("EditLink")) . "\" href=\"" . ew_HtmlEncode($this->EditUrl) . "\">" . $Language->Phrase("EditLink") . "</a>";
-		} else {
-			$oListOpt->Body = "";
-		}
-
-		// "copy"
-		$oListOpt = &$this->ListOptions->Items["copy"];
-		if ($Security->CanAdd() && $this->ShowOptionLink('add')) {
-			$oListOpt->Body = "<a class=\"ewRowLink ewCopy\" title=\"" . ew_HtmlTitle($Language->Phrase("CopyLink")) . "\" data-caption=\"" . ew_HtmlTitle($Language->Phrase("CopyLink")) . "\" href=\"" . ew_HtmlEncode($this->CopyUrl) . "\">" . $Language->Phrase("CopyLink") . "</a>";
 		} else {
 			$oListOpt->Body = "";
 		}
@@ -1835,7 +1845,7 @@ class csana_user_list extends csana_user {
 		$this->mobilePhone->ViewCustomAttributes = "";
 
 		// userPassword
-		$this->userPassword->ViewValue = $this->userPassword->CurrentValue;
+		$this->userPassword->ViewValue = $Language->Phrase("PasswordMask");
 		$this->userPassword->ViewCustomAttributes = "";
 
 		// email
@@ -1851,7 +1861,6 @@ class csana_user_list extends csana_user {
 		$this->picture->ViewCustomAttributes = "";
 
 		// registrationUser
-		$this->registrationUser->ViewValue = $this->registrationUser->CurrentValue;
 		$this->registrationUser->ViewCustomAttributes = "";
 
 		// registrationDateTime
@@ -1926,10 +1935,10 @@ class csana_user_list extends csana_user {
 			$this->lastName->HrefValue = "";
 			$this->lastName->TooltipValue = "";
 
-			// nationalID
-			$this->nationalID->LinkCustomAttributes = "";
-			$this->nationalID->HrefValue = "";
-			$this->nationalID->TooltipValue = "";
+			// nationalNumber
+			$this->nationalNumber->LinkCustomAttributes = "";
+			$this->nationalNumber->HrefValue = "";
+			$this->nationalNumber->TooltipValue = "";
 
 			// mobilePhone
 			$this->mobilePhone->LinkCustomAttributes = "";
@@ -2217,6 +2226,55 @@ $sana_user_list->ShowMessage();
 ?>
 <?php if ($sana_user_list->TotalRecs > 0 || $sana_user->CurrentAction <> "") { ?>
 <div class="panel panel-default ewGrid">
+<div class="panel-heading ewGridUpperPanel">
+<?php if ($sana_user->CurrentAction <> "gridadd" && $sana_user->CurrentAction <> "gridedit") { ?>
+<form name="ewPagerForm" class="form-inline ewForm ewPagerForm" action="<?php echo ew_CurrentPage() ?>">
+<?php if (!isset($sana_user_list->Pager)) $sana_user_list->Pager = new cNumericPager($sana_user_list->StartRec, $sana_user_list->DisplayRecs, $sana_user_list->TotalRecs, $sana_user_list->RecRange) ?>
+<?php if ($sana_user_list->Pager->RecordCount > 0) { ?>
+<div class="ewPager">
+<div class="ewNumericPage"><ul class="pagination">
+	<?php if ($sana_user_list->Pager->FirstButton->Enabled) { ?>
+	<li><a href="<?php echo $sana_user_list->PageUrl() ?>start=<?php echo $sana_user_list->Pager->FirstButton->Start ?>"><?php echo $Language->Phrase("PagerFirst") ?></a></li>
+	<?php } ?>
+	<?php if ($sana_user_list->Pager->PrevButton->Enabled) { ?>
+	<li><a href="<?php echo $sana_user_list->PageUrl() ?>start=<?php echo $sana_user_list->Pager->PrevButton->Start ?>"><?php echo $Language->Phrase("PagerPrevious") ?></a></li>
+	<?php } ?>
+	<?php foreach ($sana_user_list->Pager->Items as $PagerItem) { ?>
+		<li<?php if (!$PagerItem->Enabled) { echo " class=\" active\""; } ?>><a href="<?php if ($PagerItem->Enabled) { echo $sana_user_list->PageUrl() . "start=" . $PagerItem->Start; } else { echo "#"; } ?>"><?php echo $PagerItem->Text ?></a></li>
+	<?php } ?>
+	<?php if ($sana_user_list->Pager->NextButton->Enabled) { ?>
+	<li><a href="<?php echo $sana_user_list->PageUrl() ?>start=<?php echo $sana_user_list->Pager->NextButton->Start ?>"><?php echo $Language->Phrase("PagerNext") ?></a></li>
+	<?php } ?>
+	<?php if ($sana_user_list->Pager->LastButton->Enabled) { ?>
+	<li><a href="<?php echo $sana_user_list->PageUrl() ?>start=<?php echo $sana_user_list->Pager->LastButton->Start ?>"><?php echo $Language->Phrase("PagerLast") ?></a></li>
+	<?php } ?>
+</ul></div>
+</div>
+<div class="ewPager ewRec">
+	<span><?php echo $Language->Phrase("Record") ?>&nbsp;<?php echo $sana_user_list->Pager->FromIndex ?>&nbsp;<?php echo $Language->Phrase("To") ?>&nbsp;<?php echo $sana_user_list->Pager->ToIndex ?>&nbsp;<?php echo $Language->Phrase("Of") ?>&nbsp;<?php echo $sana_user_list->Pager->RecordCount ?></span>
+</div>
+<?php } ?>
+<?php if ($sana_user_list->TotalRecs > 0) { ?>
+<div class="ewPager">
+<input type="hidden" name="t" value="sana_user">
+<select name="<?php echo EW_TABLE_REC_PER_PAGE ?>" class="form-control input-sm" onchange="this.form.submit();">
+<option value="20"<?php if ($sana_user_list->DisplayRecs == 20) { ?> selected="selected"<?php } ?>>20</option>
+<option value="50"<?php if ($sana_user_list->DisplayRecs == 50) { ?> selected="selected"<?php } ?>>50</option>
+<option value="100"<?php if ($sana_user_list->DisplayRecs == 100) { ?> selected="selected"<?php } ?>>100</option>
+<option value="500"<?php if ($sana_user_list->DisplayRecs == 500) { ?> selected="selected"<?php } ?>>500</option>
+</select>
+</div>
+<?php } ?>
+</form>
+<?php } ?>
+<div class="ewListOtherOptions">
+<?php
+	foreach ($sana_user_list->OtherOptions as &$option)
+		$option->Render("body");
+?>
+</div>
+<div class="clearfix"></div>
+</div>
 <form name="fsana_userlist" id="fsana_userlist" class="form-inline ewForm ewListForm" action="<?php echo ew_CurrentPage() ?>" method="post">
 <?php if ($sana_user_list->CheckToken) { ?>
 <input type="hidden" name="<?php echo EW_TOKEN_NAME ?>" value="<?php echo $sana_user_list->Token ?>">
@@ -2275,12 +2333,12 @@ $sana_user_list->ListOptions->Render("header", "left");
         </div></div></th>
 	<?php } ?>
 <?php } ?>		
-<?php if ($sana_user->nationalID->Visible) { // nationalID ?>
-	<?php if ($sana_user->SortUrl($sana_user->nationalID) == "") { ?>
-		<th data-name="nationalID"><div id="elh_sana_user_nationalID" class="sana_user_nationalID"><div class="ewTableHeaderCaption"><?php echo $sana_user->nationalID->FldCaption() ?></div></div></th>
+<?php if ($sana_user->nationalNumber->Visible) { // nationalNumber ?>
+	<?php if ($sana_user->SortUrl($sana_user->nationalNumber) == "") { ?>
+		<th data-name="nationalNumber"><div id="elh_sana_user_nationalNumber" class="sana_user_nationalNumber"><div class="ewTableHeaderCaption"><?php echo $sana_user->nationalNumber->FldCaption() ?></div></div></th>
 	<?php } else { ?>
-		<th data-name="nationalID"><div class="ewPointer" onclick="ew_Sort(event,'<?php echo $sana_user->SortUrl($sana_user->nationalID) ?>',1);"><div id="elh_sana_user_nationalID" class="sana_user_nationalID">
-			<div class="ewTableHeaderBtn"><span class="ewTableHeaderCaption"><?php echo $sana_user->nationalID->FldCaption() ?><?php echo $Language->Phrase("SrchLegend") ?></span><span class="ewTableHeaderSort"><?php if ($sana_user->nationalID->getSort() == "ASC") { ?><span class="caret ewSortUp"></span><?php } elseif ($sana_user->nationalID->getSort() == "DESC") { ?><span class="caret"></span><?php } ?></span></div>
+		<th data-name="nationalNumber"><div class="ewPointer" onclick="ew_Sort(event,'<?php echo $sana_user->SortUrl($sana_user->nationalNumber) ?>',1);"><div id="elh_sana_user_nationalNumber" class="sana_user_nationalNumber">
+			<div class="ewTableHeaderBtn"><span class="ewTableHeaderCaption"><?php echo $sana_user->nationalNumber->FldCaption() ?><?php echo $Language->Phrase("SrchLegend") ?></span><span class="ewTableHeaderSort"><?php if ($sana_user->nationalNumber->getSort() == "ASC") { ?><span class="caret ewSortUp"></span><?php } elseif ($sana_user->nationalNumber->getSort() == "DESC") { ?><span class="caret"></span><?php } ?></span></div>
         </div></div></th>
 	<?php } ?>
 <?php } ?>		
@@ -2408,11 +2466,11 @@ $sana_user_list->ListOptions->Render("body", "left", $sana_user_list->RowCnt);
 </span>
 </td>
 	<?php } ?>
-	<?php if ($sana_user->nationalID->Visible) { // nationalID ?>
-		<td data-name="nationalID"<?php echo $sana_user->nationalID->CellAttributes() ?>>
-<span id="el<?php echo $sana_user_list->RowCnt ?>_sana_user_nationalID" class="sana_user_nationalID">
-<span<?php echo $sana_user->nationalID->ViewAttributes() ?>>
-<?php echo $sana_user->nationalID->ListViewValue() ?></span>
+	<?php if ($sana_user->nationalNumber->Visible) { // nationalNumber ?>
+		<td data-name="nationalNumber"<?php echo $sana_user->nationalNumber->CellAttributes() ?>>
+<span id="el<?php echo $sana_user_list->RowCnt ?>_sana_user_nationalNumber" class="sana_user_nationalNumber">
+<span<?php echo $sana_user->nationalNumber->ViewAttributes() ?>>
+<?php echo $sana_user->nationalNumber->ListViewValue() ?></span>
 </span>
 </td>
 	<?php } ?>
@@ -2493,6 +2551,17 @@ if ($sana_user_list->Recordset)
 </div>
 <div class="ewPager ewRec">
 	<span><?php echo $Language->Phrase("Record") ?>&nbsp;<?php echo $sana_user_list->Pager->FromIndex ?>&nbsp;<?php echo $Language->Phrase("To") ?>&nbsp;<?php echo $sana_user_list->Pager->ToIndex ?>&nbsp;<?php echo $Language->Phrase("Of") ?>&nbsp;<?php echo $sana_user_list->Pager->RecordCount ?></span>
+</div>
+<?php } ?>
+<?php if ($sana_user_list->TotalRecs > 0) { ?>
+<div class="ewPager">
+<input type="hidden" name="t" value="sana_user">
+<select name="<?php echo EW_TABLE_REC_PER_PAGE ?>" class="form-control input-sm" onchange="this.form.submit();">
+<option value="20"<?php if ($sana_user_list->DisplayRecs == 20) { ?> selected="selected"<?php } ?>>20</option>
+<option value="50"<?php if ($sana_user_list->DisplayRecs == 50) { ?> selected="selected"<?php } ?>>50</option>
+<option value="100"<?php if ($sana_user_list->DisplayRecs == 100) { ?> selected="selected"<?php } ?>>100</option>
+<option value="500"<?php if ($sana_user_list->DisplayRecs == 500) { ?> selected="selected"<?php } ?>>500</option>
+</select>
 </div>
 <?php } ?>
 </form>

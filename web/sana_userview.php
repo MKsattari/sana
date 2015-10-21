@@ -469,11 +469,6 @@ class csana_user_view extends csana_user {
 		$item->Body = "<a class=\"ewAction ewEdit\" title=\"" . ew_HtmlTitle($Language->Phrase("ViewPageEditLink")) . "\" data-caption=\"" . ew_HtmlTitle($Language->Phrase("ViewPageEditLink")) . "\" href=\"" . ew_HtmlEncode($this->EditUrl) . "\">" . $Language->Phrase("ViewPageEditLink") . "</a>";
 		$item->Visible = ($this->EditUrl <> "" && $Security->CanEdit()&& $this->ShowOptionLink('edit'));
 
-		// Copy
-		$item = &$option->Add("copy");
-		$item->Body = "<a class=\"ewAction ewCopy\" title=\"" . ew_HtmlTitle($Language->Phrase("ViewPageCopyLink")) . "\" data-caption=\"" . ew_HtmlTitle($Language->Phrase("ViewPageCopyLink")) . "\" href=\"" . ew_HtmlEncode($this->CopyUrl) . "\">" . $Language->Phrase("ViewPageCopyLink") . "</a>";
-		$item->Visible = ($this->CopyUrl <> "" && $Security->CanAdd() && $this->ShowOptionLink('add'));
-
 		// Delete
 		$item = &$option->Add("delete");
 		$item->Body = "<a class=\"ewAction ewDelete\" title=\"" . ew_HtmlTitle($Language->Phrase("ViewPageDeleteLink")) . "\" data-caption=\"" . ew_HtmlTitle($Language->Phrase("ViewPageDeleteLink")) . "\" href=\"" . ew_HtmlEncode($this->DeleteUrl) . "\">" . $Language->Phrase("ViewPageDeleteLink") . "</a>";
@@ -737,7 +732,7 @@ class csana_user_view extends csana_user {
 		$this->mobilePhone->ViewCustomAttributes = "";
 
 		// userPassword
-		$this->userPassword->ViewValue = $this->userPassword->CurrentValue;
+		$this->userPassword->ViewValue = $Language->Phrase("PasswordMask");
 		$this->userPassword->ViewCustomAttributes = "";
 
 		// email
@@ -753,7 +748,6 @@ class csana_user_view extends csana_user {
 		$this->picture->ViewCustomAttributes = "";
 
 		// registrationUser
-		$this->registrationUser->ViewValue = $this->registrationUser->CurrentValue;
 		$this->registrationUser->ViewCustomAttributes = "";
 
 		// registrationDateTime
@@ -832,70 +826,15 @@ class csana_user_view extends csana_user {
 			$this->lastName->HrefValue = "";
 			$this->lastName->TooltipValue = "";
 
-			// nationalID
-			$this->nationalID->LinkCustomAttributes = "";
-			$this->nationalID->HrefValue = "";
-			$this->nationalID->TooltipValue = "";
-
 			// nationalNumber
 			$this->nationalNumber->LinkCustomAttributes = "";
 			$this->nationalNumber->HrefValue = "";
 			$this->nationalNumber->TooltipValue = "";
 
-			// fatherName
-			$this->fatherName->LinkCustomAttributes = "";
-			$this->fatherName->HrefValue = "";
-			$this->fatherName->TooltipValue = "";
-
-			// country
-			$this->country->LinkCustomAttributes = "";
-			$this->country->HrefValue = "";
-			$this->country->TooltipValue = "";
-
-			// province
-			$this->province->LinkCustomAttributes = "";
-			$this->province->HrefValue = "";
-			$this->province->TooltipValue = "";
-
-			// county
-			$this->county->LinkCustomAttributes = "";
-			$this->county->HrefValue = "";
-			$this->county->TooltipValue = "";
-
-			// district
-			$this->district->LinkCustomAttributes = "";
-			$this->district->HrefValue = "";
-			$this->district->TooltipValue = "";
-
-			// city_ruralDistrict
-			$this->city_ruralDistrict->LinkCustomAttributes = "";
-			$this->city_ruralDistrict->HrefValue = "";
-			$this->city_ruralDistrict->TooltipValue = "";
-
-			// region_village
-			$this->region_village->LinkCustomAttributes = "";
-			$this->region_village->HrefValue = "";
-			$this->region_village->TooltipValue = "";
-
-			// address
-			$this->address->LinkCustomAttributes = "";
-			$this->address->HrefValue = "";
-			$this->address->TooltipValue = "";
-
-			// birthDate
-			$this->birthDate->LinkCustomAttributes = "";
-			$this->birthDate->HrefValue = "";
-			$this->birthDate->TooltipValue = "";
-
 			// ageRange
 			$this->ageRange->LinkCustomAttributes = "";
 			$this->ageRange->HrefValue = "";
 			$this->ageRange->TooltipValue = "";
-
-			// phone
-			$this->phone->LinkCustomAttributes = "";
-			$this->phone->HrefValue = "";
-			$this->phone->TooltipValue = "";
 
 			// mobilePhone
 			$this->mobilePhone->LinkCustomAttributes = "";
@@ -932,11 +871,6 @@ class csana_user_view extends csana_user {
 			$this->stationID->LinkCustomAttributes = "";
 			$this->stationID->HrefValue = "";
 			$this->stationID->TooltipValue = "";
-
-			// isolatedDateTime
-			$this->isolatedDateTime->LinkCustomAttributes = "";
-			$this->isolatedDateTime->HrefValue = "";
-			$this->isolatedDateTime->TooltipValue = "";
 
 			// acl
 			$this->acl->LinkCustomAttributes = "";
@@ -1172,17 +1106,6 @@ $sana_user_view->ShowMessage();
 </td>
 	</tr>
 <?php } ?>
-<?php if ($sana_user->nationalID->Visible) { // nationalID ?>
-	<tr id="r_nationalID">
-		<td><span id="elh_sana_user_nationalID"><?php echo $sana_user->nationalID->FldCaption() ?></span></td>
-		<td data-name="nationalID"<?php echo $sana_user->nationalID->CellAttributes() ?>>
-<span id="el_sana_user_nationalID">
-<span<?php echo $sana_user->nationalID->ViewAttributes() ?>>
-<?php echo $sana_user->nationalID->ViewValue ?></span>
-</span>
-</td>
-	</tr>
-<?php } ?>
 <?php if ($sana_user->nationalNumber->Visible) { // nationalNumber ?>
 	<tr id="r_nationalNumber">
 		<td><span id="elh_sana_user_nationalNumber"><?php echo $sana_user->nationalNumber->FldCaption() ?></span></td>
@@ -1194,105 +1117,6 @@ $sana_user_view->ShowMessage();
 </td>
 	</tr>
 <?php } ?>
-<?php if ($sana_user->fatherName->Visible) { // fatherName ?>
-	<tr id="r_fatherName">
-		<td><span id="elh_sana_user_fatherName"><?php echo $sana_user->fatherName->FldCaption() ?></span></td>
-		<td data-name="fatherName"<?php echo $sana_user->fatherName->CellAttributes() ?>>
-<span id="el_sana_user_fatherName">
-<span<?php echo $sana_user->fatherName->ViewAttributes() ?>>
-<?php echo $sana_user->fatherName->ViewValue ?></span>
-</span>
-</td>
-	</tr>
-<?php } ?>
-<?php if ($sana_user->country->Visible) { // country ?>
-	<tr id="r_country">
-		<td><span id="elh_sana_user_country"><?php echo $sana_user->country->FldCaption() ?></span></td>
-		<td data-name="country"<?php echo $sana_user->country->CellAttributes() ?>>
-<span id="el_sana_user_country">
-<span<?php echo $sana_user->country->ViewAttributes() ?>>
-<?php echo $sana_user->country->ViewValue ?></span>
-</span>
-</td>
-	</tr>
-<?php } ?>
-<?php if ($sana_user->province->Visible) { // province ?>
-	<tr id="r_province">
-		<td><span id="elh_sana_user_province"><?php echo $sana_user->province->FldCaption() ?></span></td>
-		<td data-name="province"<?php echo $sana_user->province->CellAttributes() ?>>
-<span id="el_sana_user_province">
-<span<?php echo $sana_user->province->ViewAttributes() ?>>
-<?php echo $sana_user->province->ViewValue ?></span>
-</span>
-</td>
-	</tr>
-<?php } ?>
-<?php if ($sana_user->county->Visible) { // county ?>
-	<tr id="r_county">
-		<td><span id="elh_sana_user_county"><?php echo $sana_user->county->FldCaption() ?></span></td>
-		<td data-name="county"<?php echo $sana_user->county->CellAttributes() ?>>
-<span id="el_sana_user_county">
-<span<?php echo $sana_user->county->ViewAttributes() ?>>
-<?php echo $sana_user->county->ViewValue ?></span>
-</span>
-</td>
-	</tr>
-<?php } ?>
-<?php if ($sana_user->district->Visible) { // district ?>
-	<tr id="r_district">
-		<td><span id="elh_sana_user_district"><?php echo $sana_user->district->FldCaption() ?></span></td>
-		<td data-name="district"<?php echo $sana_user->district->CellAttributes() ?>>
-<span id="el_sana_user_district">
-<span<?php echo $sana_user->district->ViewAttributes() ?>>
-<?php echo $sana_user->district->ViewValue ?></span>
-</span>
-</td>
-	</tr>
-<?php } ?>
-<?php if ($sana_user->city_ruralDistrict->Visible) { // city_ruralDistrict ?>
-	<tr id="r_city_ruralDistrict">
-		<td><span id="elh_sana_user_city_ruralDistrict"><?php echo $sana_user->city_ruralDistrict->FldCaption() ?></span></td>
-		<td data-name="city_ruralDistrict"<?php echo $sana_user->city_ruralDistrict->CellAttributes() ?>>
-<span id="el_sana_user_city_ruralDistrict">
-<span<?php echo $sana_user->city_ruralDistrict->ViewAttributes() ?>>
-<?php echo $sana_user->city_ruralDistrict->ViewValue ?></span>
-</span>
-</td>
-	</tr>
-<?php } ?>
-<?php if ($sana_user->region_village->Visible) { // region_village ?>
-	<tr id="r_region_village">
-		<td><span id="elh_sana_user_region_village"><?php echo $sana_user->region_village->FldCaption() ?></span></td>
-		<td data-name="region_village"<?php echo $sana_user->region_village->CellAttributes() ?>>
-<span id="el_sana_user_region_village">
-<span<?php echo $sana_user->region_village->ViewAttributes() ?>>
-<?php echo $sana_user->region_village->ViewValue ?></span>
-</span>
-</td>
-	</tr>
-<?php } ?>
-<?php if ($sana_user->address->Visible) { // address ?>
-	<tr id="r_address">
-		<td><span id="elh_sana_user_address"><?php echo $sana_user->address->FldCaption() ?></span></td>
-		<td data-name="address"<?php echo $sana_user->address->CellAttributes() ?>>
-<span id="el_sana_user_address">
-<span<?php echo $sana_user->address->ViewAttributes() ?>>
-<?php echo $sana_user->address->ViewValue ?></span>
-</span>
-</td>
-	</tr>
-<?php } ?>
-<?php if ($sana_user->birthDate->Visible) { // birthDate ?>
-	<tr id="r_birthDate">
-		<td><span id="elh_sana_user_birthDate"><?php echo $sana_user->birthDate->FldCaption() ?></span></td>
-		<td data-name="birthDate"<?php echo $sana_user->birthDate->CellAttributes() ?>>
-<span id="el_sana_user_birthDate">
-<span<?php echo $sana_user->birthDate->ViewAttributes() ?>>
-<?php echo $sana_user->birthDate->ViewValue ?></span>
-</span>
-</td>
-	</tr>
-<?php } ?>
 <?php if ($sana_user->ageRange->Visible) { // ageRange ?>
 	<tr id="r_ageRange">
 		<td><span id="elh_sana_user_ageRange"><?php echo $sana_user->ageRange->FldCaption() ?></span></td>
@@ -1300,17 +1124,6 @@ $sana_user_view->ShowMessage();
 <span id="el_sana_user_ageRange">
 <span<?php echo $sana_user->ageRange->ViewAttributes() ?>>
 <?php echo $sana_user->ageRange->ViewValue ?></span>
-</span>
-</td>
-	</tr>
-<?php } ?>
-<?php if ($sana_user->phone->Visible) { // phone ?>
-	<tr id="r_phone">
-		<td><span id="elh_sana_user_phone"><?php echo $sana_user->phone->FldCaption() ?></span></td>
-		<td data-name="phone"<?php echo $sana_user->phone->CellAttributes() ?>>
-<span id="el_sana_user_phone">
-<span<?php echo $sana_user->phone->ViewAttributes() ?>>
-<?php echo $sana_user->phone->ViewValue ?></span>
 </span>
 </td>
 	</tr>
@@ -1389,17 +1202,6 @@ $sana_user_view->ShowMessage();
 <span id="el_sana_user_stationID">
 <span<?php echo $sana_user->stationID->ViewAttributes() ?>>
 <?php echo $sana_user->stationID->ViewValue ?></span>
-</span>
-</td>
-	</tr>
-<?php } ?>
-<?php if ($sana_user->isolatedDateTime->Visible) { // isolatedDateTime ?>
-	<tr id="r_isolatedDateTime">
-		<td><span id="elh_sana_user_isolatedDateTime"><?php echo $sana_user->isolatedDateTime->FldCaption() ?></span></td>
-		<td data-name="isolatedDateTime"<?php echo $sana_user->isolatedDateTime->CellAttributes() ?>>
-<span id="el_sana_user_isolatedDateTime">
-<span<?php echo $sana_user->isolatedDateTime->ViewAttributes() ?>>
-<?php echo $sana_user->isolatedDateTime->ViewValue ?></span>
 </span>
 </td>
 	</tr>

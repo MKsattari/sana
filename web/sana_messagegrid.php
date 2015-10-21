@@ -1,3 +1,4 @@
+<?php include_once "sana_userinfo.php" ?>
 <?php
 
 // Create page object
@@ -135,6 +136,8 @@ if ($sana_message->CurrentAction == "gridadd") {
 
 	// Set no record found message
 	if ($sana_message->CurrentAction == "" && $sana_message_grid->TotalRecs == 0) {
+		if (!$Security->CanList())
+			$sana_message_grid->setWarningMessage($Language->Phrase("NoPermission"));
 		if ($sana_message_grid->SearchWhere == "0=101")
 			$sana_message_grid->setWarningMessage($Language->Phrase("EnterSearchCriteria"));
 		else
@@ -471,6 +474,7 @@ switch (@$gsLanguage) {
 		$sWhereWrk = "`personName` LIKE '{query_value}%' OR CONCAT(`personName`,'" . ew_ValueSeparator(1, $Page->_userID) . "',`lastName`) LIKE '{query_value}%'";
 		break;
 }
+if (!$GLOBALS["sana_message"]->UserIDAllow("grid")) $sWhereWrk = $GLOBALS["sana_user"]->AddUserIDFilter($sWhereWrk);
 $sana_message->Lookup_Selecting($sana_message->_userID, $sWhereWrk); // Call Lookup selecting
 if ($sWhereWrk <> "") $sSqlWrk .= " WHERE " . $sWhereWrk;
 $sSqlWrk .= " LIMIT " . EW_AUTO_SUGGEST_MAX_ENTRIES;
@@ -508,6 +512,7 @@ switch (@$gsLanguage) {
 		$sWhereWrk = "`personName` LIKE '{query_value}%' OR CONCAT(`personName`,'" . ew_ValueSeparator(1, $Page->_userID) . "',`lastName`) LIKE '{query_value}%'";
 		break;
 }
+if (!$GLOBALS["sana_message"]->UserIDAllow("grid")) $sWhereWrk = $GLOBALS["sana_user"]->AddUserIDFilter($sWhereWrk);
 $sana_message->Lookup_Selecting($sana_message->_userID, $sWhereWrk); // Call Lookup selecting
 if ($sWhereWrk <> "") $sSqlWrk .= " WHERE " . $sWhereWrk;
 $sSqlWrk .= " LIMIT " . EW_AUTO_SUGGEST_MAX_ENTRIES;
@@ -712,6 +717,7 @@ switch (@$gsLanguage) {
 		$sWhereWrk = "`personName` LIKE '{query_value}%' OR CONCAT(`personName`,'" . ew_ValueSeparator(1, $Page->_userID) . "',`lastName`) LIKE '{query_value}%'";
 		break;
 }
+if (!$GLOBALS["sana_message"]->UserIDAllow("grid")) $sWhereWrk = $GLOBALS["sana_user"]->AddUserIDFilter($sWhereWrk);
 $sana_message->Lookup_Selecting($sana_message->_userID, $sWhereWrk); // Call Lookup selecting
 if ($sWhereWrk <> "") $sSqlWrk .= " WHERE " . $sWhereWrk;
 $sSqlWrk .= " LIMIT " . EW_AUTO_SUGGEST_MAX_ENTRIES;

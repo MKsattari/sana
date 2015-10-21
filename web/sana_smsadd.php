@@ -5,7 +5,7 @@ ob_start(); // Turn on output buffering
 <?php include_once "ewcfg12.php" ?>
 <?php include_once ((EW_USE_ADODB) ? "adodb5/adodb.inc.php" : "ewmysql12.php") ?>
 <?php include_once "phpfn12.php" ?>
-<?php include_once "sana_location_level1info.php" ?>
+<?php include_once "sana_smsinfo.php" ?>
 <?php include_once "sana_userinfo.php" ?>
 <?php include_once "userfn12.php" ?>
 <?php
@@ -14,9 +14,9 @@ ob_start(); // Turn on output buffering
 // Page class
 //
 
-$sana_location_level1_add = NULL; // Initialize page object first
+$sana_sms_add = NULL; // Initialize page object first
 
-class csana_location_level1_add extends csana_location_level1 {
+class csana_sms_add extends csana_sms {
 
 	// Page ID
 	var $PageID = 'add';
@@ -25,10 +25,10 @@ class csana_location_level1_add extends csana_location_level1 {
 	var $ProjectID = "{07091A10-D58A-4784-942B-0E21010F5DFC}";
 
 	// Table name
-	var $TableName = 'sana_location_level1';
+	var $TableName = 'sana_sms';
 
 	// Page object name
-	var $PageObjName = 'sana_location_level1_add';
+	var $PageObjName = 'sana_sms_add';
 
 	// Page name
 	function PageName() {
@@ -143,7 +143,7 @@ class csana_location_level1_add extends csana_location_level1 {
 			$html .= "<div class=\"alert alert-danger ewError\">" . $sErrorMessage . "</div>";
 			$_SESSION[EW_SESSION_FAILURE_MESSAGE] = ""; // Clear message in Session
 		}
-		echo "<br><div class=\"ewMessageDialog\"" . (($hidden) ? " style=\"display: none;\"" : "") . ">" . $html . "</div>";
+		echo "<div class=\"ewMessageDialog\"" . (($hidden) ? " style=\"display: none;\"" : "") . ">" . $html . "</div>";
 	}
 	var $PageHeader;
 	var $PageFooter;
@@ -222,10 +222,10 @@ class csana_location_level1_add extends csana_location_level1 {
 		// Parent constuctor
 		parent::__construct();
 
-		// Table object (sana_location_level1)
-		if (!isset($GLOBALS["sana_location_level1"]) || get_class($GLOBALS["sana_location_level1"]) == "csana_location_level1") {
-			$GLOBALS["sana_location_level1"] = &$this;
-			$GLOBALS["Table"] = &$GLOBALS["sana_location_level1"];
+		// Table object (sana_sms)
+		if (!isset($GLOBALS["sana_sms"]) || get_class($GLOBALS["sana_sms"]) == "csana_sms") {
+			$GLOBALS["sana_sms"] = &$this;
+			$GLOBALS["Table"] = &$GLOBALS["sana_sms"];
 		}
 
 		// Table object (sana_user)
@@ -237,7 +237,7 @@ class csana_location_level1_add extends csana_location_level1 {
 
 		// Table name (for backward compatibility)
 		if (!defined("EW_TABLE_NAME"))
-			define("EW_TABLE_NAME", 'sana_location_level1', TRUE);
+			define("EW_TABLE_NAME", 'sana_sms', TRUE);
 
 		// Start timer
 		if (!isset($GLOBALS["gTimer"])) $GLOBALS["gTimer"] = new cTimer();
@@ -268,7 +268,7 @@ class csana_location_level1_add extends csana_location_level1 {
 			$Security->SaveLastUrl();
 			$this->setFailureMessage($Language->Phrase("NoPermission")); // Set no permission
 			if ($Security->CanList())
-				$this->Page_Terminate(ew_GetUrl("sana_location_level1list.php"));
+				$this->Page_Terminate(ew_GetUrl("sana_smslist.php"));
 			else
 				$this->Page_Terminate(ew_GetUrl("login.php"));
 		}
@@ -326,13 +326,13 @@ class csana_location_level1_add extends csana_location_level1 {
 		Page_Unloaded();
 
 		// Export
-		global $EW_EXPORT, $sana_location_level1;
+		global $EW_EXPORT, $sana_sms;
 		if ($this->CustomExport <> "" && $this->CustomExport == $this->Export && array_key_exists($this->CustomExport, $EW_EXPORT)) {
 				$sContent = ob_get_contents();
 			if ($gsExportFile == "") $gsExportFile = $this->TableVar;
 			$class = $EW_EXPORT[$this->CustomExport];
 			if (class_exists($class)) {
-				$doc = new $class($sana_location_level1);
+				$doc = new $class($sana_sms);
 				$doc->Text = $sContent;
 				if ($this->Export == "email")
 					echo $this->ExportEmail($doc->Text);
@@ -378,11 +378,11 @@ class csana_location_level1_add extends csana_location_level1 {
 
 			// Load key values from QueryString
 			$this->CopyRecord = TRUE;
-			if (@$_GET["locationLevel1ID"] != "") {
-				$this->locationLevel1ID->setQueryStringValue($_GET["locationLevel1ID"]);
-				$this->setKey("locationLevel1ID", $this->locationLevel1ID->CurrentValue); // Set up key
+			if (@$_GET["smsID"] != "") {
+				$this->smsID->setQueryStringValue($_GET["smsID"]);
+				$this->setKey("smsID", $this->smsID->CurrentValue); // Set up key
 			} else {
-				$this->setKey("locationLevel1ID", ""); // Clear key
+				$this->setKey("smsID", ""); // Clear key
 				$this->CopyRecord = FALSE;
 			}
 			if ($this->CopyRecord) {
@@ -415,7 +415,7 @@ class csana_location_level1_add extends csana_location_level1 {
 			case "C": // Copy an existing record
 				if (!$this->LoadRow()) { // Load record based on key
 					if ($this->getFailureMessage() == "") $this->setFailureMessage($Language->Phrase("NoRecord")); // No record found
-					$this->Page_Terminate("sana_location_level1list.php"); // No matching record, return to list
+					$this->Page_Terminate("sana_smslist.php"); // No matching record, return to list
 				}
 				break;
 			case "A": // Add new record
@@ -424,9 +424,9 @@ class csana_location_level1_add extends csana_location_level1 {
 					if ($this->getSuccessMessage() == "")
 						$this->setSuccessMessage($Language->Phrase("AddSuccess")); // Set up success message
 					$sReturnUrl = $this->getReturnUrl();
-					if (ew_GetPageName($sReturnUrl) == "sana_location_level1list.php")
+					if (ew_GetPageName($sReturnUrl) == "sana_smslist.php")
 						$sReturnUrl = $this->AddMasterUrl($this->GetListUrl()); // List page, return to list page with correct master key if necessary
-					elseif (ew_GetPageName($sReturnUrl) == "sana_location_level1view.php")
+					elseif (ew_GetPageName($sReturnUrl) == "sana_smsview.php")
 						$sReturnUrl = $this->GetViewUrl(); // View page, return to view page with keyurl directly
 					$this->Page_Terminate($sReturnUrl); // Clean up and return
 				} else {
@@ -452,8 +452,12 @@ class csana_location_level1_add extends csana_location_level1 {
 
 	// Load default values
 	function LoadDefaultValues() {
-		$this->locationName->CurrentValue = NULL;
-		$this->locationName->OldValue = $this->locationName->CurrentValue;
+		$this->mobilePhone->CurrentValue = NULL;
+		$this->mobilePhone->OldValue = $this->mobilePhone->CurrentValue;
+		$this->message->CurrentValue = NULL;
+		$this->message->OldValue = $this->message->CurrentValue;
+		$this->description->CurrentValue = NULL;
+		$this->description->OldValue = $this->description->CurrentValue;
 	}
 
 	// Load form values
@@ -461,8 +465,14 @@ class csana_location_level1_add extends csana_location_level1 {
 
 		// Load from form
 		global $objForm;
-		if (!$this->locationName->FldIsDetailKey) {
-			$this->locationName->setFormValue($objForm->GetValue("x_locationName"));
+		if (!$this->mobilePhone->FldIsDetailKey) {
+			$this->mobilePhone->setFormValue($objForm->GetValue("x_mobilePhone"));
+		}
+		if (!$this->message->FldIsDetailKey) {
+			$this->message->setFormValue($objForm->GetValue("x_message"));
+		}
+		if (!$this->description->FldIsDetailKey) {
+			$this->description->setFormValue($objForm->GetValue("x_description"));
 		}
 	}
 
@@ -470,7 +480,9 @@ class csana_location_level1_add extends csana_location_level1 {
 	function RestoreFormValues() {
 		global $objForm;
 		$this->LoadOldRecord();
-		$this->locationName->CurrentValue = $this->locationName->FormValue;
+		$this->mobilePhone->CurrentValue = $this->mobilePhone->FormValue;
+		$this->message->CurrentValue = $this->message->FormValue;
+		$this->description->CurrentValue = $this->description->FormValue;
 	}
 
 	// Load row based on key values
@@ -502,16 +514,24 @@ class csana_location_level1_add extends csana_location_level1 {
 		// Call Row Selected event
 		$row = &$rs->fields;
 		$this->Row_Selected($row);
-		$this->locationLevel1ID->setDbValue($rs->fields('locationLevel1ID'));
-		$this->locationName->setDbValue($rs->fields('locationName'));
+		$this->smsID->setDbValue($rs->fields('smsID'));
+		$this->_userID->setDbValue($rs->fields('userID'));
+		$this->mobilePhone->setDbValue($rs->fields('mobilePhone'));
+		$this->message->setDbValue($rs->fields('message'));
+		$this->result->setDbValue($rs->fields('result'));
+		$this->description->setDbValue($rs->fields('description'));
 	}
 
 	// Load DbValue from recordset
 	function LoadDbValues(&$rs) {
 		if (!$rs || !is_array($rs) && $rs->EOF) return;
 		$row = is_array($rs) ? $rs : $rs->fields;
-		$this->locationLevel1ID->DbValue = $row['locationLevel1ID'];
-		$this->locationName->DbValue = $row['locationName'];
+		$this->smsID->DbValue = $row['smsID'];
+		$this->_userID->DbValue = $row['userID'];
+		$this->mobilePhone->DbValue = $row['mobilePhone'];
+		$this->message->DbValue = $row['message'];
+		$this->result->DbValue = $row['result'];
+		$this->description->DbValue = $row['description'];
 	}
 
 	// Load old record
@@ -519,8 +539,8 @@ class csana_location_level1_add extends csana_location_level1 {
 
 		// Load key values from Session
 		$bValidKey = TRUE;
-		if (strval($this->getKey("locationLevel1ID")) <> "")
-			$this->locationLevel1ID->CurrentValue = $this->getKey("locationLevel1ID"); // locationLevel1ID
+		if (strval($this->getKey("smsID")) <> "")
+			$this->smsID->CurrentValue = $this->getKey("smsID"); // smsID
 		else
 			$bValidKey = FALSE;
 
@@ -547,36 +567,86 @@ class csana_location_level1_add extends csana_location_level1 {
 		$this->Row_Rendering();
 
 		// Common render codes for all row types
-		// locationLevel1ID
-		// locationName
+		// smsID
+		// userID
+		// mobilePhone
+		// message
+		// result
+		// description
 
 		if ($this->RowType == EW_ROWTYPE_VIEW) { // View row
 
-		// locationLevel1ID
-		$this->locationLevel1ID->ViewValue = $this->locationLevel1ID->CurrentValue;
-		$this->locationLevel1ID->ViewCustomAttributes = "";
+		// smsID
+		$this->smsID->ViewValue = $this->smsID->CurrentValue;
+		$this->smsID->ViewCustomAttributes = "";
 
-		// locationName
-		$this->locationName->ViewValue = $this->locationName->CurrentValue;
-		$this->locationName->ViewCustomAttributes = "";
+		// userID
+		$this->_userID->ViewValue = $this->_userID->CurrentValue;
+		$this->_userID->ViewCustomAttributes = "";
 
-			// locationName
-			$this->locationName->LinkCustomAttributes = "";
-			$this->locationName->HrefValue = "";
-			$this->locationName->TooltipValue = "";
+		// mobilePhone
+		$this->mobilePhone->ViewValue = $this->mobilePhone->CurrentValue;
+		$this->mobilePhone->ViewCustomAttributes = "";
+
+		// message
+		$this->message->ViewValue = $this->message->CurrentValue;
+		$this->message->ViewCustomAttributes = "";
+
+		// result
+		$this->result->ViewValue = $this->result->CurrentValue;
+		$this->result->ViewCustomAttributes = "";
+
+		// description
+		$this->description->ViewValue = $this->description->CurrentValue;
+		$this->description->ViewCustomAttributes = "";
+
+			// mobilePhone
+			$this->mobilePhone->LinkCustomAttributes = "";
+			$this->mobilePhone->HrefValue = "";
+			$this->mobilePhone->TooltipValue = "";
+
+			// message
+			$this->message->LinkCustomAttributes = "";
+			$this->message->HrefValue = "";
+			$this->message->TooltipValue = "";
+
+			// description
+			$this->description->LinkCustomAttributes = "";
+			$this->description->HrefValue = "";
+			$this->description->TooltipValue = "";
 		} elseif ($this->RowType == EW_ROWTYPE_ADD) { // Add row
 
-			// locationName
-			$this->locationName->EditAttrs["class"] = "form-control";
-			$this->locationName->EditCustomAttributes = "";
-			$this->locationName->EditValue = ew_HtmlEncode($this->locationName->CurrentValue);
-			$this->locationName->PlaceHolder = ew_RemoveHtml($this->locationName->FldCaption());
+			// mobilePhone
+			$this->mobilePhone->EditAttrs["class"] = "form-control";
+			$this->mobilePhone->EditCustomAttributes = "";
+			$this->mobilePhone->EditValue = ew_HtmlEncode($this->mobilePhone->CurrentValue);
+			$this->mobilePhone->PlaceHolder = ew_RemoveHtml($this->mobilePhone->FldCaption());
+
+			// message
+			$this->message->EditAttrs["class"] = "form-control";
+			$this->message->EditCustomAttributes = "";
+			$this->message->EditValue = ew_HtmlEncode($this->message->CurrentValue);
+			$this->message->PlaceHolder = ew_RemoveHtml($this->message->FldCaption());
+
+			// description
+			$this->description->EditAttrs["class"] = "form-control";
+			$this->description->EditCustomAttributes = "";
+			$this->description->EditValue = ew_HtmlEncode($this->description->CurrentValue);
+			$this->description->PlaceHolder = ew_RemoveHtml($this->description->FldCaption());
 
 			// Add refer script
-			// locationName
+			// mobilePhone
 
-			$this->locationName->LinkCustomAttributes = "";
-			$this->locationName->HrefValue = "";
+			$this->mobilePhone->LinkCustomAttributes = "";
+			$this->mobilePhone->HrefValue = "";
+
+			// message
+			$this->message->LinkCustomAttributes = "";
+			$this->message->HrefValue = "";
+
+			// description
+			$this->description->LinkCustomAttributes = "";
+			$this->description->HrefValue = "";
 		}
 		if ($this->RowType == EW_ROWTYPE_ADD ||
 			$this->RowType == EW_ROWTYPE_EDIT ||
@@ -599,8 +669,11 @@ class csana_location_level1_add extends csana_location_level1 {
 		// Check if validation required
 		if (!EW_SERVER_VALIDATE)
 			return ($gsFormError == "");
-		if (!$this->locationName->FldIsDetailKey && !is_null($this->locationName->FormValue) && $this->locationName->FormValue == "") {
-			ew_AddMessage($gsFormError, str_replace("%s", $this->locationName->FldCaption(), $this->locationName->ReqErrMsg));
+		if (!$this->mobilePhone->FldIsDetailKey && !is_null($this->mobilePhone->FormValue) && $this->mobilePhone->FormValue == "") {
+			ew_AddMessage($gsFormError, str_replace("%s", $this->mobilePhone->FldCaption(), $this->mobilePhone->ReqErrMsg));
+		}
+		if (!$this->message->FldIsDetailKey && !is_null($this->message->FormValue) && $this->message->FormValue == "") {
+			ew_AddMessage($gsFormError, str_replace("%s", $this->message->FldCaption(), $this->message->ReqErrMsg));
 		}
 
 		// Return validate result
@@ -626,8 +699,14 @@ class csana_location_level1_add extends csana_location_level1 {
 		}
 		$rsnew = array();
 
-		// locationName
-		$this->locationName->SetDbValueDef($rsnew, $this->locationName->CurrentValue, "", FALSE);
+		// mobilePhone
+		$this->mobilePhone->SetDbValueDef($rsnew, $this->mobilePhone->CurrentValue, "", FALSE);
+
+		// message
+		$this->message->SetDbValueDef($rsnew, $this->message->CurrentValue, "", FALSE);
+
+		// description
+		$this->description->SetDbValueDef($rsnew, $this->description->CurrentValue, NULL, FALSE);
 
 		// Call Row Inserting event
 		$rs = ($rsold == NULL) ? NULL : $rsold->fields;
@@ -639,8 +718,8 @@ class csana_location_level1_add extends csana_location_level1 {
 			if ($AddRow) {
 
 				// Get insert id if necessary
-				$this->locationLevel1ID->setDbValue($conn->Insert_ID());
-				$rsnew['locationLevel1ID'] = $this->locationLevel1ID->DbValue;
+				$this->smsID->setDbValue($conn->Insert_ID());
+				$rsnew['smsID'] = $this->smsID->DbValue;
 			}
 		} else {
 			if ($this->getSuccessMessage() <> "" || $this->getFailureMessage() <> "") {
@@ -668,7 +747,7 @@ class csana_location_level1_add extends csana_location_level1 {
 		global $Breadcrumb, $Language;
 		$Breadcrumb = new cBreadcrumb();
 		$url = substr(ew_CurrentUrl(), strrpos(ew_CurrentUrl(), "/")+1);
-		$Breadcrumb->Add("list", $this->TableVar, $this->AddMasterUrl("sana_location_level1list.php"), "", $this->TableVar, TRUE);
+		$Breadcrumb->Add("list", $this->TableVar, $this->AddMasterUrl("sana_smslist.php"), "", $this->TableVar, TRUE);
 		$PageId = ($this->CurrentAction == "C") ? "Copy" : "Add";
 		$Breadcrumb->Add("add", $PageId, $url);
 	}
@@ -745,29 +824,29 @@ class csana_location_level1_add extends csana_location_level1 {
 <?php
 
 // Create page object
-if (!isset($sana_location_level1_add)) $sana_location_level1_add = new csana_location_level1_add();
+if (!isset($sana_sms_add)) $sana_sms_add = new csana_sms_add();
 
 // Page init
-$sana_location_level1_add->Page_Init();
+$sana_sms_add->Page_Init();
 
 // Page main
-$sana_location_level1_add->Page_Main();
+$sana_sms_add->Page_Main();
 
 // Global Page Rendering event (in userfn*.php)
 Page_Rendering();
 
 // Page Rendering event
-$sana_location_level1_add->Page_Render();
+$sana_sms_add->Page_Render();
 ?>
 <?php include_once "header.php" ?>
 <script type="text/javascript">
 
 // Form object
 var CurrentPageID = EW_PAGE_ID = "add";
-var CurrentForm = fsana_location_level1add = new ew_Form("fsana_location_level1add", "add");
+var CurrentForm = fsana_smsadd = new ew_Form("fsana_smsadd", "add");
 
 // Validate form
-fsana_location_level1add.Validate = function() {
+fsana_smsadd.Validate = function() {
 	if (!this.ValidateRequired)
 		return true; // Ignore validation
 	var $ = jQuery, fobj = this.GetForm(), $fobj = $(fobj);
@@ -781,9 +860,12 @@ fsana_location_level1add.Validate = function() {
 	for (var i = startcnt; i <= rowcnt; i++) {
 		var infix = ($k[0]) ? String(i) : "";
 		$fobj.data("rowindex", infix);
-			elm = this.GetElements("x" + infix + "_locationName");
+			elm = this.GetElements("x" + infix + "_mobilePhone");
 			if (elm && !ew_IsHidden(elm) && !ew_HasValue(elm))
-				return this.OnError(elm, "<?php echo ew_JsEncode2(str_replace("%s", $sana_location_level1->locationName->FldCaption(), $sana_location_level1->locationName->ReqErrMsg)) ?>");
+				return this.OnError(elm, "<?php echo ew_JsEncode2(str_replace("%s", $sana_sms->mobilePhone->FldCaption(), $sana_sms->mobilePhone->ReqErrMsg)) ?>");
+			elm = this.GetElements("x" + infix + "_message");
+			if (elm && !ew_IsHidden(elm) && !ew_HasValue(elm))
+				return this.OnError(elm, "<?php echo ew_JsEncode2(str_replace("%s", $sana_sms->message->FldCaption(), $sana_sms->message->ReqErrMsg)) ?>");
 
 			// Fire Form_CustomValidate event
 			if (!this.Form_CustomValidate(fobj))
@@ -802,7 +884,7 @@ fsana_location_level1add.Validate = function() {
 }
 
 // Form_CustomValidate event
-fsana_location_level1add.Form_CustomValidate = 
+fsana_smsadd.Form_CustomValidate = 
  function(fobj) { // DO NOT CHANGE THIS LINE!
 
  	// Your custom validation code here, return false if invalid. 
@@ -811,9 +893,9 @@ fsana_location_level1add.Form_CustomValidate =
 
 // Use JavaScript validation or not
 <?php if (EW_CLIENT_VALIDATE) { ?>
-fsana_location_level1add.ValidateRequired = true;
+fsana_smsadd.ValidateRequired = true;
 <?php } else { ?>
-fsana_location_level1add.ValidateRequired = false; 
+fsana_smsadd.ValidateRequired = false; 
 <?php } ?>
 
 // Dynamic selection lists
@@ -829,40 +911,60 @@ fsana_location_level1add.ValidateRequired = false;
 <?php echo $Language->SelectionForm(); ?>
 <div class="clearfix"></div>
 </div>
-<?php $sana_location_level1_add->ShowPageHeader(); ?>
+<?php $sana_sms_add->ShowPageHeader(); ?>
 <?php
-$sana_location_level1_add->ShowMessage();
+$sana_sms_add->ShowMessage();
 ?>
-<form name="fsana_location_level1add" id="fsana_location_level1add" class="<?php echo $sana_location_level1_add->FormClassName ?>" action="<?php echo ew_CurrentPage() ?>" method="post">
-<?php if ($sana_location_level1_add->CheckToken) { ?>
-<input type="hidden" name="<?php echo EW_TOKEN_NAME ?>" value="<?php echo $sana_location_level1_add->Token ?>">
+<form name="fsana_smsadd" id="fsana_smsadd" class="<?php echo $sana_sms_add->FormClassName ?>" action="<?php echo ew_CurrentPage() ?>" method="post">
+<?php if ($sana_sms_add->CheckToken) { ?>
+<input type="hidden" name="<?php echo EW_TOKEN_NAME ?>" value="<?php echo $sana_sms_add->Token ?>">
 <?php } ?>
-<input type="hidden" name="t" value="sana_location_level1">
+<input type="hidden" name="t" value="sana_sms">
 <input type="hidden" name="a_add" id="a_add" value="A">
 <div>
-<?php if ($sana_location_level1->locationName->Visible) { // locationName ?>
-	<div id="r_locationName" class="form-group">
-		<label id="elh_sana_location_level1_locationName" for="x_locationName" class="col-sm-2 control-label ewLabel"><?php echo $sana_location_level1->locationName->FldCaption() ?><?php echo $Language->Phrase("FieldRequiredIndicator") ?></label>
-		<div class="col-sm-10"><div<?php echo $sana_location_level1->locationName->CellAttributes() ?>>
-<span id="el_sana_location_level1_locationName">
-<input type="text" data-table="sana_location_level1" data-field="x_locationName" name="x_locationName" id="x_locationName" size="30" maxlength="255" placeholder="<?php echo ew_HtmlEncode($sana_location_level1->locationName->getPlaceHolder()) ?>" value="<?php echo $sana_location_level1->locationName->EditValue ?>"<?php echo $sana_location_level1->locationName->EditAttributes() ?>>
+<?php if ($sana_sms->mobilePhone->Visible) { // mobilePhone ?>
+	<div id="r_mobilePhone" class="form-group">
+		<label id="elh_sana_sms_mobilePhone" for="x_mobilePhone" class="col-sm-2 control-label ewLabel"><?php echo $sana_sms->mobilePhone->FldCaption() ?><?php echo $Language->Phrase("FieldRequiredIndicator") ?></label>
+		<div class="col-sm-10"><div<?php echo $sana_sms->mobilePhone->CellAttributes() ?>>
+<span id="el_sana_sms_mobilePhone">
+<input type="text" data-table="sana_sms" data-field="x_mobilePhone" name="x_mobilePhone" id="x_mobilePhone" size="30" maxlength="15" placeholder="<?php echo ew_HtmlEncode($sana_sms->mobilePhone->getPlaceHolder()) ?>" value="<?php echo $sana_sms->mobilePhone->EditValue ?>"<?php echo $sana_sms->mobilePhone->EditAttributes() ?>>
 </span>
-<?php echo $sana_location_level1->locationName->CustomMsg ?></div></div>
+<?php echo $sana_sms->mobilePhone->CustomMsg ?></div></div>
+	</div>
+<?php } ?>
+<?php if ($sana_sms->message->Visible) { // message ?>
+	<div id="r_message" class="form-group">
+		<label id="elh_sana_sms_message" for="x_message" class="col-sm-2 control-label ewLabel"><?php echo $sana_sms->message->FldCaption() ?><?php echo $Language->Phrase("FieldRequiredIndicator") ?></label>
+		<div class="col-sm-10"><div<?php echo $sana_sms->message->CellAttributes() ?>>
+<span id="el_sana_sms_message">
+<input type="text" data-table="sana_sms" data-field="x_message" name="x_message" id="x_message" size="30" maxlength="255" placeholder="<?php echo ew_HtmlEncode($sana_sms->message->getPlaceHolder()) ?>" value="<?php echo $sana_sms->message->EditValue ?>"<?php echo $sana_sms->message->EditAttributes() ?>>
+</span>
+<?php echo $sana_sms->message->CustomMsg ?></div></div>
+	</div>
+<?php } ?>
+<?php if ($sana_sms->description->Visible) { // description ?>
+	<div id="r_description" class="form-group">
+		<label id="elh_sana_sms_description" for="x_description" class="col-sm-2 control-label ewLabel"><?php echo $sana_sms->description->FldCaption() ?></label>
+		<div class="col-sm-10"><div<?php echo $sana_sms->description->CellAttributes() ?>>
+<span id="el_sana_sms_description">
+<input type="text" data-table="sana_sms" data-field="x_description" name="x_description" id="x_description" size="30" maxlength="255" placeholder="<?php echo ew_HtmlEncode($sana_sms->description->getPlaceHolder()) ?>" value="<?php echo $sana_sms->description->EditValue ?>"<?php echo $sana_sms->description->EditAttributes() ?>>
+</span>
+<?php echo $sana_sms->description->CustomMsg ?></div></div>
 	</div>
 <?php } ?>
 </div>
 <div class="form-group">
 	<div class="col-sm-offset-2 col-sm-10">
 <button class="btn btn-primary ewButton" name="btnAction" id="btnAction" type="submit"><?php echo $Language->Phrase("AddBtn") ?></button>
-<button class="btn btn-default ewButton" name="btnCancel" id="btnCancel" type="button" data-href="<?php echo $sana_location_level1_add->getReturnUrl() ?>"><?php echo $Language->Phrase("CancelBtn") ?></button>
+<button class="btn btn-default ewButton" name="btnCancel" id="btnCancel" type="button" data-href="<?php echo $sana_sms_add->getReturnUrl() ?>"><?php echo $Language->Phrase("CancelBtn") ?></button>
 	</div>
 </div>
 </form>
 <script type="text/javascript">
-fsana_location_level1add.Init();
+fsana_smsadd.Init();
 </script>
 <?php
-$sana_location_level1_add->ShowPageFooter();
+$sana_sms_add->ShowPageFooter();
 if (EW_DEBUG_ENABLED)
 	echo ew_DebugMsg();
 ?>
@@ -874,5 +976,5 @@ if (EW_DEBUG_ENABLED)
 </script>
 <?php include_once "footer.php" ?>
 <?php
-$sana_location_level1_add->Page_Terminate();
+$sana_sms_add->Page_Terminate();
 ?>

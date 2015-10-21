@@ -4,14 +4,13 @@
 // personName
 // lastName
 // nationalID
+// mobilePhone
 // nationalNumber
-// passportNumber
 // fatherName
 // gender
 // locationLevel1
-// locationLevel2
-// mobilePhone
 // picture
+// registrationStation
 
 ?>
 <?php if ($sana_person->Visible) { ?>
@@ -63,6 +62,17 @@
 </td>
 		</tr>
 <?php } ?>
+<?php if ($sana_person->mobilePhone->Visible) { // mobilePhone ?>
+		<tr id="r_mobilePhone">
+			<td><?php echo $sana_person->mobilePhone->FldCaption() ?></td>
+			<td<?php echo $sana_person->mobilePhone->CellAttributes() ?>>
+<span id="el_sana_person_mobilePhone">
+<span<?php echo $sana_person->mobilePhone->ViewAttributes() ?>>
+<?php echo $sana_person->mobilePhone->ListViewValue() ?></span>
+</span>
+</td>
+		</tr>
+<?php } ?>
 <?php if ($sana_person->nationalNumber->Visible) { // nationalNumber ?>
 		<tr id="r_nationalNumber">
 			<td><?php echo $sana_person->nationalNumber->FldCaption() ?></td>
@@ -70,17 +80,6 @@
 <span id="el_sana_person_nationalNumber">
 <span<?php echo $sana_person->nationalNumber->ViewAttributes() ?>>
 <?php echo $sana_person->nationalNumber->ListViewValue() ?></span>
-</span>
-</td>
-		</tr>
-<?php } ?>
-<?php if ($sana_person->passportNumber->Visible) { // passportNumber ?>
-		<tr id="r_passportNumber">
-			<td><?php echo $sana_person->passportNumber->FldCaption() ?></td>
-			<td<?php echo $sana_person->passportNumber->CellAttributes() ?>>
-<span id="el_sana_person_passportNumber">
-<span<?php echo $sana_person->passportNumber->ViewAttributes() ?>>
-<?php echo $sana_person->passportNumber->ListViewValue() ?></span>
 </span>
 </td>
 		</tr>
@@ -118,28 +117,6 @@
 </td>
 		</tr>
 <?php } ?>
-<?php if ($sana_person->locationLevel2->Visible) { // locationLevel2 ?>
-		<tr id="r_locationLevel2">
-			<td><?php echo $sana_person->locationLevel2->FldCaption() ?></td>
-			<td<?php echo $sana_person->locationLevel2->CellAttributes() ?>>
-<span id="el_sana_person_locationLevel2">
-<span<?php echo $sana_person->locationLevel2->ViewAttributes() ?>>
-<?php echo $sana_person->locationLevel2->ListViewValue() ?></span>
-</span>
-</td>
-		</tr>
-<?php } ?>
-<?php if ($sana_person->mobilePhone->Visible) { // mobilePhone ?>
-		<tr id="r_mobilePhone">
-			<td><?php echo $sana_person->mobilePhone->FldCaption() ?></td>
-			<td<?php echo $sana_person->mobilePhone->CellAttributes() ?>>
-<span id="el_sana_person_mobilePhone">
-<span<?php echo $sana_person->mobilePhone->ViewAttributes() ?>>
-<?php echo $sana_person->mobilePhone->ListViewValue() ?></span>
-</span>
-</td>
-		</tr>
-<?php } ?>
 <?php if ($sana_person->picture->Visible) { // picture ?>
 		<tr id="r_picture">
 			<td><?php echo $sana_person->picture->FldCaption() ?></td>
@@ -148,6 +125,17 @@
 <span>
 <?php echo ew_GetFileViewTag($sana_person->picture, $sana_person->picture->ListViewValue()) ?>
 </span>
+</span>
+</td>
+		</tr>
+<?php } ?>
+<?php if ($sana_person->registrationStation->Visible) { // registrationStation ?>
+		<tr id="r_registrationStation">
+			<td><?php echo $sana_person->registrationStation->FldCaption() ?></td>
+			<td<?php echo $sana_person->registrationStation->CellAttributes() ?>>
+<span id="el_sana_person_registrationStation">
+<span<?php echo $sana_person->registrationStation->ViewAttributes() ?>>
+<?php echo $sana_person->registrationStation->ListViewValue() ?></span>
 </span>
 </td>
 		</tr>

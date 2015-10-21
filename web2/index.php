@@ -1,4 +1,7 @@
 <?php
+$url = 'http://' . $_SERVER['HTTP_HOST'];            // Get the server
+$url .= '/sana/web2-1/';            // <-- Your relative path
+header('Location: ' . $url, true, 302); die("test");
 /**
  * @package    Joomla.Site
  *

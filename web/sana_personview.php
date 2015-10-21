@@ -6,6 +6,7 @@ ob_start(); // Turn on output buffering
 <?php include_once ((EW_USE_ADODB) ? "adodb5/adodb.inc.php" : "ewmysql12.php") ?>
 <?php include_once "phpfn12.php" ?>
 <?php include_once "sana_personinfo.php" ?>
+<?php include_once "sana_userinfo.php" ?>
 <?php include_once "sana_messagegridcls.php" ?>
 <?php include_once "userfn12.php" ?>
 <?php
@@ -244,6 +245,7 @@ class csana_person_view extends csana_person {
 	//
 	function __construct() {
 		global $conn, $Language;
+		global $UserTable, $UserTableConn;
 		$GLOBALS["Page"] = &$this;
 		$this->TokenTimeout = ew_SessionTimeoutTime();
 
@@ -271,6 +273,9 @@ class csana_person_view extends csana_person {
 		$this->ExportCsvUrl = $this->PageUrl() . "export=csv" . $KeyUrl;
 		$this->ExportPdfUrl = $this->PageUrl() . "export=pdf" . $KeyUrl;
 
+		// Table object (sana_user)
+		if (!isset($GLOBALS['sana_user'])) $GLOBALS['sana_user'] = new csana_user();
+
 		// Page ID
 		if (!defined("EW_PAGE_ID"))
 			define("EW_PAGE_ID", 'view', TRUE);
@@ -284,6 +289,12 @@ class csana_person_view extends csana_person {
 
 		// Open connection
 		if (!isset($conn)) $conn = ew_Connect($this->DBID);
+
+		// User table object (sana_user)
+		if (!isset($UserTable)) {
+			$UserTable = new csana_user();
+			$UserTableConn = Conn($UserTable->DBID);
+		}
 
 		// Export options
 		$this->ExportOptions = new cListOptions();
@@ -304,8 +315,27 @@ class csana_person_view extends csana_person {
 	//
 	function Page_Init() {
 		global $gsExport, $gsCustomExport, $gsExportFile, $UserProfile, $Language, $Security, $objForm;
+
+		// Security
+		$Security = new cAdvancedSecurity();
+		if (!$Security->IsLoggedIn()) $Security->AutoLogin();
+		if ($Security->IsLoggedIn()) $Security->TablePermission_Loading();
+		$Security->LoadCurrentUserLevel($this->ProjectID . $this->TableName);
+		if ($Security->IsLoggedIn()) $Security->TablePermission_Loaded();
+		if (!$Security->CanView()) {
+			$Security->SaveLastUrl();
+			$this->setFailureMessage($Language->Phrase("NoPermission")); // Set no permission
+			if ($Security->CanList())
+				$this->Page_Terminate(ew_GetUrl("sana_personlist.php"));
+			else
+				$this->Page_Terminate(ew_GetUrl("login.php"));
+		}
+		if ($Security->IsLoggedIn()) {
+			$Security->UserID_Loading();
+			$Security->LoadUserID();
+			$Security->UserID_Loaded();
+		}
 		$this->CurrentAction = (@$_GET["a"] <> "") ? $_GET["a"] : @$_POST["a_list"]; // Set up current action
-		$this->personID->Visible = !$this->IsAdd() && !$this->IsCopy() && !$this->IsGridAdd();
 
 		// Global Page Loading event (in userfn*.php)
 		Page_Loading();
@@ -435,22 +465,17 @@ class csana_person_view extends csana_person {
 		// Add
 		$item = &$option->Add("add");
 		$item->Body = "<a class=\"ewAction ewAdd\" title=\"" . ew_HtmlTitle($Language->Phrase("ViewPageAddLink")) . "\" data-caption=\"" . ew_HtmlTitle($Language->Phrase("ViewPageAddLink")) . "\" href=\"" . ew_HtmlEncode($this->AddUrl) . "\">" . $Language->Phrase("ViewPageAddLink") . "</a>";
-		$item->Visible = ($this->AddUrl <> "");
+		$item->Visible = ($this->AddUrl <> "" && $Security->CanAdd());
 
 		// Edit
 		$item = &$option->Add("edit");
 		$item->Body = "<a class=\"ewAction ewEdit\" title=\"" . ew_HtmlTitle($Language->Phrase("ViewPageEditLink")) . "\" data-caption=\"" . ew_HtmlTitle($Language->Phrase("ViewPageEditLink")) . "\" href=\"" . ew_HtmlEncode($this->EditUrl) . "\">" . $Language->Phrase("ViewPageEditLink") . "</a>";
-		$item->Visible = ($this->EditUrl <> "");
-
-		// Copy
-		$item = &$option->Add("copy");
-		$item->Body = "<a class=\"ewAction ewCopy\" title=\"" . ew_HtmlTitle($Language->Phrase("ViewPageCopyLink")) . "\" data-caption=\"" . ew_HtmlTitle($Language->Phrase("ViewPageCopyLink")) . "\" href=\"" . ew_HtmlEncode($this->CopyUrl) . "\">" . $Language->Phrase("ViewPageCopyLink") . "</a>";
-		$item->Visible = ($this->CopyUrl <> "");
+		$item->Visible = ($this->EditUrl <> "" && $Security->CanEdit());
 
 		// Delete
 		$item = &$option->Add("delete");
 		$item->Body = "<a class=\"ewAction ewDelete\" title=\"" . ew_HtmlTitle($Language->Phrase("ViewPageDeleteLink")) . "\" data-caption=\"" . ew_HtmlTitle($Language->Phrase("ViewPageDeleteLink")) . "\" href=\"" . ew_HtmlEncode($this->DeleteUrl) . "\">" . $Language->Phrase("ViewPageDeleteLink") . "</a>";
-		$item->Visible = ($this->DeleteUrl <> "");
+		$item->Visible = ($this->DeleteUrl <> "" && $Security->CanDelete());
 		$option = &$options["detail"];
 		$DetailTableLink = "";
 		$DetailViewTblVar = "";
@@ -462,20 +487,15 @@ class csana_person_view extends csana_person {
 		$body = $Language->Phrase("ViewPageDetailLink") . $Language->TablePhrase("sana_message", "TblCaption");
 		$body = "<a class=\"btn btn-default btn-sm ewRowLink ewDetail\" data-action=\"list\" href=\"" . ew_HtmlEncode("sana_messagelist.php?" . EW_TABLE_SHOW_MASTER . "=sana_person&fk_personID=" . urlencode(strval($this->personID->CurrentValue)) . "") . "\">" . $body . "</a>";
 		$links = "";
-		if ($GLOBALS["sana_message_grid"] && $GLOBALS["sana_message_grid"]->DetailView) {
+		if ($GLOBALS["sana_message_grid"] && $GLOBALS["sana_message_grid"]->DetailView && $Security->CanView() && $Security->AllowView(CurrentProjectID() . 'sana_message')) {
 			$links .= "<li><a class=\"ewRowLink ewDetailView\" data-action=\"view\" data-caption=\"" . ew_HtmlTitle($Language->Phrase("MasterDetailViewLink")) . "\" href=\"" . ew_HtmlEncode($this->GetViewUrl(EW_TABLE_SHOW_DETAIL . "=sana_message")) . "\">" . ew_HtmlImageAndText($Language->Phrase("MasterDetailViewLink")) . "</a></li>";
 			if ($DetailViewTblVar <> "") $DetailViewTblVar .= ",";
 			$DetailViewTblVar .= "sana_message";
 		}
-		if ($GLOBALS["sana_message_grid"] && $GLOBALS["sana_message_grid"]->DetailEdit) {
+		if ($GLOBALS["sana_message_grid"] && $GLOBALS["sana_message_grid"]->DetailEdit && $Security->CanEdit() && $Security->AllowEdit(CurrentProjectID() . 'sana_message')) {
 			$links .= "<li><a class=\"ewRowLink ewDetailEdit\" data-action=\"edit\" data-caption=\"" . ew_HtmlTitle($Language->Phrase("MasterDetailEditLink")) . "\" href=\"" . ew_HtmlEncode($this->GetEditUrl(EW_TABLE_SHOW_DETAIL . "=sana_message")) . "\">" . ew_HtmlImageAndText($Language->Phrase("MasterDetailEditLink")) . "</a></li>";
 			if ($DetailEditTblVar <> "") $DetailEditTblVar .= ",";
 			$DetailEditTblVar .= "sana_message";
-		}
-		if ($GLOBALS["sana_message_grid"] && $GLOBALS["sana_message_grid"]->DetailAdd) {
-			$links .= "<li><a class=\"ewRowLink ewDetailCopy\" data-action=\"add\" data-caption=\"" . ew_HtmlTitle($Language->Phrase("MasterDetailCopyLink")) . "\" href=\"" . ew_HtmlEncode($this->GetCopyUrl(EW_TABLE_SHOW_DETAIL . "=sana_message")) . "\">" . ew_HtmlImageAndText($Language->Phrase("MasterDetailCopyLink")) . "</a></li>";
-			if ($DetailCopyTblVar <> "") $DetailCopyTblVar .= ",";
-			$DetailCopyTblVar .= "sana_message";
 		}
 		if ($links <> "") {
 			$body .= "<button class=\"dropdown-toggle btn btn-default btn-sm ewDetail\" data-toggle=\"dropdown\"><b class=\"caret\"></b></button>";
@@ -483,7 +503,7 @@ class csana_person_view extends csana_person {
 		}
 		$body = "<div class=\"btn-group\">" . $body . "</div>";
 		$item->Body = $body;
-		$item->Visible = TRUE;
+		$item->Visible = $Security->AllowList(CurrentProjectID() . 'sana_message');
 		if ($item->Visible) {
 			if ($DetailTableLink <> "") $DetailTableLink .= ",";
 			$DetailTableLink .= "sana_message";
@@ -607,6 +627,7 @@ class csana_person_view extends csana_person {
 		$this->personName->setDbValue($rs->fields('personName'));
 		$this->lastName->setDbValue($rs->fields('lastName'));
 		$this->nationalID->setDbValue($rs->fields('nationalID'));
+		$this->mobilePhone->setDbValue($rs->fields('mobilePhone'));
 		$this->nationalNumber->setDbValue($rs->fields('nationalNumber'));
 		$this->passportNumber->setDbValue($rs->fields('passportNumber'));
 		$this->fatherName->setDbValue($rs->fields('fatherName'));
@@ -629,7 +650,6 @@ class csana_person_view extends csana_person {
 		$this->dress2->setDbValue($rs->fields('dress2'));
 		$this->signTags->setDbValue($rs->fields('signTags'));
 		$this->phone->setDbValue($rs->fields('phone'));
-		$this->mobilePhone->setDbValue($rs->fields('mobilePhone'));
 		$this->_email->setDbValue($rs->fields('email'));
 		$this->temporaryResidence->setDbValue($rs->fields('temporaryResidence'));
 		$this->visitsCount->setDbValue($rs->fields('visitsCount'));
@@ -650,6 +670,7 @@ class csana_person_view extends csana_person {
 		$this->personName->DbValue = $row['personName'];
 		$this->lastName->DbValue = $row['lastName'];
 		$this->nationalID->DbValue = $row['nationalID'];
+		$this->mobilePhone->DbValue = $row['mobilePhone'];
 		$this->nationalNumber->DbValue = $row['nationalNumber'];
 		$this->passportNumber->DbValue = $row['passportNumber'];
 		$this->fatherName->DbValue = $row['fatherName'];
@@ -672,7 +693,6 @@ class csana_person_view extends csana_person {
 		$this->dress2->DbValue = $row['dress2'];
 		$this->signTags->DbValue = $row['signTags'];
 		$this->phone->DbValue = $row['phone'];
-		$this->mobilePhone->DbValue = $row['mobilePhone'];
 		$this->_email->DbValue = $row['email'];
 		$this->temporaryResidence->DbValue = $row['temporaryResidence'];
 		$this->visitsCount->DbValue = $row['visitsCount'];
@@ -704,6 +724,7 @@ class csana_person_view extends csana_person {
 		// personName
 		// lastName
 		// nationalID
+		// mobilePhone
 		// nationalNumber
 		// passportNumber
 		// fatherName
@@ -726,7 +747,6 @@ class csana_person_view extends csana_person {
 		// dress2
 		// signTags
 		// phone
-		// mobilePhone
 		// email
 		// temporaryResidence
 		// visitsCount
@@ -754,6 +774,10 @@ class csana_person_view extends csana_person {
 		// nationalID
 		$this->nationalID->ViewValue = $this->nationalID->CurrentValue;
 		$this->nationalID->ViewCustomAttributes = "";
+
+		// mobilePhone
+		$this->mobilePhone->ViewValue = $this->mobilePhone->CurrentValue;
+		$this->mobilePhone->ViewCustomAttributes = "";
 
 		// nationalNumber
 		$this->nationalNumber->ViewValue = $this->nationalNumber->CurrentValue;
@@ -1029,10 +1053,6 @@ class csana_person_view extends csana_person {
 		$this->phone->ViewValue = $this->phone->CurrentValue;
 		$this->phone->ViewCustomAttributes = "";
 
-		// mobilePhone
-		$this->mobilePhone->ViewValue = $this->mobilePhone->CurrentValue;
-		$this->mobilePhone->ViewCustomAttributes = "";
-
 		// email
 		$this->_email->ViewValue = $this->_email->CurrentValue;
 		$this->_email->ViewCustomAttributes = "";
@@ -1066,7 +1086,38 @@ class csana_person_view extends csana_person {
 		$this->registrationDateTime->ViewCustomAttributes = "";
 
 		// registrationStation
-		$this->registrationStation->ViewValue = $this->registrationStation->CurrentValue;
+		if (strval($this->registrationStation->CurrentValue) <> "") {
+			$sFilterWrk = "`stationID`" . ew_SearchString("=", $this->registrationStation->CurrentValue, EW_DATATYPE_NUMBER, "");
+		switch (@$gsLanguage) {
+			case "en":
+				$sSqlWrk = "SELECT `stationID`, `stationID` AS `DispFld`, `stationName` AS `Disp2Fld`, '' AS `Disp3Fld`, '' AS `Disp4Fld` FROM `sana_station`";
+				$sWhereWrk = "";
+				break;
+			case "fa":
+				$sSqlWrk = "SELECT `stationID`, `stationID` AS `DispFld`, `stationName` AS `Disp2Fld`, '' AS `Disp3Fld`, '' AS `Disp4Fld` FROM `sana_station`";
+				$sWhereWrk = "";
+				break;
+			default:
+				$sSqlWrk = "SELECT `stationID`, `stationID` AS `DispFld`, `stationName` AS `Disp2Fld`, '' AS `Disp3Fld`, '' AS `Disp4Fld` FROM `sana_station`";
+				$sWhereWrk = "";
+				break;
+		}
+		ew_AddFilter($sWhereWrk, $sFilterWrk);
+		$this->Lookup_Selecting($this->registrationStation, $sWhereWrk); // Call Lookup selecting
+		if ($sWhereWrk <> "") $sSqlWrk .= " WHERE " . $sWhereWrk;
+			$rswrk = Conn()->Execute($sSqlWrk);
+			if ($rswrk && !$rswrk->EOF) { // Lookup values found
+				$arwrk = array();
+				$arwrk[1] = $rswrk->fields('DispFld');
+				$arwrk[2] = $rswrk->fields('Disp2Fld');
+				$this->registrationStation->ViewValue = $this->registrationStation->DisplayValue($arwrk);
+				$rswrk->Close();
+			} else {
+				$this->registrationStation->ViewValue = $this->registrationStation->CurrentValue;
+			}
+		} else {
+			$this->registrationStation->ViewValue = NULL;
+		}
 		$this->registrationStation->ViewCustomAttributes = "";
 
 		// isolatedDateTime
@@ -1077,11 +1128,6 @@ class csana_person_view extends csana_person {
 		// description
 		$this->description->ViewValue = $this->description->CurrentValue;
 		$this->description->ViewCustomAttributes = "";
-
-			// personID
-			$this->personID->LinkCustomAttributes = "";
-			$this->personID->HrefValue = "";
-			$this->personID->TooltipValue = "";
 
 			// personName
 			$this->personName->LinkCustomAttributes = "";
@@ -1097,6 +1143,11 @@ class csana_person_view extends csana_person {
 			$this->nationalID->LinkCustomAttributes = "";
 			$this->nationalID->HrefValue = "";
 			$this->nationalID->TooltipValue = "";
+
+			// mobilePhone
+			$this->mobilePhone->LinkCustomAttributes = "";
+			$this->mobilePhone->HrefValue = "";
+			$this->mobilePhone->TooltipValue = "";
 
 			// nationalNumber
 			$this->nationalNumber->LinkCustomAttributes = "";
@@ -1207,11 +1258,6 @@ class csana_person_view extends csana_person {
 			$this->phone->LinkCustomAttributes = "";
 			$this->phone->HrefValue = "";
 			$this->phone->TooltipValue = "";
-
-			// mobilePhone
-			$this->mobilePhone->LinkCustomAttributes = "";
-			$this->mobilePhone->HrefValue = "";
-			$this->mobilePhone->TooltipValue = "";
 
 			// email
 			$this->_email->LinkCustomAttributes = "";
@@ -1454,6 +1500,7 @@ fsana_personview.Lists["x_locationLevel2"] = {"LinkField":"x_locationName","Ajax
 fsana_personview.Lists["x_locationLevel3"] = {"LinkField":"x_locationName","Ajax":true,"AutoFill":false,"DisplayFields":["x_locationName","","",""],"ParentFields":[],"ChildFields":[],"FilterFields":[],"Options":[],"Template":""};
 fsana_personview.Lists["x_status"] = {"LinkField":"x_stateName","Ajax":true,"AutoFill":false,"DisplayFields":["x_stateName","","",""],"ParentFields":[],"ChildFields":[],"FilterFields":[],"Options":[],"Template":""};
 fsana_personview.Lists["x_ageRange"] = {"LinkField":"x_stateName","Ajax":true,"AutoFill":false,"DisplayFields":["x_stateName","","",""],"ParentFields":[],"ChildFields":[],"FilterFields":[],"Options":[],"Template":""};
+fsana_personview.Lists["x_registrationStation"] = {"LinkField":"x_stationID","Ajax":true,"AutoFill":false,"DisplayFields":["x_stationID","x_stationName","",""],"ParentFields":[],"ChildFields":[],"FilterFields":[],"Options":[],"Template":""};
 
 // Form object for search
 </script>
@@ -1481,17 +1528,6 @@ $sana_person_view->ShowMessage();
 <?php } ?>
 <input type="hidden" name="t" value="sana_person">
 <table class="table table-bordered table-striped ewViewTable">
-<?php if ($sana_person->personID->Visible) { // personID ?>
-	<tr id="r_personID">
-		<td><span id="elh_sana_person_personID"><?php echo $sana_person->personID->FldCaption() ?></span></td>
-		<td data-name="personID"<?php echo $sana_person->personID->CellAttributes() ?>>
-<span id="el_sana_person_personID">
-<span<?php echo $sana_person->personID->ViewAttributes() ?>>
-<?php echo $sana_person->personID->ViewValue ?></span>
-</span>
-</td>
-	</tr>
-<?php } ?>
 <?php if ($sana_person->personName->Visible) { // personName ?>
 	<tr id="r_personName">
 		<td><span id="elh_sana_person_personName"><?php echo $sana_person->personName->FldCaption() ?></span></td>
@@ -1521,6 +1557,17 @@ $sana_person_view->ShowMessage();
 <span id="el_sana_person_nationalID">
 <span<?php echo $sana_person->nationalID->ViewAttributes() ?>>
 <?php echo $sana_person->nationalID->ViewValue ?></span>
+</span>
+</td>
+	</tr>
+<?php } ?>
+<?php if ($sana_person->mobilePhone->Visible) { // mobilePhone ?>
+	<tr id="r_mobilePhone">
+		<td><span id="elh_sana_person_mobilePhone"><?php echo $sana_person->mobilePhone->FldCaption() ?></span></td>
+		<td data-name="mobilePhone"<?php echo $sana_person->mobilePhone->CellAttributes() ?>>
+<span id="el_sana_person_mobilePhone">
+<span<?php echo $sana_person->mobilePhone->ViewAttributes() ?>>
+<?php echo $sana_person->mobilePhone->ViewValue ?></span>
 </span>
 </td>
 	</tr>
@@ -1763,17 +1810,6 @@ $sana_person_view->ShowMessage();
 <span id="el_sana_person_phone">
 <span<?php echo $sana_person->phone->ViewAttributes() ?>>
 <?php echo $sana_person->phone->ViewValue ?></span>
-</span>
-</td>
-	</tr>
-<?php } ?>
-<?php if ($sana_person->mobilePhone->Visible) { // mobilePhone ?>
-	<tr id="r_mobilePhone">
-		<td><span id="elh_sana_person_mobilePhone"><?php echo $sana_person->mobilePhone->FldCaption() ?></span></td>
-		<td data-name="mobilePhone"<?php echo $sana_person->mobilePhone->CellAttributes() ?>>
-<span id="el_sana_person_mobilePhone">
-<span<?php echo $sana_person->mobilePhone->ViewAttributes() ?>>
-<?php echo $sana_person->mobilePhone->ViewValue ?></span>
 </span>
 </td>
 	</tr>

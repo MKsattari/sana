@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<ew-language date="2015/10/5" version="12.0.0" id="en" name="English" desc="English" author="e.World Technology Ltd.">
+<ew-language date="2015/10/21" version="12.0.0" id="en" name="English" desc="English" author="e.World Technology Ltd.">
 	<locale>
 		<phrase id="locale" value=""/><!-- *** system locale for this language -->
 		<phrase id="use_system_locale" value="1"/><!-- *** change to "0" to disable system locale and use the following settings *** -->
@@ -437,15 +437,17 @@
 	</global>
 	<project><phrase id="bodytitle" value="SANA"/>
 <phrase id="footertext" value="&amp;copy;2015 e.World Technology Ltd. All rights reserved."/>
-<menu id="15"><phrase id="menutext" value="sana station"/>
-</menu>
-<menu id="16"><phrase id="menutext" value="sana message"/>
+<menu id="30"><phrase id="menutext" value="home page"/>
 </menu>
 <menu id="3"><phrase id="menutext" value="sana person"/>
 </menu>
-<menu id="2"><phrase id="menutext" value="sana object"/>
+<menu id="16"><phrase id="menutext" value="sana message"/>
 </menu>
 <menu id="6"><phrase id="menutext" value="sana user"/>
+</menu>
+<menu id="15"><phrase id="menutext" value="sana station"/>
+</menu>
+<menu id="2"><phrase id="menutext" value="sana object"/>
 </menu>
 <menu id="5"><phrase id="menutext" value="sana state"/>
 </menu>
@@ -468,6 +470,10 @@
 <menu id="8"><phrase id="menutext" value="userlevels"/>
 </menu>
 <table id="sana_person"><phrase id="tblcaption" value="sana person"/>
+<phrase id="tblpagecaption1" value="main"/>
+<phrase id="tblpagecaption2" value="location"/>
+<phrase id="tblpagecaption3" value="other"/>
+<phrase id="tblpagecaption4" value="system"/>
 <field id="personid"><phrase id="fldcaption" value="person ID"/>
 </field>
 <field id="personname"><phrase id="fldcaption" value="person Name"/>
@@ -692,11 +698,11 @@
 </field>
 <field id="locationname"><phrase id="fldcaption" value="location Name"/>
 </field>
+<field id="locationlevel1id"><phrase id="fldcaption" value="location Level 1ID"/>
+</field>
 <field id="locationlevel2id"><phrase id="fldcaption" value="location Level 2ID"/>
 </field>
 <field id="locationlevel2name"><phrase id="fldcaption" value="location Level 2Name"/>
-</field>
-<field id="locationlevel1id"><phrase id="fldcaption" value="location Level 1ID"/>
 </field>
 </table>
 <table id="sana_location_level4"><phrase id="tblcaption" value="sana location level 4"/>
@@ -755,6 +761,16 @@
 <field id="projectid"><phrase id="fldcaption" value="project ID"/>
 </field>
 <field id="description"><phrase id="fldcaption" value="description"/>
+</field>
+<field id="address"><phrase id="fldcaption" value="address"/>
+</field>
+<field id="gps1"><phrase id="fldcaption" value="GPS1"/>
+</field>
+<field id="gps2"><phrase id="fldcaption" value="GPS2"/>
+</field>
+<field id="gps3"><phrase id="fldcaption" value="GPS3"/>
+</field>
+<field id="stationtype"><phrase id="fldcaption" value="station Type"/>
 </field>
 </table>
 <table id="sana_message"><phrase id="tblcaption" value="sana message"/>

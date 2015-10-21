@@ -6,6 +6,7 @@ ob_start(); // Turn on output buffering
 <?php include_once ((EW_USE_ADODB) ? "adodb5/adodb.inc.php" : "ewmysql12.php") ?>
 <?php include_once "phpfn12.php" ?>
 <?php include_once "sana_personinfo.php" ?>
+<?php include_once "sana_userinfo.php" ?>
 <?php include_once "userfn12.php" ?>
 <?php
 
@@ -211,6 +212,7 @@ class csana_person_search extends csana_person {
 	//
 	function __construct() {
 		global $conn, $Language;
+		global $UserTable, $UserTableConn;
 		$GLOBALS["Page"] = &$this;
 		$this->TokenTimeout = ew_SessionTimeoutTime();
 
@@ -226,6 +228,9 @@ class csana_person_search extends csana_person {
 			$GLOBALS["Table"] = &$GLOBALS["sana_person"];
 		}
 
+		// Table object (sana_user)
+		if (!isset($GLOBALS['sana_user'])) $GLOBALS['sana_user'] = new csana_user();
+
 		// Page ID
 		if (!defined("EW_PAGE_ID"))
 			define("EW_PAGE_ID", 'search', TRUE);
@@ -239,6 +244,12 @@ class csana_person_search extends csana_person {
 
 		// Open connection
 		if (!isset($conn)) $conn = ew_Connect($this->DBID);
+
+		// User table object (sana_user)
+		if (!isset($UserTable)) {
+			$UserTable = new csana_user();
+			$UserTableConn = Conn($UserTable->DBID);
+		}
 	}
 
 	// 
@@ -247,10 +258,33 @@ class csana_person_search extends csana_person {
 	function Page_Init() {
 		global $gsExport, $gsCustomExport, $gsExportFile, $UserProfile, $Language, $Security, $objForm;
 
+		// Security
+		$Security = new cAdvancedSecurity();
+		if (!$Security->IsLoggedIn()) $Security->AutoLogin();
+		if ($Security->IsLoggedIn()) $Security->TablePermission_Loading();
+		$Security->LoadCurrentUserLevel($this->ProjectID . $this->TableName);
+		if ($Security->IsLoggedIn()) $Security->TablePermission_Loaded();
+		if (!$Security->CanSearch()) {
+			$Security->SaveLastUrl();
+			$this->setFailureMessage($Language->Phrase("NoPermission")); // Set no permission
+			if ($Security->CanList())
+				$this->Page_Terminate(ew_GetUrl("sana_personlist.php"));
+			else
+				$this->Page_Terminate(ew_GetUrl("login.php"));
+		}
+		if ($Security->IsLoggedIn()) {
+			$Security->UserID_Loading();
+			$Security->LoadUserID();
+			$Security->UserID_Loaded();
+		}
+
 		// Create form object
 		$objForm = new cFormObj();
 		$this->CurrentAction = (@$_GET["a"] <> "") ? $_GET["a"] : @$_POST["a_list"]; // Set up current action
 		$this->personID->Visible = !$this->IsAdd() && !$this->IsCopy() && !$this->IsGridAdd();
+
+		// Set up multi page object
+		$this->SetupMultiPages();
 
 		// Global Page Loading event (in userfn*.php)
 		Page_Loading();
@@ -315,6 +349,7 @@ class csana_person_search extends csana_person {
 	var $IsModal = FALSE;
 	var $SearchLabelClass = "col-sm-3 control-label ewLabel";
 	var $SearchRightColumnClass = "col-sm-9";
+	var $MultiPages; // Multi pages object
 
 	//
 	// Page main
@@ -378,6 +413,7 @@ class csana_person_search extends csana_person {
 		$this->BuildSearchUrl($sSrchUrl, $this->personName); // personName
 		$this->BuildSearchUrl($sSrchUrl, $this->lastName); // lastName
 		$this->BuildSearchUrl($sSrchUrl, $this->nationalID); // nationalID
+		$this->BuildSearchUrl($sSrchUrl, $this->mobilePhone); // mobilePhone
 		$this->BuildSearchUrl($sSrchUrl, $this->nationalNumber); // nationalNumber
 		$this->BuildSearchUrl($sSrchUrl, $this->passportNumber); // passportNumber
 		$this->BuildSearchUrl($sSrchUrl, $this->fatherName); // fatherName
@@ -400,7 +436,6 @@ class csana_person_search extends csana_person {
 		$this->BuildSearchUrl($sSrchUrl, $this->dress2); // dress2
 		$this->BuildSearchUrl($sSrchUrl, $this->signTags); // signTags
 		$this->BuildSearchUrl($sSrchUrl, $this->phone); // phone
-		$this->BuildSearchUrl($sSrchUrl, $this->mobilePhone); // mobilePhone
 		$this->BuildSearchUrl($sSrchUrl, $this->_email); // email
 		$this->BuildSearchUrl($sSrchUrl, $this->temporaryResidence); // temporaryResidence
 		$this->BuildSearchUrl($sSrchUrl, $this->visitsCount); // visitsCount
@@ -492,6 +527,10 @@ class csana_person_search extends csana_person {
 		$this->nationalID->AdvancedSearch->SearchValue = ew_StripSlashes($objForm->GetValue("x_nationalID"));
 		$this->nationalID->AdvancedSearch->SearchOperator = $objForm->GetValue("z_nationalID");
 
+		// mobilePhone
+		$this->mobilePhone->AdvancedSearch->SearchValue = ew_StripSlashes($objForm->GetValue("x_mobilePhone"));
+		$this->mobilePhone->AdvancedSearch->SearchOperator = $objForm->GetValue("z_mobilePhone");
+
 		// nationalNumber
 		$this->nationalNumber->AdvancedSearch->SearchValue = ew_StripSlashes($objForm->GetValue("x_nationalNumber"));
 		$this->nationalNumber->AdvancedSearch->SearchOperator = $objForm->GetValue("z_nationalNumber");
@@ -580,10 +619,6 @@ class csana_person_search extends csana_person {
 		$this->phone->AdvancedSearch->SearchValue = ew_StripSlashes($objForm->GetValue("x_phone"));
 		$this->phone->AdvancedSearch->SearchOperator = $objForm->GetValue("z_phone");
 
-		// mobilePhone
-		$this->mobilePhone->AdvancedSearch->SearchValue = ew_StripSlashes($objForm->GetValue("x_mobilePhone"));
-		$this->mobilePhone->AdvancedSearch->SearchOperator = $objForm->GetValue("z_mobilePhone");
-
 		// email
 		$this->_email->AdvancedSearch->SearchValue = ew_StripSlashes($objForm->GetValue("x__email"));
 		$this->_email->AdvancedSearch->SearchOperator = $objForm->GetValue("z__email");
@@ -635,6 +670,7 @@ class csana_person_search extends csana_person {
 		// personName
 		// lastName
 		// nationalID
+		// mobilePhone
 		// nationalNumber
 		// passportNumber
 		// fatherName
@@ -657,7 +693,6 @@ class csana_person_search extends csana_person {
 		// dress2
 		// signTags
 		// phone
-		// mobilePhone
 		// email
 		// temporaryResidence
 		// visitsCount
@@ -685,6 +720,10 @@ class csana_person_search extends csana_person {
 		// nationalID
 		$this->nationalID->ViewValue = $this->nationalID->CurrentValue;
 		$this->nationalID->ViewCustomAttributes = "";
+
+		// mobilePhone
+		$this->mobilePhone->ViewValue = $this->mobilePhone->CurrentValue;
+		$this->mobilePhone->ViewCustomAttributes = "";
 
 		// nationalNumber
 		$this->nationalNumber->ViewValue = $this->nationalNumber->CurrentValue;
@@ -960,10 +999,6 @@ class csana_person_search extends csana_person {
 		$this->phone->ViewValue = $this->phone->CurrentValue;
 		$this->phone->ViewCustomAttributes = "";
 
-		// mobilePhone
-		$this->mobilePhone->ViewValue = $this->mobilePhone->CurrentValue;
-		$this->mobilePhone->ViewCustomAttributes = "";
-
 		// email
 		$this->_email->ViewValue = $this->_email->CurrentValue;
 		$this->_email->ViewCustomAttributes = "";
@@ -997,7 +1032,38 @@ class csana_person_search extends csana_person {
 		$this->registrationDateTime->ViewCustomAttributes = "";
 
 		// registrationStation
-		$this->registrationStation->ViewValue = $this->registrationStation->CurrentValue;
+		if (strval($this->registrationStation->CurrentValue) <> "") {
+			$sFilterWrk = "`stationID`" . ew_SearchString("=", $this->registrationStation->CurrentValue, EW_DATATYPE_NUMBER, "");
+		switch (@$gsLanguage) {
+			case "en":
+				$sSqlWrk = "SELECT `stationID`, `stationID` AS `DispFld`, `stationName` AS `Disp2Fld`, '' AS `Disp3Fld`, '' AS `Disp4Fld` FROM `sana_station`";
+				$sWhereWrk = "";
+				break;
+			case "fa":
+				$sSqlWrk = "SELECT `stationID`, `stationID` AS `DispFld`, `stationName` AS `Disp2Fld`, '' AS `Disp3Fld`, '' AS `Disp4Fld` FROM `sana_station`";
+				$sWhereWrk = "";
+				break;
+			default:
+				$sSqlWrk = "SELECT `stationID`, `stationID` AS `DispFld`, `stationName` AS `Disp2Fld`, '' AS `Disp3Fld`, '' AS `Disp4Fld` FROM `sana_station`";
+				$sWhereWrk = "";
+				break;
+		}
+		ew_AddFilter($sWhereWrk, $sFilterWrk);
+		$this->Lookup_Selecting($this->registrationStation, $sWhereWrk); // Call Lookup selecting
+		if ($sWhereWrk <> "") $sSqlWrk .= " WHERE " . $sWhereWrk;
+			$rswrk = Conn()->Execute($sSqlWrk);
+			if ($rswrk && !$rswrk->EOF) { // Lookup values found
+				$arwrk = array();
+				$arwrk[1] = $rswrk->fields('DispFld');
+				$arwrk[2] = $rswrk->fields('Disp2Fld');
+				$this->registrationStation->ViewValue = $this->registrationStation->DisplayValue($arwrk);
+				$rswrk->Close();
+			} else {
+				$this->registrationStation->ViewValue = $this->registrationStation->CurrentValue;
+			}
+		} else {
+			$this->registrationStation->ViewValue = NULL;
+		}
 		$this->registrationStation->ViewCustomAttributes = "";
 
 		// isolatedDateTime
@@ -1028,6 +1094,11 @@ class csana_person_search extends csana_person {
 			$this->nationalID->LinkCustomAttributes = "";
 			$this->nationalID->HrefValue = "";
 			$this->nationalID->TooltipValue = "";
+
+			// mobilePhone
+			$this->mobilePhone->LinkCustomAttributes = "";
+			$this->mobilePhone->HrefValue = "";
+			$this->mobilePhone->TooltipValue = "";
 
 			// nationalNumber
 			$this->nationalNumber->LinkCustomAttributes = "";
@@ -1139,11 +1210,6 @@ class csana_person_search extends csana_person {
 			$this->phone->HrefValue = "";
 			$this->phone->TooltipValue = "";
 
-			// mobilePhone
-			$this->mobilePhone->LinkCustomAttributes = "";
-			$this->mobilePhone->HrefValue = "";
-			$this->mobilePhone->TooltipValue = "";
-
 			// email
 			$this->_email->LinkCustomAttributes = "";
 			$this->_email->HrefValue = "";
@@ -1230,6 +1296,12 @@ class csana_person_search extends csana_person {
 			$this->nationalID->EditCustomAttributes = "";
 			$this->nationalID->EditValue = ew_HtmlEncode($this->nationalID->AdvancedSearch->SearchValue);
 			$this->nationalID->PlaceHolder = ew_RemoveHtml($this->nationalID->FldCaption());
+
+			// mobilePhone
+			$this->mobilePhone->EditAttrs["class"] = "form-control";
+			$this->mobilePhone->EditCustomAttributes = "";
+			$this->mobilePhone->EditValue = ew_HtmlEncode($this->mobilePhone->AdvancedSearch->SearchValue);
+			$this->mobilePhone->PlaceHolder = ew_RemoveHtml($this->mobilePhone->FldCaption());
 
 			// nationalNumber
 			$this->nationalNumber->EditAttrs["class"] = "form-control";
@@ -1519,12 +1591,6 @@ class csana_person_search extends csana_person {
 			$this->phone->EditValue = ew_HtmlEncode($this->phone->AdvancedSearch->SearchValue);
 			$this->phone->PlaceHolder = ew_RemoveHtml($this->phone->FldCaption());
 
-			// mobilePhone
-			$this->mobilePhone->EditAttrs["class"] = "form-control";
-			$this->mobilePhone->EditCustomAttributes = "";
-			$this->mobilePhone->EditValue = ew_HtmlEncode($this->mobilePhone->AdvancedSearch->SearchValue);
-			$this->mobilePhone->PlaceHolder = ew_RemoveHtml($this->mobilePhone->FldCaption());
-
 			// email
 			$this->_email->EditAttrs["class"] = "form-control";
 			$this->_email->EditCustomAttributes = "";
@@ -1564,8 +1630,33 @@ class csana_person_search extends csana_person {
 			// registrationStation
 			$this->registrationStation->EditAttrs["class"] = "form-control";
 			$this->registrationStation->EditCustomAttributes = "";
-			$this->registrationStation->EditValue = ew_HtmlEncode($this->registrationStation->AdvancedSearch->SearchValue);
-			$this->registrationStation->PlaceHolder = ew_RemoveHtml($this->registrationStation->FldCaption());
+			if (trim(strval($this->registrationStation->AdvancedSearch->SearchValue)) == "") {
+				$sFilterWrk = "0=1";
+			} else {
+				$sFilterWrk = "`stationID`" . ew_SearchString("=", $this->registrationStation->AdvancedSearch->SearchValue, EW_DATATYPE_NUMBER, "");
+			}
+			switch (@$gsLanguage) {
+				case "en":
+					$sSqlWrk = "SELECT `stationID`, `stationID` AS `DispFld`, `stationName` AS `Disp2Fld`, '' AS `Disp3Fld`, '' AS `Disp4Fld`, '' AS `SelectFilterFld`, '' AS `SelectFilterFld2`, '' AS `SelectFilterFld3`, '' AS `SelectFilterFld4` FROM `sana_station`";
+					$sWhereWrk = "";
+					break;
+				case "fa":
+					$sSqlWrk = "SELECT `stationID`, `stationID` AS `DispFld`, `stationName` AS `Disp2Fld`, '' AS `Disp3Fld`, '' AS `Disp4Fld`, '' AS `SelectFilterFld`, '' AS `SelectFilterFld2`, '' AS `SelectFilterFld3`, '' AS `SelectFilterFld4` FROM `sana_station`";
+					$sWhereWrk = "";
+					break;
+				default:
+					$sSqlWrk = "SELECT `stationID`, `stationID` AS `DispFld`, `stationName` AS `Disp2Fld`, '' AS `Disp3Fld`, '' AS `Disp4Fld`, '' AS `SelectFilterFld`, '' AS `SelectFilterFld2`, '' AS `SelectFilterFld3`, '' AS `SelectFilterFld4` FROM `sana_station`";
+					$sWhereWrk = "";
+					break;
+			}
+			ew_AddFilter($sWhereWrk, $sFilterWrk);
+			$this->Lookup_Selecting($this->registrationStation, $sWhereWrk); // Call Lookup selecting
+			if ($sWhereWrk <> "") $sSqlWrk .= " WHERE " . $sWhereWrk;
+			$rswrk = Conn()->Execute($sSqlWrk);
+			$arwrk = ($rswrk) ? $rswrk->GetRows() : array();
+			if ($rswrk) $rswrk->Close();
+			array_unshift($arwrk, array("", $Language->Phrase("PleaseSelect"), "", "", "", "", "", "", ""));
+			$this->registrationStation->EditValue = $arwrk;
 
 			// isolatedDateTime
 			$this->isolatedDateTime->EditAttrs["class"] = "form-control";
@@ -1612,9 +1703,6 @@ class csana_person_search extends csana_person {
 		if (!ew_CheckDate($this->registrationDateTime->AdvancedSearch->SearchValue)) {
 			ew_AddMessage($gsSearchError, $this->registrationDateTime->FldErrMsg());
 		}
-		if (!ew_CheckInteger($this->registrationStation->AdvancedSearch->SearchValue)) {
-			ew_AddMessage($gsSearchError, $this->registrationStation->FldErrMsg());
-		}
 		if (!ew_CheckDate($this->isolatedDateTime->AdvancedSearch->SearchValue)) {
 			ew_AddMessage($gsSearchError, $this->isolatedDateTime->FldErrMsg());
 		}
@@ -1637,6 +1725,7 @@ class csana_person_search extends csana_person {
 		$this->personName->AdvancedSearch->Load();
 		$this->lastName->AdvancedSearch->Load();
 		$this->nationalID->AdvancedSearch->Load();
+		$this->mobilePhone->AdvancedSearch->Load();
 		$this->nationalNumber->AdvancedSearch->Load();
 		$this->passportNumber->AdvancedSearch->Load();
 		$this->fatherName->AdvancedSearch->Load();
@@ -1659,7 +1748,6 @@ class csana_person_search extends csana_person {
 		$this->dress2->AdvancedSearch->Load();
 		$this->signTags->AdvancedSearch->Load();
 		$this->phone->AdvancedSearch->Load();
-		$this->mobilePhone->AdvancedSearch->Load();
 		$this->_email->AdvancedSearch->Load();
 		$this->temporaryResidence->AdvancedSearch->Load();
 		$this->visitsCount->AdvancedSearch->Load();
@@ -1679,6 +1767,17 @@ class csana_person_search extends csana_person {
 		$Breadcrumb->Add("list", $this->TableVar, $this->AddMasterUrl("sana_personlist.php"), "", $this->TableVar, TRUE);
 		$PageId = "search";
 		$Breadcrumb->Add("search", $PageId, $url);
+	}
+
+	// Set up multi pages
+	function SetupMultiPages() {
+		$pages = new cSubPages();
+		$pages->Add(0);
+		$pages->Add(1);
+		$pages->Add(2);
+		$pages->Add(3);
+		$pages->Add(4);
+		$this->MultiPages = $pages;
 	}
 
 	// Page Load event
@@ -1793,6 +1892,9 @@ fsana_personsearch.ValidateRequired = true;
 fsana_personsearch.ValidateRequired = false; 
 <?php } ?>
 
+// Multi-Page
+fsana_personsearch.MultiPage = new ew_MultiPage("fsana_personsearch");
+
 // Dynamic selection lists
 fsana_personsearch.Lists["x_gender"] = {"LinkField":"x_stateName","Ajax":true,"AutoFill":false,"DisplayFields":["x_stateName","","",""],"ParentFields":[],"ChildFields":[],"FilterFields":[],"Options":[],"Template":""};
 fsana_personsearch.Lists["x_locationLevel1"] = {"LinkField":"x_locationName","Ajax":true,"AutoFill":false,"DisplayFields":["x_locationName","","",""],"ParentFields":[],"ChildFields":["x_locationLevel2"],"FilterFields":[],"Options":[],"Template":""};
@@ -1800,6 +1902,7 @@ fsana_personsearch.Lists["x_locationLevel2"] = {"LinkField":"x_locationName","Aj
 fsana_personsearch.Lists["x_locationLevel3"] = {"LinkField":"x_locationName","Ajax":true,"AutoFill":false,"DisplayFields":["x_locationName","","",""],"ParentFields":["x_locationLevel2"],"ChildFields":[],"FilterFields":["x_locationLevel2Name"],"Options":[],"Template":""};
 fsana_personsearch.Lists["x_status"] = {"LinkField":"x_stateName","Ajax":true,"AutoFill":false,"DisplayFields":["x_stateName","","",""],"ParentFields":[],"ChildFields":[],"FilterFields":[],"Options":[],"Template":""};
 fsana_personsearch.Lists["x_ageRange"] = {"LinkField":"x_stateName","Ajax":true,"AutoFill":false,"DisplayFields":["x_stateName","","",""],"ParentFields":[],"ChildFields":[],"FilterFields":[],"Options":[],"Template":""};
+fsana_personsearch.Lists["x_registrationStation"] = {"LinkField":"x_stationID","Ajax":true,"AutoFill":false,"DisplayFields":["x_stationID","x_stationName","",""],"ParentFields":[],"ChildFields":[],"FilterFields":[],"Options":[],"Template":""};
 
 // Form object for search
 // Validate function for search
@@ -1821,9 +1924,6 @@ fsana_personsearch.Validate = function(fobj) {
 	elm = this.GetElements("x" + infix + "_registrationDateTime");
 	if (elm && !ew_CheckDate(elm.value))
 		return this.OnError(elm, "<?php echo ew_JsEncode2($sana_person->registrationDateTime->FldErrMsg()) ?>");
-	elm = this.GetElements("x" + infix + "_registrationStation");
-	if (elm && !ew_CheckInteger(elm.value))
-		return this.OnError(elm, "<?php echo ew_JsEncode2($sana_person->registrationStation->FldErrMsg()) ?>");
 	elm = this.GetElements("x" + infix + "_isolatedDateTime");
 	if (elm && !ew_CheckDate(elm.value))
 		return this.OnError(elm, "<?php echo ew_JsEncode2($sana_person->isolatedDateTime->FldErrMsg()) ?>");
@@ -1858,6 +1958,16 @@ $sana_person_search->ShowMessage();
 <?php if ($sana_person_search->IsModal) { ?>
 <input type="hidden" name="modal" value="1">
 <?php } ?>
+<div class="ewMultiPage">
+<div class="panel-group" id="sana_person_search">
+	<div class="panel panel-default<?php echo $sana_person_search->MultiPages->PageStyle("1") ?>">
+		<div class="panel-heading">
+			<h4 class="panel-title">
+				<a class="panel-toggle" data-toggle="collapse" data-parent="#sana_person_search" href="#tab_sana_person1"><?php echo $sana_person->PageCaption(1) ?></a>
+			</h4>
+		</div>
+		<div class="panel-collapse collapse<?php echo $sana_person_search->MultiPages->PageStyle("1") ?>" id="tab_sana_person1">
+			<div class="panel-body">
 <div>
 <?php if ($sana_person->personID->Visible) { // personID ?>
 	<div id="r_personID" class="form-group">
@@ -1866,7 +1976,7 @@ $sana_person_search->ShowMessage();
 		</label>
 		<div class="<?php echo $sana_person_search->SearchRightColumnClass ?>"><div<?php echo $sana_person->personID->CellAttributes() ?>>
 			<span id="el_sana_person_personID">
-<input type="text" data-table="sana_person" data-field="x_personID" name="x_personID" id="x_personID" placeholder="<?php echo ew_HtmlEncode($sana_person->personID->getPlaceHolder()) ?>" value="<?php echo $sana_person->personID->EditValue ?>"<?php echo $sana_person->personID->EditAttributes() ?>>
+<input type="text" data-table="sana_person" data-field="x_personID" data-page="1" name="x_personID" id="x_personID" placeholder="<?php echo ew_HtmlEncode($sana_person->personID->getPlaceHolder()) ?>" value="<?php echo $sana_person->personID->EditValue ?>"<?php echo $sana_person->personID->EditAttributes() ?>>
 </span>
 		</div></div>
 	</div>
@@ -1878,7 +1988,7 @@ $sana_person_search->ShowMessage();
 		</label>
 		<div class="<?php echo $sana_person_search->SearchRightColumnClass ?>"><div<?php echo $sana_person->personName->CellAttributes() ?>>
 			<span id="el_sana_person_personName">
-<input type="text" data-table="sana_person" data-field="x_personName" name="x_personName" id="x_personName" size="30" maxlength="100" placeholder="<?php echo ew_HtmlEncode($sana_person->personName->getPlaceHolder()) ?>" value="<?php echo $sana_person->personName->EditValue ?>"<?php echo $sana_person->personName->EditAttributes() ?>>
+<input type="text" data-table="sana_person" data-field="x_personName" data-page="1" name="x_personName" id="x_personName" size="30" maxlength="100" placeholder="<?php echo ew_HtmlEncode($sana_person->personName->getPlaceHolder()) ?>" value="<?php echo $sana_person->personName->EditValue ?>"<?php echo $sana_person->personName->EditAttributes() ?>>
 </span>
 		</div></div>
 	</div>
@@ -1890,7 +2000,7 @@ $sana_person_search->ShowMessage();
 		</label>
 		<div class="<?php echo $sana_person_search->SearchRightColumnClass ?>"><div<?php echo $sana_person->lastName->CellAttributes() ?>>
 			<span id="el_sana_person_lastName">
-<input type="text" data-table="sana_person" data-field="x_lastName" name="x_lastName" id="x_lastName" size="30" maxlength="200" placeholder="<?php echo ew_HtmlEncode($sana_person->lastName->getPlaceHolder()) ?>" value="<?php echo $sana_person->lastName->EditValue ?>"<?php echo $sana_person->lastName->EditAttributes() ?>>
+<input type="text" data-table="sana_person" data-field="x_lastName" data-page="1" name="x_lastName" id="x_lastName" size="30" maxlength="200" placeholder="<?php echo ew_HtmlEncode($sana_person->lastName->getPlaceHolder()) ?>" value="<?php echo $sana_person->lastName->EditValue ?>"<?php echo $sana_person->lastName->EditAttributes() ?>>
 </span>
 		</div></div>
 	</div>
@@ -1902,7 +2012,19 @@ $sana_person_search->ShowMessage();
 		</label>
 		<div class="<?php echo $sana_person_search->SearchRightColumnClass ?>"><div<?php echo $sana_person->nationalID->CellAttributes() ?>>
 			<span id="el_sana_person_nationalID">
-<input type="text" data-table="sana_person" data-field="x_nationalID" name="x_nationalID" id="x_nationalID" size="30" maxlength="10" placeholder="<?php echo ew_HtmlEncode($sana_person->nationalID->getPlaceHolder()) ?>" value="<?php echo $sana_person->nationalID->EditValue ?>"<?php echo $sana_person->nationalID->EditAttributes() ?>>
+<input type="text" data-table="sana_person" data-field="x_nationalID" data-page="1" name="x_nationalID" id="x_nationalID" size="30" maxlength="10" placeholder="<?php echo ew_HtmlEncode($sana_person->nationalID->getPlaceHolder()) ?>" value="<?php echo $sana_person->nationalID->EditValue ?>"<?php echo $sana_person->nationalID->EditAttributes() ?>>
+</span>
+		</div></div>
+	</div>
+<?php } ?>
+<?php if ($sana_person->mobilePhone->Visible) { // mobilePhone ?>
+	<div id="r_mobilePhone" class="form-group">
+		<label for="x_mobilePhone" class="<?php echo $sana_person_search->SearchLabelClass ?>"><span id="elh_sana_person_mobilePhone"><?php echo $sana_person->mobilePhone->FldCaption() ?></span>	
+		<p class="form-control-static ewSearchOperator"><?php echo $Language->Phrase("LIKE") ?><input type="hidden" name="z_mobilePhone" id="z_mobilePhone" value="LIKE"></p>
+		</label>
+		<div class="<?php echo $sana_person_search->SearchRightColumnClass ?>"><div<?php echo $sana_person->mobilePhone->CellAttributes() ?>>
+			<span id="el_sana_person_mobilePhone">
+<input type="text" data-table="sana_person" data-field="x_mobilePhone" data-page="1" name="x_mobilePhone" id="x_mobilePhone" size="30" maxlength="15" placeholder="<?php echo ew_HtmlEncode($sana_person->mobilePhone->getPlaceHolder()) ?>" value="<?php echo $sana_person->mobilePhone->EditValue ?>"<?php echo $sana_person->mobilePhone->EditAttributes() ?>>
 </span>
 		</div></div>
 	</div>
@@ -1914,7 +2036,7 @@ $sana_person_search->ShowMessage();
 		</label>
 		<div class="<?php echo $sana_person_search->SearchRightColumnClass ?>"><div<?php echo $sana_person->nationalNumber->CellAttributes() ?>>
 			<span id="el_sana_person_nationalNumber">
-<input type="text" data-table="sana_person" data-field="x_nationalNumber" name="x_nationalNumber" id="x_nationalNumber" size="30" maxlength="10" placeholder="<?php echo ew_HtmlEncode($sana_person->nationalNumber->getPlaceHolder()) ?>" value="<?php echo $sana_person->nationalNumber->EditValue ?>"<?php echo $sana_person->nationalNumber->EditAttributes() ?>>
+<input type="text" data-table="sana_person" data-field="x_nationalNumber" data-page="1" name="x_nationalNumber" id="x_nationalNumber" size="30" maxlength="10" placeholder="<?php echo ew_HtmlEncode($sana_person->nationalNumber->getPlaceHolder()) ?>" value="<?php echo $sana_person->nationalNumber->EditValue ?>"<?php echo $sana_person->nationalNumber->EditAttributes() ?>>
 </span>
 		</div></div>
 	</div>
@@ -1926,7 +2048,7 @@ $sana_person_search->ShowMessage();
 		</label>
 		<div class="<?php echo $sana_person_search->SearchRightColumnClass ?>"><div<?php echo $sana_person->passportNumber->CellAttributes() ?>>
 			<span id="el_sana_person_passportNumber">
-<input type="text" data-table="sana_person" data-field="x_passportNumber" name="x_passportNumber" id="x_passportNumber" size="30" maxlength="15" placeholder="<?php echo ew_HtmlEncode($sana_person->passportNumber->getPlaceHolder()) ?>" value="<?php echo $sana_person->passportNumber->EditValue ?>"<?php echo $sana_person->passportNumber->EditAttributes() ?>>
+<input type="text" data-table="sana_person" data-field="x_passportNumber" data-page="1" name="x_passportNumber" id="x_passportNumber" size="30" maxlength="15" placeholder="<?php echo ew_HtmlEncode($sana_person->passportNumber->getPlaceHolder()) ?>" value="<?php echo $sana_person->passportNumber->EditValue ?>"<?php echo $sana_person->passportNumber->EditAttributes() ?>>
 </span>
 		</div></div>
 	</div>
@@ -1938,7 +2060,7 @@ $sana_person_search->ShowMessage();
 		</label>
 		<div class="<?php echo $sana_person_search->SearchRightColumnClass ?>"><div<?php echo $sana_person->fatherName->CellAttributes() ?>>
 			<span id="el_sana_person_fatherName">
-<input type="text" data-table="sana_person" data-field="x_fatherName" name="x_fatherName" id="x_fatherName" size="30" maxlength="100" placeholder="<?php echo ew_HtmlEncode($sana_person->fatherName->getPlaceHolder()) ?>" value="<?php echo $sana_person->fatherName->EditValue ?>"<?php echo $sana_person->fatherName->EditAttributes() ?>>
+<input type="text" data-table="sana_person" data-field="x_fatherName" data-page="1" name="x_fatherName" id="x_fatherName" size="30" maxlength="100" placeholder="<?php echo ew_HtmlEncode($sana_person->fatherName->getPlaceHolder()) ?>" value="<?php echo $sana_person->fatherName->EditValue ?>"<?php echo $sana_person->fatherName->EditAttributes() ?>>
 </span>
 		</div></div>
 	</div>
@@ -1950,7 +2072,7 @@ $sana_person_search->ShowMessage();
 		</label>
 		<div class="<?php echo $sana_person_search->SearchRightColumnClass ?>"><div<?php echo $sana_person->gender->CellAttributes() ?>>
 			<span id="el_sana_person_gender">
-<select data-table="sana_person" data-field="x_gender" data-value-separator="<?php echo ew_HtmlEncode(is_array($sana_person->gender->DisplayValueSeparator) ? json_encode($sana_person->gender->DisplayValueSeparator) : $sana_person->gender->DisplayValueSeparator) ?>" id="x_gender" name="x_gender"<?php echo $sana_person->gender->EditAttributes() ?>>
+<select data-table="sana_person" data-field="x_gender" data-page="1" data-value-separator="<?php echo ew_HtmlEncode(is_array($sana_person->gender->DisplayValueSeparator) ? json_encode($sana_person->gender->DisplayValueSeparator) : $sana_person->gender->DisplayValueSeparator) ?>" id="x_gender" name="x_gender"<?php echo $sana_person->gender->EditAttributes() ?>>
 <?php
 if (is_array($sana_person->gender->EditValue)) {
 	$arwrk = $sana_person->gender->EditValue;
@@ -2002,6 +2124,78 @@ if ($sSqlWrk <> "") $sana_person->gender->LookupFilters["s"] .= $sSqlWrk;
 		</div></div>
 	</div>
 <?php } ?>
+<?php if ($sana_person->ageRange->Visible) { // ageRange ?>
+	<div id="r_ageRange" class="form-group">
+		<label for="x_ageRange" class="<?php echo $sana_person_search->SearchLabelClass ?>"><span id="elh_sana_person_ageRange"><?php echo $sana_person->ageRange->FldCaption() ?></span>	
+		<p class="form-control-static ewSearchOperator"><?php echo $Language->Phrase("LIKE") ?><input type="hidden" name="z_ageRange" id="z_ageRange" value="LIKE"></p>
+		</label>
+		<div class="<?php echo $sana_person_search->SearchRightColumnClass ?>"><div<?php echo $sana_person->ageRange->CellAttributes() ?>>
+			<span id="el_sana_person_ageRange">
+<select data-table="sana_person" data-field="x_ageRange" data-page="1" data-value-separator="<?php echo ew_HtmlEncode(is_array($sana_person->ageRange->DisplayValueSeparator) ? json_encode($sana_person->ageRange->DisplayValueSeparator) : $sana_person->ageRange->DisplayValueSeparator) ?>" id="x_ageRange" name="x_ageRange"<?php echo $sana_person->ageRange->EditAttributes() ?>>
+<?php
+if (is_array($sana_person->ageRange->EditValue)) {
+	$arwrk = $sana_person->ageRange->EditValue;
+	$rowswrk = count($arwrk);
+	$emptywrk = TRUE;
+	for ($rowcntwrk = 0; $rowcntwrk < $rowswrk; $rowcntwrk++) {
+		$selwrk = ew_SameStr($sana_person->ageRange->AdvancedSearch->SearchValue, $arwrk[$rowcntwrk][0]) ? " selected" : "";
+		if ($selwrk <> "") $emptywrk = FALSE;		
+?>
+<option value="<?php echo ew_HtmlEncode($arwrk[$rowcntwrk][0]) ?>"<?php echo $selwrk ?>>
+<?php echo $sana_person->ageRange->DisplayValue($arwrk[$rowcntwrk]) ?>
+</option>
+<?php
+	}
+	if ($emptywrk && strval($sana_person->ageRange->CurrentValue) <> "") {
+?>
+<option value="<?php echo ew_HtmlEncode($sana_person->ageRange->CurrentValue) ?>" selected><?php echo $sana_person->ageRange->CurrentValue ?></option>
+<?php
+    }
+}
+?>
+</select>
+<?php
+switch (@$gsLanguage) {
+	case "en":
+		$sSqlWrk = "SELECT `stateName`, `stateName` AS `DispFld`, '' AS `Disp2Fld`, '' AS `Disp3Fld`, '' AS `Disp4Fld` FROM `sana_state`";
+		$sWhereWrk = "";
+		break;
+	case "fa":
+		$sSqlWrk = "SELECT `stateName`, `stateName` AS `DispFld`, '' AS `Disp2Fld`, '' AS `Disp3Fld`, '' AS `Disp4Fld` FROM `sana_state`";
+		$sWhereWrk = "";
+		break;
+	default:
+		$sSqlWrk = "SELECT `stateName`, `stateName` AS `DispFld`, '' AS `Disp2Fld`, '' AS `Disp3Fld`, '' AS `Disp4Fld` FROM `sana_state`";
+		$sWhereWrk = "";
+		break;
+}
+$lookuptblfilter = " `stateClass` = 'age' ";
+ew_AddFilter($sWhereWrk, $lookuptblfilter);
+$sana_person->ageRange->LookupFilters = array("s" => $sSqlWrk, "d" => "");
+$sana_person->ageRange->LookupFilters += array("f0" => "`stateName` = {filter_value}", "t0" => "200", "fn0" => "");
+$sSqlWrk = "";
+$sana_person->Lookup_Selecting($sana_person->ageRange, $sWhereWrk); // Call Lookup selecting
+if ($sWhereWrk <> "") $sSqlWrk .= " WHERE " . $sWhereWrk;
+if ($sSqlWrk <> "") $sana_person->ageRange->LookupFilters["s"] .= $sSqlWrk;
+?>
+<input type="hidden" name="s_x_ageRange" id="s_x_ageRange" value="<?php echo $sana_person->ageRange->LookupFilterQuery() ?>">
+</span>
+		</div></div>
+	</div>
+<?php } ?>
+</div>
+			</div>
+		</div>
+	</div>
+	<div class="panel panel-default<?php echo $sana_person_search->MultiPages->PageStyle("2") ?>">
+		<div class="panel-heading">
+			<h4 class="panel-title">
+				<a class="panel-toggle" data-toggle="collapse" data-parent="#sana_person_search" href="#tab_sana_person2"><?php echo $sana_person->PageCaption(2) ?></a>
+			</h4>
+		</div>
+		<div class="panel-collapse collapse<?php echo $sana_person_search->MultiPages->PageStyle("2") ?>" id="tab_sana_person2">
+			<div class="panel-body">
+<div>
 <?php if ($sana_person->locationLevel1->Visible) { // locationLevel1 ?>
 	<div id="r_locationLevel1" class="form-group">
 		<label for="x_locationLevel1" class="<?php echo $sana_person_search->SearchLabelClass ?>"><span id="elh_sana_person_locationLevel1"><?php echo $sana_person->locationLevel1->FldCaption() ?></span>	
@@ -2010,7 +2204,7 @@ if ($sSqlWrk <> "") $sana_person->gender->LookupFilters["s"] .= $sSqlWrk;
 		<div class="<?php echo $sana_person_search->SearchRightColumnClass ?>"><div<?php echo $sana_person->locationLevel1->CellAttributes() ?>>
 			<span id="el_sana_person_locationLevel1">
 <?php $sana_person->locationLevel1->EditAttrs["onchange"] = "ew_UpdateOpt.call(this); " . @$sana_person->locationLevel1->EditAttrs["onchange"]; ?>
-<select data-table="sana_person" data-field="x_locationLevel1" data-value-separator="<?php echo ew_HtmlEncode(is_array($sana_person->locationLevel1->DisplayValueSeparator) ? json_encode($sana_person->locationLevel1->DisplayValueSeparator) : $sana_person->locationLevel1->DisplayValueSeparator) ?>" id="x_locationLevel1" name="x_locationLevel1"<?php echo $sana_person->locationLevel1->EditAttributes() ?>>
+<select data-table="sana_person" data-field="x_locationLevel1" data-page="2" data-value-separator="<?php echo ew_HtmlEncode(is_array($sana_person->locationLevel1->DisplayValueSeparator) ? json_encode($sana_person->locationLevel1->DisplayValueSeparator) : $sana_person->locationLevel1->DisplayValueSeparator) ?>" id="x_locationLevel1" name="x_locationLevel1"<?php echo $sana_person->locationLevel1->EditAttributes() ?>>
 <?php
 if (is_array($sana_person->locationLevel1->EditValue)) {
 	$arwrk = $sana_person->locationLevel1->EditValue;
@@ -2068,7 +2262,7 @@ if ($sSqlWrk <> "") $sana_person->locationLevel1->LookupFilters["s"] .= $sSqlWrk
 		<div class="<?php echo $sana_person_search->SearchRightColumnClass ?>"><div<?php echo $sana_person->locationLevel2->CellAttributes() ?>>
 			<span id="el_sana_person_locationLevel2">
 <?php $sana_person->locationLevel2->EditAttrs["onchange"] = "ew_UpdateOpt.call(this); " . @$sana_person->locationLevel2->EditAttrs["onchange"]; ?>
-<select data-table="sana_person" data-field="x_locationLevel2" data-value-separator="<?php echo ew_HtmlEncode(is_array($sana_person->locationLevel2->DisplayValueSeparator) ? json_encode($sana_person->locationLevel2->DisplayValueSeparator) : $sana_person->locationLevel2->DisplayValueSeparator) ?>" id="x_locationLevel2" name="x_locationLevel2"<?php echo $sana_person->locationLevel2->EditAttributes() ?>>
+<select data-table="sana_person" data-field="x_locationLevel2" data-page="2" data-value-separator="<?php echo ew_HtmlEncode(is_array($sana_person->locationLevel2->DisplayValueSeparator) ? json_encode($sana_person->locationLevel2->DisplayValueSeparator) : $sana_person->locationLevel2->DisplayValueSeparator) ?>" id="x_locationLevel2" name="x_locationLevel2"<?php echo $sana_person->locationLevel2->EditAttributes() ?>>
 <?php
 if (is_array($sana_person->locationLevel2->EditValue)) {
 	$arwrk = $sana_person->locationLevel2->EditValue;
@@ -2126,7 +2320,7 @@ if ($sSqlWrk <> "") $sana_person->locationLevel2->LookupFilters["s"] .= $sSqlWrk
 		</label>
 		<div class="<?php echo $sana_person_search->SearchRightColumnClass ?>"><div<?php echo $sana_person->locationLevel3->CellAttributes() ?>>
 			<span id="el_sana_person_locationLevel3">
-<select data-table="sana_person" data-field="x_locationLevel3" data-value-separator="<?php echo ew_HtmlEncode(is_array($sana_person->locationLevel3->DisplayValueSeparator) ? json_encode($sana_person->locationLevel3->DisplayValueSeparator) : $sana_person->locationLevel3->DisplayValueSeparator) ?>" id="x_locationLevel3" name="x_locationLevel3"<?php echo $sana_person->locationLevel3->EditAttributes() ?>>
+<select data-table="sana_person" data-field="x_locationLevel3" data-page="2" data-value-separator="<?php echo ew_HtmlEncode(is_array($sana_person->locationLevel3->DisplayValueSeparator) ? json_encode($sana_person->locationLevel3->DisplayValueSeparator) : $sana_person->locationLevel3->DisplayValueSeparator) ?>" id="x_locationLevel3" name="x_locationLevel3"<?php echo $sana_person->locationLevel3->EditAttributes() ?>>
 <?php
 if (is_array($sana_person->locationLevel3->EditValue)) {
 	$arwrk = $sana_person->locationLevel3->EditValue;
@@ -2184,7 +2378,7 @@ if ($sSqlWrk <> "") $sana_person->locationLevel3->LookupFilters["s"] .= $sSqlWrk
 		</label>
 		<div class="<?php echo $sana_person_search->SearchRightColumnClass ?>"><div<?php echo $sana_person->locationLevel4->CellAttributes() ?>>
 			<span id="el_sana_person_locationLevel4">
-<input type="text" data-table="sana_person" data-field="x_locationLevel4" name="x_locationLevel4" id="x_locationLevel4" size="30" maxlength="255" placeholder="<?php echo ew_HtmlEncode($sana_person->locationLevel4->getPlaceHolder()) ?>" value="<?php echo $sana_person->locationLevel4->EditValue ?>"<?php echo $sana_person->locationLevel4->EditAttributes() ?>>
+<input type="text" data-table="sana_person" data-field="x_locationLevel4" data-page="2" name="x_locationLevel4" id="x_locationLevel4" size="30" maxlength="255" placeholder="<?php echo ew_HtmlEncode($sana_person->locationLevel4->getPlaceHolder()) ?>" value="<?php echo $sana_person->locationLevel4->EditValue ?>"<?php echo $sana_person->locationLevel4->EditAttributes() ?>>
 </span>
 		</div></div>
 	</div>
@@ -2196,7 +2390,7 @@ if ($sSqlWrk <> "") $sana_person->locationLevel3->LookupFilters["s"] .= $sSqlWrk
 		</label>
 		<div class="<?php echo $sana_person_search->SearchRightColumnClass ?>"><div<?php echo $sana_person->locationLevel5->CellAttributes() ?>>
 			<span id="el_sana_person_locationLevel5">
-<input type="text" data-table="sana_person" data-field="x_locationLevel5" name="x_locationLevel5" id="x_locationLevel5" size="30" maxlength="100" placeholder="<?php echo ew_HtmlEncode($sana_person->locationLevel5->getPlaceHolder()) ?>" value="<?php echo $sana_person->locationLevel5->EditValue ?>"<?php echo $sana_person->locationLevel5->EditAttributes() ?>>
+<input type="text" data-table="sana_person" data-field="x_locationLevel5" data-page="2" name="x_locationLevel5" id="x_locationLevel5" size="30" maxlength="100" placeholder="<?php echo ew_HtmlEncode($sana_person->locationLevel5->getPlaceHolder()) ?>" value="<?php echo $sana_person->locationLevel5->EditValue ?>"<?php echo $sana_person->locationLevel5->EditAttributes() ?>>
 </span>
 		</div></div>
 	</div>
@@ -2208,7 +2402,7 @@ if ($sSqlWrk <> "") $sana_person->locationLevel3->LookupFilters["s"] .= $sSqlWrk
 		</label>
 		<div class="<?php echo $sana_person_search->SearchRightColumnClass ?>"><div<?php echo $sana_person->locationLevel6->CellAttributes() ?>>
 			<span id="el_sana_person_locationLevel6">
-<input type="text" data-table="sana_person" data-field="x_locationLevel6" name="x_locationLevel6" id="x_locationLevel6" size="30" maxlength="100" placeholder="<?php echo ew_HtmlEncode($sana_person->locationLevel6->getPlaceHolder()) ?>" value="<?php echo $sana_person->locationLevel6->EditValue ?>"<?php echo $sana_person->locationLevel6->EditAttributes() ?>>
+<input type="text" data-table="sana_person" data-field="x_locationLevel6" data-page="2" name="x_locationLevel6" id="x_locationLevel6" size="30" maxlength="100" placeholder="<?php echo ew_HtmlEncode($sana_person->locationLevel6->getPlaceHolder()) ?>" value="<?php echo $sana_person->locationLevel6->EditValue ?>"<?php echo $sana_person->locationLevel6->EditAttributes() ?>>
 </span>
 		</div></div>
 	</div>
@@ -2220,11 +2414,36 @@ if ($sSqlWrk <> "") $sana_person->locationLevel3->LookupFilters["s"] .= $sSqlWrk
 		</label>
 		<div class="<?php echo $sana_person_search->SearchRightColumnClass ?>"><div<?php echo $sana_person->address->CellAttributes() ?>>
 			<span id="el_sana_person_address">
-<input type="text" data-table="sana_person" data-field="x_address" name="x_address" id="x_address" size="30" maxlength="255" placeholder="<?php echo ew_HtmlEncode($sana_person->address->getPlaceHolder()) ?>" value="<?php echo $sana_person->address->EditValue ?>"<?php echo $sana_person->address->EditAttributes() ?>>
+<input type="text" data-table="sana_person" data-field="x_address" data-page="2" name="x_address" id="x_address" size="30" maxlength="255" placeholder="<?php echo ew_HtmlEncode($sana_person->address->getPlaceHolder()) ?>" value="<?php echo $sana_person->address->EditValue ?>"<?php echo $sana_person->address->EditAttributes() ?>>
 </span>
 		</div></div>
 	</div>
 <?php } ?>
+<?php if ($sana_person->temporaryResidence->Visible) { // temporaryResidence ?>
+	<div id="r_temporaryResidence" class="form-group">
+		<label for="x_temporaryResidence" class="<?php echo $sana_person_search->SearchLabelClass ?>"><span id="elh_sana_person_temporaryResidence"><?php echo $sana_person->temporaryResidence->FldCaption() ?></span>	
+		<p class="form-control-static ewSearchOperator"><?php echo $Language->Phrase("LIKE") ?><input type="hidden" name="z_temporaryResidence" id="z_temporaryResidence" value="LIKE"></p>
+		</label>
+		<div class="<?php echo $sana_person_search->SearchRightColumnClass ?>"><div<?php echo $sana_person->temporaryResidence->CellAttributes() ?>>
+			<span id="el_sana_person_temporaryResidence">
+<input type="text" data-table="sana_person" data-field="x_temporaryResidence" data-page="2" name="x_temporaryResidence" id="x_temporaryResidence" maxlength="255" placeholder="<?php echo ew_HtmlEncode($sana_person->temporaryResidence->getPlaceHolder()) ?>" value="<?php echo $sana_person->temporaryResidence->EditValue ?>"<?php echo $sana_person->temporaryResidence->EditAttributes() ?>>
+</span>
+		</div></div>
+	</div>
+<?php } ?>
+</div>
+			</div>
+		</div>
+	</div>
+	<div class="panel panel-default<?php echo $sana_person_search->MultiPages->PageStyle("3") ?>">
+		<div class="panel-heading">
+			<h4 class="panel-title">
+				<a class="panel-toggle" data-toggle="collapse" data-parent="#sana_person_search" href="#tab_sana_person3"><?php echo $sana_person->PageCaption(3) ?></a>
+			</h4>
+		</div>
+		<div class="panel-collapse collapse<?php echo $sana_person_search->MultiPages->PageStyle("3") ?>" id="tab_sana_person3">
+			<div class="panel-body">
+<div>
 <?php if ($sana_person->convoy->Visible) { // convoy ?>
 	<div id="r_convoy" class="form-group">
 		<label for="x_convoy" class="<?php echo $sana_person_search->SearchLabelClass ?>"><span id="elh_sana_person_convoy"><?php echo $sana_person->convoy->FldCaption() ?></span>	
@@ -2232,7 +2451,7 @@ if ($sSqlWrk <> "") $sana_person->locationLevel3->LookupFilters["s"] .= $sSqlWrk
 		</label>
 		<div class="<?php echo $sana_person_search->SearchRightColumnClass ?>"><div<?php echo $sana_person->convoy->CellAttributes() ?>>
 			<span id="el_sana_person_convoy">
-<input type="text" data-table="sana_person" data-field="x_convoy" name="x_convoy" id="x_convoy" size="30" maxlength="255" placeholder="<?php echo ew_HtmlEncode($sana_person->convoy->getPlaceHolder()) ?>" value="<?php echo $sana_person->convoy->EditValue ?>"<?php echo $sana_person->convoy->EditAttributes() ?>>
+<input type="text" data-table="sana_person" data-field="x_convoy" data-page="3" name="x_convoy" id="x_convoy" size="30" maxlength="255" placeholder="<?php echo ew_HtmlEncode($sana_person->convoy->getPlaceHolder()) ?>" value="<?php echo $sana_person->convoy->EditValue ?>"<?php echo $sana_person->convoy->EditAttributes() ?>>
 </span>
 		</div></div>
 	</div>
@@ -2244,7 +2463,7 @@ if ($sSqlWrk <> "") $sana_person->locationLevel3->LookupFilters["s"] .= $sSqlWrk
 		</label>
 		<div class="<?php echo $sana_person_search->SearchRightColumnClass ?>"><div<?php echo $sana_person->convoyManager->CellAttributes() ?>>
 			<span id="el_sana_person_convoyManager">
-<input type="text" data-table="sana_person" data-field="x_convoyManager" name="x_convoyManager" id="x_convoyManager" size="30" maxlength="100" placeholder="<?php echo ew_HtmlEncode($sana_person->convoyManager->getPlaceHolder()) ?>" value="<?php echo $sana_person->convoyManager->EditValue ?>"<?php echo $sana_person->convoyManager->EditAttributes() ?>>
+<input type="text" data-table="sana_person" data-field="x_convoyManager" data-page="3" name="x_convoyManager" id="x_convoyManager" size="30" maxlength="100" placeholder="<?php echo ew_HtmlEncode($sana_person->convoyManager->getPlaceHolder()) ?>" value="<?php echo $sana_person->convoyManager->EditValue ?>"<?php echo $sana_person->convoyManager->EditAttributes() ?>>
 </span>
 		</div></div>
 	</div>
@@ -2256,11 +2475,144 @@ if ($sSqlWrk <> "") $sana_person->locationLevel3->LookupFilters["s"] .= $sSqlWrk
 		</label>
 		<div class="<?php echo $sana_person_search->SearchRightColumnClass ?>"><div<?php echo $sana_person->followersName->CellAttributes() ?>>
 			<span id="el_sana_person_followersName">
-<input type="text" data-table="sana_person" data-field="x_followersName" name="x_followersName" id="x_followersName" maxlength="255" placeholder="<?php echo ew_HtmlEncode($sana_person->followersName->getPlaceHolder()) ?>" value="<?php echo $sana_person->followersName->EditValue ?>"<?php echo $sana_person->followersName->EditAttributes() ?>>
+<input type="text" data-table="sana_person" data-field="x_followersName" data-page="3" name="x_followersName" id="x_followersName" maxlength="255" placeholder="<?php echo ew_HtmlEncode($sana_person->followersName->getPlaceHolder()) ?>" value="<?php echo $sana_person->followersName->EditValue ?>"<?php echo $sana_person->followersName->EditAttributes() ?>>
 </span>
 		</div></div>
 	</div>
 <?php } ?>
+<?php if ($sana_person->isolatedLocation->Visible) { // isolatedLocation ?>
+	<div id="r_isolatedLocation" class="form-group">
+		<label for="x_isolatedLocation" class="<?php echo $sana_person_search->SearchLabelClass ?>"><span id="elh_sana_person_isolatedLocation"><?php echo $sana_person->isolatedLocation->FldCaption() ?></span>	
+		<p class="form-control-static ewSearchOperator"><?php echo $Language->Phrase("LIKE") ?><input type="hidden" name="z_isolatedLocation" id="z_isolatedLocation" value="LIKE"></p>
+		</label>
+		<div class="<?php echo $sana_person_search->SearchRightColumnClass ?>"><div<?php echo $sana_person->isolatedLocation->CellAttributes() ?>>
+			<span id="el_sana_person_isolatedLocation">
+<input type="text" data-table="sana_person" data-field="x_isolatedLocation" data-page="3" name="x_isolatedLocation" id="x_isolatedLocation" size="30" maxlength="255" placeholder="<?php echo ew_HtmlEncode($sana_person->isolatedLocation->getPlaceHolder()) ?>" value="<?php echo $sana_person->isolatedLocation->EditValue ?>"<?php echo $sana_person->isolatedLocation->EditAttributes() ?>>
+</span>
+		</div></div>
+	</div>
+<?php } ?>
+<?php if ($sana_person->birthDate->Visible) { // birthDate ?>
+	<div id="r_birthDate" class="form-group">
+		<label for="x_birthDate" class="<?php echo $sana_person_search->SearchLabelClass ?>"><span id="elh_sana_person_birthDate"><?php echo $sana_person->birthDate->FldCaption() ?></span>	
+		<p class="form-control-static ewSearchOperator"><?php echo $Language->Phrase("=") ?><input type="hidden" name="z_birthDate" id="z_birthDate" value="="></p>
+		</label>
+		<div class="<?php echo $sana_person_search->SearchRightColumnClass ?>"><div<?php echo $sana_person->birthDate->CellAttributes() ?>>
+			<span id="el_sana_person_birthDate">
+<input type="text" data-table="sana_person" data-field="x_birthDate" data-page="3" name="x_birthDate" id="x_birthDate" size="30" placeholder="<?php echo ew_HtmlEncode($sana_person->birthDate->getPlaceHolder()) ?>" value="<?php echo $sana_person->birthDate->EditValue ?>"<?php echo $sana_person->birthDate->EditAttributes() ?>>
+</span>
+		</div></div>
+	</div>
+<?php } ?>
+<?php if ($sana_person->dress1->Visible) { // dress1 ?>
+	<div id="r_dress1" class="form-group">
+		<label for="x_dress1" class="<?php echo $sana_person_search->SearchLabelClass ?>"><span id="elh_sana_person_dress1"><?php echo $sana_person->dress1->FldCaption() ?></span>	
+		<p class="form-control-static ewSearchOperator"><?php echo $Language->Phrase("LIKE") ?><input type="hidden" name="z_dress1" id="z_dress1" value="LIKE"></p>
+		</label>
+		<div class="<?php echo $sana_person_search->SearchRightColumnClass ?>"><div<?php echo $sana_person->dress1->CellAttributes() ?>>
+			<span id="el_sana_person_dress1">
+<input type="text" data-table="sana_person" data-field="x_dress1" data-page="3" name="x_dress1" id="x_dress1" size="30" maxlength="255" placeholder="<?php echo ew_HtmlEncode($sana_person->dress1->getPlaceHolder()) ?>" value="<?php echo $sana_person->dress1->EditValue ?>"<?php echo $sana_person->dress1->EditAttributes() ?>>
+</span>
+		</div></div>
+	</div>
+<?php } ?>
+<?php if ($sana_person->dress2->Visible) { // dress2 ?>
+	<div id="r_dress2" class="form-group">
+		<label for="x_dress2" class="<?php echo $sana_person_search->SearchLabelClass ?>"><span id="elh_sana_person_dress2"><?php echo $sana_person->dress2->FldCaption() ?></span>	
+		<p class="form-control-static ewSearchOperator"><?php echo $Language->Phrase("LIKE") ?><input type="hidden" name="z_dress2" id="z_dress2" value="LIKE"></p>
+		</label>
+		<div class="<?php echo $sana_person_search->SearchRightColumnClass ?>"><div<?php echo $sana_person->dress2->CellAttributes() ?>>
+			<span id="el_sana_person_dress2">
+<input type="text" data-table="sana_person" data-field="x_dress2" data-page="3" name="x_dress2" id="x_dress2" size="30" maxlength="255" placeholder="<?php echo ew_HtmlEncode($sana_person->dress2->getPlaceHolder()) ?>" value="<?php echo $sana_person->dress2->EditValue ?>"<?php echo $sana_person->dress2->EditAttributes() ?>>
+</span>
+		</div></div>
+	</div>
+<?php } ?>
+<?php if ($sana_person->signTags->Visible) { // signTags ?>
+	<div id="r_signTags" class="form-group">
+		<label for="x_signTags" class="<?php echo $sana_person_search->SearchLabelClass ?>"><span id="elh_sana_person_signTags"><?php echo $sana_person->signTags->FldCaption() ?></span>	
+		<p class="form-control-static ewSearchOperator"><?php echo $Language->Phrase("LIKE") ?><input type="hidden" name="z_signTags" id="z_signTags" value="LIKE"></p>
+		</label>
+		<div class="<?php echo $sana_person_search->SearchRightColumnClass ?>"><div<?php echo $sana_person->signTags->CellAttributes() ?>>
+			<span id="el_sana_person_signTags">
+<input type="text" data-table="sana_person" data-field="x_signTags" data-page="3" name="x_signTags" id="x_signTags" size="30" maxlength="255" placeholder="<?php echo ew_HtmlEncode($sana_person->signTags->getPlaceHolder()) ?>" value="<?php echo $sana_person->signTags->EditValue ?>"<?php echo $sana_person->signTags->EditAttributes() ?>>
+</span>
+		</div></div>
+	</div>
+<?php } ?>
+<?php if ($sana_person->phone->Visible) { // phone ?>
+	<div id="r_phone" class="form-group">
+		<label for="x_phone" class="<?php echo $sana_person_search->SearchLabelClass ?>"><span id="elh_sana_person_phone"><?php echo $sana_person->phone->FldCaption() ?></span>	
+		<p class="form-control-static ewSearchOperator"><?php echo $Language->Phrase("LIKE") ?><input type="hidden" name="z_phone" id="z_phone" value="LIKE"></p>
+		</label>
+		<div class="<?php echo $sana_person_search->SearchRightColumnClass ?>"><div<?php echo $sana_person->phone->CellAttributes() ?>>
+			<span id="el_sana_person_phone">
+<input type="text" data-table="sana_person" data-field="x_phone" data-page="3" name="x_phone" id="x_phone" maxlength="100" placeholder="<?php echo ew_HtmlEncode($sana_person->phone->getPlaceHolder()) ?>" value="<?php echo $sana_person->phone->EditValue ?>"<?php echo $sana_person->phone->EditAttributes() ?>>
+</span>
+		</div></div>
+	</div>
+<?php } ?>
+<?php if ($sana_person->_email->Visible) { // email ?>
+	<div id="r__email" class="form-group">
+		<label for="x__email" class="<?php echo $sana_person_search->SearchLabelClass ?>"><span id="elh_sana_person__email"><?php echo $sana_person->_email->FldCaption() ?></span>	
+		<p class="form-control-static ewSearchOperator"><?php echo $Language->Phrase("LIKE") ?><input type="hidden" name="z__email" id="z__email" value="LIKE"></p>
+		</label>
+		<div class="<?php echo $sana_person_search->SearchRightColumnClass ?>"><div<?php echo $sana_person->_email->CellAttributes() ?>>
+			<span id="el_sana_person__email">
+<input type="text" data-table="sana_person" data-field="x__email" data-page="3" name="x__email" id="x__email" size="30" maxlength="150" placeholder="<?php echo ew_HtmlEncode($sana_person->_email->getPlaceHolder()) ?>" value="<?php echo $sana_person->_email->EditValue ?>"<?php echo $sana_person->_email->EditAttributes() ?>>
+</span>
+		</div></div>
+	</div>
+<?php } ?>
+<?php if ($sana_person->picture->Visible) { // picture ?>
+	<div id="r_picture" class="form-group">
+		<label class="<?php echo $sana_person_search->SearchLabelClass ?>"><span id="elh_sana_person_picture"><?php echo $sana_person->picture->FldCaption() ?></span>	
+		<p class="form-control-static ewSearchOperator"><?php echo $Language->Phrase("LIKE") ?><input type="hidden" name="z_picture" id="z_picture" value="LIKE"></p>
+		</label>
+		<div class="<?php echo $sana_person_search->SearchRightColumnClass ?>"><div<?php echo $sana_person->picture->CellAttributes() ?>>
+			<span id="el_sana_person_picture">
+<input type="text" data-table="sana_person" data-field="x_picture" data-page="3" name="x_picture" id="x_picture" size="30" maxlength="255" placeholder="<?php echo ew_HtmlEncode($sana_person->picture->getPlaceHolder()) ?>" value="<?php echo $sana_person->picture->EditValue ?>"<?php echo $sana_person->picture->EditAttributes() ?>>
+</span>
+		</div></div>
+	</div>
+<?php } ?>
+<?php if ($sana_person->isolatedDateTime->Visible) { // isolatedDateTime ?>
+	<div id="r_isolatedDateTime" class="form-group">
+		<label for="x_isolatedDateTime" class="<?php echo $sana_person_search->SearchLabelClass ?>"><span id="elh_sana_person_isolatedDateTime"><?php echo $sana_person->isolatedDateTime->FldCaption() ?></span>	
+		<p class="form-control-static ewSearchOperator"><?php echo $Language->Phrase("=") ?><input type="hidden" name="z_isolatedDateTime" id="z_isolatedDateTime" value="="></p>
+		</label>
+		<div class="<?php echo $sana_person_search->SearchRightColumnClass ?>"><div<?php echo $sana_person->isolatedDateTime->CellAttributes() ?>>
+			<span id="el_sana_person_isolatedDateTime">
+<input type="text" data-table="sana_person" data-field="x_isolatedDateTime" data-page="3" data-format="5" name="x_isolatedDateTime" id="x_isolatedDateTime" placeholder="<?php echo ew_HtmlEncode($sana_person->isolatedDateTime->getPlaceHolder()) ?>" value="<?php echo $sana_person->isolatedDateTime->EditValue ?>"<?php echo $sana_person->isolatedDateTime->EditAttributes() ?>>
+</span>
+		</div></div>
+	</div>
+<?php } ?>
+<?php if ($sana_person->description->Visible) { // description ?>
+	<div id="r_description" class="form-group">
+		<label for="x_description" class="<?php echo $sana_person_search->SearchLabelClass ?>"><span id="elh_sana_person_description"><?php echo $sana_person->description->FldCaption() ?></span>	
+		<p class="form-control-static ewSearchOperator"><?php echo $Language->Phrase("LIKE") ?><input type="hidden" name="z_description" id="z_description" value="LIKE"></p>
+		</label>
+		<div class="<?php echo $sana_person_search->SearchRightColumnClass ?>"><div<?php echo $sana_person->description->CellAttributes() ?>>
+			<span id="el_sana_person_description">
+<input type="text" data-table="sana_person" data-field="x_description" data-page="3" name="x_description" id="x_description" size="35" placeholder="<?php echo ew_HtmlEncode($sana_person->description->getPlaceHolder()) ?>" value="<?php echo $sana_person->description->EditValue ?>"<?php echo $sana_person->description->EditAttributes() ?>>
+</span>
+		</div></div>
+	</div>
+<?php } ?>
+</div>
+			</div>
+		</div>
+	</div>
+	<div class="panel panel-default<?php echo $sana_person_search->MultiPages->PageStyle("4") ?>">
+		<div class="panel-heading">
+			<h4 class="panel-title">
+				<a class="panel-toggle" data-toggle="collapse" data-parent="#sana_person_search" href="#tab_sana_person4"><?php echo $sana_person->PageCaption(4) ?></a>
+			</h4>
+		</div>
+		<div class="panel-collapse collapse<?php echo $sana_person_search->MultiPages->PageStyle("4") ?>" id="tab_sana_person4">
+			<div class="panel-body">
+<div>
 <?php if ($sana_person->status->Visible) { // status ?>
 	<div id="r_status" class="form-group">
 		<label for="x_status" class="<?php echo $sana_person_search->SearchLabelClass ?>"><span id="elh_sana_person_status"><?php echo $sana_person->status->FldCaption() ?></span>	
@@ -2268,7 +2620,7 @@ if ($sSqlWrk <> "") $sana_person->locationLevel3->LookupFilters["s"] .= $sSqlWrk
 		</label>
 		<div class="<?php echo $sana_person_search->SearchRightColumnClass ?>"><div<?php echo $sana_person->status->CellAttributes() ?>>
 			<span id="el_sana_person_status">
-<select data-table="sana_person" data-field="x_status" data-value-separator="<?php echo ew_HtmlEncode(is_array($sana_person->status->DisplayValueSeparator) ? json_encode($sana_person->status->DisplayValueSeparator) : $sana_person->status->DisplayValueSeparator) ?>" id="x_status" name="x_status"<?php echo $sana_person->status->EditAttributes() ?>>
+<select data-table="sana_person" data-field="x_status" data-page="4" data-value-separator="<?php echo ew_HtmlEncode(is_array($sana_person->status->DisplayValueSeparator) ? json_encode($sana_person->status->DisplayValueSeparator) : $sana_person->status->DisplayValueSeparator) ?>" id="x_status" name="x_status"<?php echo $sana_person->status->EditAttributes() ?>>
 <?php
 if (is_array($sana_person->status->EditValue)) {
 	$arwrk = $sana_person->status->EditValue;
@@ -2320,173 +2672,6 @@ if ($sSqlWrk <> "") $sana_person->status->LookupFilters["s"] .= $sSqlWrk;
 		</div></div>
 	</div>
 <?php } ?>
-<?php if ($sana_person->isolatedLocation->Visible) { // isolatedLocation ?>
-	<div id="r_isolatedLocation" class="form-group">
-		<label for="x_isolatedLocation" class="<?php echo $sana_person_search->SearchLabelClass ?>"><span id="elh_sana_person_isolatedLocation"><?php echo $sana_person->isolatedLocation->FldCaption() ?></span>	
-		<p class="form-control-static ewSearchOperator"><?php echo $Language->Phrase("LIKE") ?><input type="hidden" name="z_isolatedLocation" id="z_isolatedLocation" value="LIKE"></p>
-		</label>
-		<div class="<?php echo $sana_person_search->SearchRightColumnClass ?>"><div<?php echo $sana_person->isolatedLocation->CellAttributes() ?>>
-			<span id="el_sana_person_isolatedLocation">
-<input type="text" data-table="sana_person" data-field="x_isolatedLocation" name="x_isolatedLocation" id="x_isolatedLocation" size="30" maxlength="255" placeholder="<?php echo ew_HtmlEncode($sana_person->isolatedLocation->getPlaceHolder()) ?>" value="<?php echo $sana_person->isolatedLocation->EditValue ?>"<?php echo $sana_person->isolatedLocation->EditAttributes() ?>>
-</span>
-		</div></div>
-	</div>
-<?php } ?>
-<?php if ($sana_person->birthDate->Visible) { // birthDate ?>
-	<div id="r_birthDate" class="form-group">
-		<label for="x_birthDate" class="<?php echo $sana_person_search->SearchLabelClass ?>"><span id="elh_sana_person_birthDate"><?php echo $sana_person->birthDate->FldCaption() ?></span>	
-		<p class="form-control-static ewSearchOperator"><?php echo $Language->Phrase("=") ?><input type="hidden" name="z_birthDate" id="z_birthDate" value="="></p>
-		</label>
-		<div class="<?php echo $sana_person_search->SearchRightColumnClass ?>"><div<?php echo $sana_person->birthDate->CellAttributes() ?>>
-			<span id="el_sana_person_birthDate">
-<input type="text" data-table="sana_person" data-field="x_birthDate" name="x_birthDate" id="x_birthDate" size="30" placeholder="<?php echo ew_HtmlEncode($sana_person->birthDate->getPlaceHolder()) ?>" value="<?php echo $sana_person->birthDate->EditValue ?>"<?php echo $sana_person->birthDate->EditAttributes() ?>>
-</span>
-		</div></div>
-	</div>
-<?php } ?>
-<?php if ($sana_person->ageRange->Visible) { // ageRange ?>
-	<div id="r_ageRange" class="form-group">
-		<label for="x_ageRange" class="<?php echo $sana_person_search->SearchLabelClass ?>"><span id="elh_sana_person_ageRange"><?php echo $sana_person->ageRange->FldCaption() ?></span>	
-		<p class="form-control-static ewSearchOperator"><?php echo $Language->Phrase("LIKE") ?><input type="hidden" name="z_ageRange" id="z_ageRange" value="LIKE"></p>
-		</label>
-		<div class="<?php echo $sana_person_search->SearchRightColumnClass ?>"><div<?php echo $sana_person->ageRange->CellAttributes() ?>>
-			<span id="el_sana_person_ageRange">
-<select data-table="sana_person" data-field="x_ageRange" data-value-separator="<?php echo ew_HtmlEncode(is_array($sana_person->ageRange->DisplayValueSeparator) ? json_encode($sana_person->ageRange->DisplayValueSeparator) : $sana_person->ageRange->DisplayValueSeparator) ?>" id="x_ageRange" name="x_ageRange"<?php echo $sana_person->ageRange->EditAttributes() ?>>
-<?php
-if (is_array($sana_person->ageRange->EditValue)) {
-	$arwrk = $sana_person->ageRange->EditValue;
-	$rowswrk = count($arwrk);
-	$emptywrk = TRUE;
-	for ($rowcntwrk = 0; $rowcntwrk < $rowswrk; $rowcntwrk++) {
-		$selwrk = ew_SameStr($sana_person->ageRange->AdvancedSearch->SearchValue, $arwrk[$rowcntwrk][0]) ? " selected" : "";
-		if ($selwrk <> "") $emptywrk = FALSE;		
-?>
-<option value="<?php echo ew_HtmlEncode($arwrk[$rowcntwrk][0]) ?>"<?php echo $selwrk ?>>
-<?php echo $sana_person->ageRange->DisplayValue($arwrk[$rowcntwrk]) ?>
-</option>
-<?php
-	}
-	if ($emptywrk && strval($sana_person->ageRange->CurrentValue) <> "") {
-?>
-<option value="<?php echo ew_HtmlEncode($sana_person->ageRange->CurrentValue) ?>" selected><?php echo $sana_person->ageRange->CurrentValue ?></option>
-<?php
-    }
-}
-?>
-</select>
-<?php
-switch (@$gsLanguage) {
-	case "en":
-		$sSqlWrk = "SELECT `stateName`, `stateName` AS `DispFld`, '' AS `Disp2Fld`, '' AS `Disp3Fld`, '' AS `Disp4Fld` FROM `sana_state`";
-		$sWhereWrk = "";
-		break;
-	case "fa":
-		$sSqlWrk = "SELECT `stateName`, `stateName` AS `DispFld`, '' AS `Disp2Fld`, '' AS `Disp3Fld`, '' AS `Disp4Fld` FROM `sana_state`";
-		$sWhereWrk = "";
-		break;
-	default:
-		$sSqlWrk = "SELECT `stateName`, `stateName` AS `DispFld`, '' AS `Disp2Fld`, '' AS `Disp3Fld`, '' AS `Disp4Fld` FROM `sana_state`";
-		$sWhereWrk = "";
-		break;
-}
-$lookuptblfilter = " `stateClass` = 'age' ";
-ew_AddFilter($sWhereWrk, $lookuptblfilter);
-$sana_person->ageRange->LookupFilters = array("s" => $sSqlWrk, "d" => "");
-$sana_person->ageRange->LookupFilters += array("f0" => "`stateName` = {filter_value}", "t0" => "200", "fn0" => "");
-$sSqlWrk = "";
-$sana_person->Lookup_Selecting($sana_person->ageRange, $sWhereWrk); // Call Lookup selecting
-if ($sWhereWrk <> "") $sSqlWrk .= " WHERE " . $sWhereWrk;
-if ($sSqlWrk <> "") $sana_person->ageRange->LookupFilters["s"] .= $sSqlWrk;
-?>
-<input type="hidden" name="s_x_ageRange" id="s_x_ageRange" value="<?php echo $sana_person->ageRange->LookupFilterQuery() ?>">
-</span>
-		</div></div>
-	</div>
-<?php } ?>
-<?php if ($sana_person->dress1->Visible) { // dress1 ?>
-	<div id="r_dress1" class="form-group">
-		<label for="x_dress1" class="<?php echo $sana_person_search->SearchLabelClass ?>"><span id="elh_sana_person_dress1"><?php echo $sana_person->dress1->FldCaption() ?></span>	
-		<p class="form-control-static ewSearchOperator"><?php echo $Language->Phrase("LIKE") ?><input type="hidden" name="z_dress1" id="z_dress1" value="LIKE"></p>
-		</label>
-		<div class="<?php echo $sana_person_search->SearchRightColumnClass ?>"><div<?php echo $sana_person->dress1->CellAttributes() ?>>
-			<span id="el_sana_person_dress1">
-<input type="text" data-table="sana_person" data-field="x_dress1" name="x_dress1" id="x_dress1" size="30" maxlength="255" placeholder="<?php echo ew_HtmlEncode($sana_person->dress1->getPlaceHolder()) ?>" value="<?php echo $sana_person->dress1->EditValue ?>"<?php echo $sana_person->dress1->EditAttributes() ?>>
-</span>
-		</div></div>
-	</div>
-<?php } ?>
-<?php if ($sana_person->dress2->Visible) { // dress2 ?>
-	<div id="r_dress2" class="form-group">
-		<label for="x_dress2" class="<?php echo $sana_person_search->SearchLabelClass ?>"><span id="elh_sana_person_dress2"><?php echo $sana_person->dress2->FldCaption() ?></span>	
-		<p class="form-control-static ewSearchOperator"><?php echo $Language->Phrase("LIKE") ?><input type="hidden" name="z_dress2" id="z_dress2" value="LIKE"></p>
-		</label>
-		<div class="<?php echo $sana_person_search->SearchRightColumnClass ?>"><div<?php echo $sana_person->dress2->CellAttributes() ?>>
-			<span id="el_sana_person_dress2">
-<input type="text" data-table="sana_person" data-field="x_dress2" name="x_dress2" id="x_dress2" size="30" maxlength="255" placeholder="<?php echo ew_HtmlEncode($sana_person->dress2->getPlaceHolder()) ?>" value="<?php echo $sana_person->dress2->EditValue ?>"<?php echo $sana_person->dress2->EditAttributes() ?>>
-</span>
-		</div></div>
-	</div>
-<?php } ?>
-<?php if ($sana_person->signTags->Visible) { // signTags ?>
-	<div id="r_signTags" class="form-group">
-		<label for="x_signTags" class="<?php echo $sana_person_search->SearchLabelClass ?>"><span id="elh_sana_person_signTags"><?php echo $sana_person->signTags->FldCaption() ?></span>	
-		<p class="form-control-static ewSearchOperator"><?php echo $Language->Phrase("LIKE") ?><input type="hidden" name="z_signTags" id="z_signTags" value="LIKE"></p>
-		</label>
-		<div class="<?php echo $sana_person_search->SearchRightColumnClass ?>"><div<?php echo $sana_person->signTags->CellAttributes() ?>>
-			<span id="el_sana_person_signTags">
-<input type="text" data-table="sana_person" data-field="x_signTags" name="x_signTags" id="x_signTags" size="30" maxlength="255" placeholder="<?php echo ew_HtmlEncode($sana_person->signTags->getPlaceHolder()) ?>" value="<?php echo $sana_person->signTags->EditValue ?>"<?php echo $sana_person->signTags->EditAttributes() ?>>
-</span>
-		</div></div>
-	</div>
-<?php } ?>
-<?php if ($sana_person->phone->Visible) { // phone ?>
-	<div id="r_phone" class="form-group">
-		<label for="x_phone" class="<?php echo $sana_person_search->SearchLabelClass ?>"><span id="elh_sana_person_phone"><?php echo $sana_person->phone->FldCaption() ?></span>	
-		<p class="form-control-static ewSearchOperator"><?php echo $Language->Phrase("LIKE") ?><input type="hidden" name="z_phone" id="z_phone" value="LIKE"></p>
-		</label>
-		<div class="<?php echo $sana_person_search->SearchRightColumnClass ?>"><div<?php echo $sana_person->phone->CellAttributes() ?>>
-			<span id="el_sana_person_phone">
-<input type="text" data-table="sana_person" data-field="x_phone" name="x_phone" id="x_phone" maxlength="100" placeholder="<?php echo ew_HtmlEncode($sana_person->phone->getPlaceHolder()) ?>" value="<?php echo $sana_person->phone->EditValue ?>"<?php echo $sana_person->phone->EditAttributes() ?>>
-</span>
-		</div></div>
-	</div>
-<?php } ?>
-<?php if ($sana_person->mobilePhone->Visible) { // mobilePhone ?>
-	<div id="r_mobilePhone" class="form-group">
-		<label for="x_mobilePhone" class="<?php echo $sana_person_search->SearchLabelClass ?>"><span id="elh_sana_person_mobilePhone"><?php echo $sana_person->mobilePhone->FldCaption() ?></span>	
-		<p class="form-control-static ewSearchOperator"><?php echo $Language->Phrase("LIKE") ?><input type="hidden" name="z_mobilePhone" id="z_mobilePhone" value="LIKE"></p>
-		</label>
-		<div class="<?php echo $sana_person_search->SearchRightColumnClass ?>"><div<?php echo $sana_person->mobilePhone->CellAttributes() ?>>
-			<span id="el_sana_person_mobilePhone">
-<input type="text" data-table="sana_person" data-field="x_mobilePhone" name="x_mobilePhone" id="x_mobilePhone" size="30" maxlength="15" placeholder="<?php echo ew_HtmlEncode($sana_person->mobilePhone->getPlaceHolder()) ?>" value="<?php echo $sana_person->mobilePhone->EditValue ?>"<?php echo $sana_person->mobilePhone->EditAttributes() ?>>
-</span>
-		</div></div>
-	</div>
-<?php } ?>
-<?php if ($sana_person->_email->Visible) { // email ?>
-	<div id="r__email" class="form-group">
-		<label for="x__email" class="<?php echo $sana_person_search->SearchLabelClass ?>"><span id="elh_sana_person__email"><?php echo $sana_person->_email->FldCaption() ?></span>	
-		<p class="form-control-static ewSearchOperator"><?php echo $Language->Phrase("LIKE") ?><input type="hidden" name="z__email" id="z__email" value="LIKE"></p>
-		</label>
-		<div class="<?php echo $sana_person_search->SearchRightColumnClass ?>"><div<?php echo $sana_person->_email->CellAttributes() ?>>
-			<span id="el_sana_person__email">
-<input type="text" data-table="sana_person" data-field="x__email" name="x__email" id="x__email" size="30" maxlength="150" placeholder="<?php echo ew_HtmlEncode($sana_person->_email->getPlaceHolder()) ?>" value="<?php echo $sana_person->_email->EditValue ?>"<?php echo $sana_person->_email->EditAttributes() ?>>
-</span>
-		</div></div>
-	</div>
-<?php } ?>
-<?php if ($sana_person->temporaryResidence->Visible) { // temporaryResidence ?>
-	<div id="r_temporaryResidence" class="form-group">
-		<label for="x_temporaryResidence" class="<?php echo $sana_person_search->SearchLabelClass ?>"><span id="elh_sana_person_temporaryResidence"><?php echo $sana_person->temporaryResidence->FldCaption() ?></span>	
-		<p class="form-control-static ewSearchOperator"><?php echo $Language->Phrase("LIKE") ?><input type="hidden" name="z_temporaryResidence" id="z_temporaryResidence" value="LIKE"></p>
-		</label>
-		<div class="<?php echo $sana_person_search->SearchRightColumnClass ?>"><div<?php echo $sana_person->temporaryResidence->CellAttributes() ?>>
-			<span id="el_sana_person_temporaryResidence">
-<input type="text" data-table="sana_person" data-field="x_temporaryResidence" name="x_temporaryResidence" id="x_temporaryResidence" maxlength="255" placeholder="<?php echo ew_HtmlEncode($sana_person->temporaryResidence->getPlaceHolder()) ?>" value="<?php echo $sana_person->temporaryResidence->EditValue ?>"<?php echo $sana_person->temporaryResidence->EditAttributes() ?>>
-</span>
-		</div></div>
-	</div>
-<?php } ?>
 <?php if ($sana_person->visitsCount->Visible) { // visitsCount ?>
 	<div id="r_visitsCount" class="form-group">
 		<label for="x_visitsCount" class="<?php echo $sana_person_search->SearchLabelClass ?>"><span id="elh_sana_person_visitsCount"><?php echo $sana_person->visitsCount->FldCaption() ?></span>	
@@ -2494,19 +2679,7 @@ if ($sSqlWrk <> "") $sana_person->ageRange->LookupFilters["s"] .= $sSqlWrk;
 		</label>
 		<div class="<?php echo $sana_person_search->SearchRightColumnClass ?>"><div<?php echo $sana_person->visitsCount->CellAttributes() ?>>
 			<span id="el_sana_person_visitsCount">
-<input type="text" data-table="sana_person" data-field="x_visitsCount" name="x_visitsCount" id="x_visitsCount" size="30" placeholder="<?php echo ew_HtmlEncode($sana_person->visitsCount->getPlaceHolder()) ?>" value="<?php echo $sana_person->visitsCount->EditValue ?>"<?php echo $sana_person->visitsCount->EditAttributes() ?>>
-</span>
-		</div></div>
-	</div>
-<?php } ?>
-<?php if ($sana_person->picture->Visible) { // picture ?>
-	<div id="r_picture" class="form-group">
-		<label class="<?php echo $sana_person_search->SearchLabelClass ?>"><span id="elh_sana_person_picture"><?php echo $sana_person->picture->FldCaption() ?></span>	
-		<p class="form-control-static ewSearchOperator"><?php echo $Language->Phrase("LIKE") ?><input type="hidden" name="z_picture" id="z_picture" value="LIKE"></p>
-		</label>
-		<div class="<?php echo $sana_person_search->SearchRightColumnClass ?>"><div<?php echo $sana_person->picture->CellAttributes() ?>>
-			<span id="el_sana_person_picture">
-<input type="text" data-table="sana_person" data-field="x_picture" name="x_picture" id="x_picture" size="30" maxlength="255" placeholder="<?php echo ew_HtmlEncode($sana_person->picture->getPlaceHolder()) ?>" value="<?php echo $sana_person->picture->EditValue ?>"<?php echo $sana_person->picture->EditAttributes() ?>>
+<input type="text" data-table="sana_person" data-field="x_visitsCount" data-page="4" name="x_visitsCount" id="x_visitsCount" size="30" placeholder="<?php echo ew_HtmlEncode($sana_person->visitsCount->getPlaceHolder()) ?>" value="<?php echo $sana_person->visitsCount->EditValue ?>"<?php echo $sana_person->visitsCount->EditAttributes() ?>>
 </span>
 		</div></div>
 	</div>
@@ -2518,7 +2691,7 @@ if ($sSqlWrk <> "") $sana_person->ageRange->LookupFilters["s"] .= $sSqlWrk;
 		</label>
 		<div class="<?php echo $sana_person_search->SearchRightColumnClass ?>"><div<?php echo $sana_person->registrationUser->CellAttributes() ?>>
 			<span id="el_sana_person_registrationUser">
-<input type="text" data-table="sana_person" data-field="x_registrationUser" name="x_registrationUser" id="x_registrationUser" size="30" placeholder="<?php echo ew_HtmlEncode($sana_person->registrationUser->getPlaceHolder()) ?>" value="<?php echo $sana_person->registrationUser->EditValue ?>"<?php echo $sana_person->registrationUser->EditAttributes() ?>>
+<input type="text" data-table="sana_person" data-field="x_registrationUser" data-page="4" name="x_registrationUser" id="x_registrationUser" size="30" placeholder="<?php echo ew_HtmlEncode($sana_person->registrationUser->getPlaceHolder()) ?>" value="<?php echo $sana_person->registrationUser->EditValue ?>"<?php echo $sana_person->registrationUser->EditAttributes() ?>>
 </span>
 		</div></div>
 	</div>
@@ -2530,7 +2703,7 @@ if ($sSqlWrk <> "") $sana_person->ageRange->LookupFilters["s"] .= $sSqlWrk;
 		</label>
 		<div class="<?php echo $sana_person_search->SearchRightColumnClass ?>"><div<?php echo $sana_person->registrationDateTime->CellAttributes() ?>>
 			<span id="el_sana_person_registrationDateTime">
-<input type="text" data-table="sana_person" data-field="x_registrationDateTime" data-format="5" name="x_registrationDateTime" id="x_registrationDateTime" placeholder="<?php echo ew_HtmlEncode($sana_person->registrationDateTime->getPlaceHolder()) ?>" value="<?php echo $sana_person->registrationDateTime->EditValue ?>"<?php echo $sana_person->registrationDateTime->EditAttributes() ?>>
+<input type="text" data-table="sana_person" data-field="x_registrationDateTime" data-page="4" data-format="5" name="x_registrationDateTime" id="x_registrationDateTime" placeholder="<?php echo ew_HtmlEncode($sana_person->registrationDateTime->getPlaceHolder()) ?>" value="<?php echo $sana_person->registrationDateTime->EditValue ?>"<?php echo $sana_person->registrationDateTime->EditAttributes() ?>>
 </span>
 		</div></div>
 	</div>
@@ -2542,35 +2715,61 @@ if ($sSqlWrk <> "") $sana_person->ageRange->LookupFilters["s"] .= $sSqlWrk;
 		</label>
 		<div class="<?php echo $sana_person_search->SearchRightColumnClass ?>"><div<?php echo $sana_person->registrationStation->CellAttributes() ?>>
 			<span id="el_sana_person_registrationStation">
-<input type="text" data-table="sana_person" data-field="x_registrationStation" name="x_registrationStation" id="x_registrationStation" size="30" placeholder="<?php echo ew_HtmlEncode($sana_person->registrationStation->getPlaceHolder()) ?>" value="<?php echo $sana_person->registrationStation->EditValue ?>"<?php echo $sana_person->registrationStation->EditAttributes() ?>>
+<select data-table="sana_person" data-field="x_registrationStation" data-page="4" data-value-separator="<?php echo ew_HtmlEncode(is_array($sana_person->registrationStation->DisplayValueSeparator) ? json_encode($sana_person->registrationStation->DisplayValueSeparator) : $sana_person->registrationStation->DisplayValueSeparator) ?>" id="x_registrationStation" name="x_registrationStation"<?php echo $sana_person->registrationStation->EditAttributes() ?>>
+<?php
+if (is_array($sana_person->registrationStation->EditValue)) {
+	$arwrk = $sana_person->registrationStation->EditValue;
+	$rowswrk = count($arwrk);
+	$emptywrk = TRUE;
+	for ($rowcntwrk = 0; $rowcntwrk < $rowswrk; $rowcntwrk++) {
+		$selwrk = ew_SameStr($sana_person->registrationStation->AdvancedSearch->SearchValue, $arwrk[$rowcntwrk][0]) ? " selected" : "";
+		if ($selwrk <> "") $emptywrk = FALSE;		
+?>
+<option value="<?php echo ew_HtmlEncode($arwrk[$rowcntwrk][0]) ?>"<?php echo $selwrk ?>>
+<?php echo $sana_person->registrationStation->DisplayValue($arwrk[$rowcntwrk]) ?>
+</option>
+<?php
+	}
+	if ($emptywrk && strval($sana_person->registrationStation->CurrentValue) <> "") {
+?>
+<option value="<?php echo ew_HtmlEncode($sana_person->registrationStation->CurrentValue) ?>" selected><?php echo $sana_person->registrationStation->CurrentValue ?></option>
+<?php
+    }
+}
+?>
+</select>
+<?php
+switch (@$gsLanguage) {
+	case "en":
+		$sSqlWrk = "SELECT `stationID`, `stationID` AS `DispFld`, `stationName` AS `Disp2Fld`, '' AS `Disp3Fld`, '' AS `Disp4Fld` FROM `sana_station`";
+		$sWhereWrk = "";
+		break;
+	case "fa":
+		$sSqlWrk = "SELECT `stationID`, `stationID` AS `DispFld`, `stationName` AS `Disp2Fld`, '' AS `Disp3Fld`, '' AS `Disp4Fld` FROM `sana_station`";
+		$sWhereWrk = "";
+		break;
+	default:
+		$sSqlWrk = "SELECT `stationID`, `stationID` AS `DispFld`, `stationName` AS `Disp2Fld`, '' AS `Disp3Fld`, '' AS `Disp4Fld` FROM `sana_station`";
+		$sWhereWrk = "";
+		break;
+}
+$sana_person->registrationStation->LookupFilters = array("s" => $sSqlWrk, "d" => "");
+$sana_person->registrationStation->LookupFilters += array("f0" => "`stationID` = {filter_value}", "t0" => "3", "fn0" => "");
+$sSqlWrk = "";
+$sana_person->Lookup_Selecting($sana_person->registrationStation, $sWhereWrk); // Call Lookup selecting
+if ($sWhereWrk <> "") $sSqlWrk .= " WHERE " . $sWhereWrk;
+if ($sSqlWrk <> "") $sana_person->registrationStation->LookupFilters["s"] .= $sSqlWrk;
+?>
+<input type="hidden" name="s_x_registrationStation" id="s_x_registrationStation" value="<?php echo $sana_person->registrationStation->LookupFilterQuery() ?>">
 </span>
 		</div></div>
 	</div>
 <?php } ?>
-<?php if ($sana_person->isolatedDateTime->Visible) { // isolatedDateTime ?>
-	<div id="r_isolatedDateTime" class="form-group">
-		<label for="x_isolatedDateTime" class="<?php echo $sana_person_search->SearchLabelClass ?>"><span id="elh_sana_person_isolatedDateTime"><?php echo $sana_person->isolatedDateTime->FldCaption() ?></span>	
-		<p class="form-control-static ewSearchOperator"><?php echo $Language->Phrase("=") ?><input type="hidden" name="z_isolatedDateTime" id="z_isolatedDateTime" value="="></p>
-		</label>
-		<div class="<?php echo $sana_person_search->SearchRightColumnClass ?>"><div<?php echo $sana_person->isolatedDateTime->CellAttributes() ?>>
-			<span id="el_sana_person_isolatedDateTime">
-<input type="text" data-table="sana_person" data-field="x_isolatedDateTime" data-format="5" name="x_isolatedDateTime" id="x_isolatedDateTime" placeholder="<?php echo ew_HtmlEncode($sana_person->isolatedDateTime->getPlaceHolder()) ?>" value="<?php echo $sana_person->isolatedDateTime->EditValue ?>"<?php echo $sana_person->isolatedDateTime->EditAttributes() ?>>
-</span>
-		</div></div>
+</div>
+			</div>
+		</div>
 	</div>
-<?php } ?>
-<?php if ($sana_person->description->Visible) { // description ?>
-	<div id="r_description" class="form-group">
-		<label for="x_description" class="<?php echo $sana_person_search->SearchLabelClass ?>"><span id="elh_sana_person_description"><?php echo $sana_person->description->FldCaption() ?></span>	
-		<p class="form-control-static ewSearchOperator"><?php echo $Language->Phrase("LIKE") ?><input type="hidden" name="z_description" id="z_description" value="LIKE"></p>
-		</label>
-		<div class="<?php echo $sana_person_search->SearchRightColumnClass ?>"><div<?php echo $sana_person->description->CellAttributes() ?>>
-			<span id="el_sana_person_description">
-<input type="text" data-table="sana_person" data-field="x_description" name="x_description" id="x_description" size="35" placeholder="<?php echo ew_HtmlEncode($sana_person->description->getPlaceHolder()) ?>" value="<?php echo $sana_person->description->EditValue ?>"<?php echo $sana_person->description->EditAttributes() ?>>
-</span>
-		</div></div>
-	</div>
-<?php } ?>
+</div>
 </div>
 <?php if (!$sana_person_search->IsModal) { ?>
 <div class="form-group">

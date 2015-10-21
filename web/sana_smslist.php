@@ -5,7 +5,7 @@ ob_start(); // Turn on output buffering
 <?php include_once "ewcfg12.php" ?>
 <?php include_once ((EW_USE_ADODB) ? "adodb5/adodb.inc.php" : "ewmysql12.php") ?>
 <?php include_once "phpfn12.php" ?>
-<?php include_once "sana_stateinfo.php" ?>
+<?php include_once "sana_smsinfo.php" ?>
 <?php include_once "sana_userinfo.php" ?>
 <?php include_once "userfn12.php" ?>
 <?php
@@ -14,9 +14,9 @@ ob_start(); // Turn on output buffering
 // Page class
 //
 
-$sana_state_list = NULL; // Initialize page object first
+$sana_sms_list = NULL; // Initialize page object first
 
-class csana_state_list extends csana_state {
+class csana_sms_list extends csana_sms {
 
 	// Page ID
 	var $PageID = 'list';
@@ -25,13 +25,13 @@ class csana_state_list extends csana_state {
 	var $ProjectID = "{07091A10-D58A-4784-942B-0E21010F5DFC}";
 
 	// Table name
-	var $TableName = 'sana_state';
+	var $TableName = 'sana_sms';
 
 	// Page object name
-	var $PageObjName = 'sana_state_list';
+	var $PageObjName = 'sana_sms_list';
 
 	// Grid form hidden field names
-	var $FormName = 'fsana_statelist';
+	var $FormName = 'fsana_smslist';
 	var $FormActionName = 'k_action';
 	var $FormKeyName = 'k_key';
 	var $FormOldKeyName = 'k_oldkey';
@@ -183,7 +183,7 @@ class csana_state_list extends csana_state {
 			$html .= "<div class=\"alert alert-danger ewError\">" . $sErrorMessage . "</div>";
 			$_SESSION[EW_SESSION_FAILURE_MESSAGE] = ""; // Clear message in Session
 		}
-		echo "<br><div class=\"ewMessageDialog\"" . (($hidden) ? " style=\"display: none;\"" : "") . ">" . $html . "</div>";
+		echo "<div class=\"ewMessageDialog\"" . (($hidden) ? " style=\"display: none;\"" : "") . ">" . $html . "</div>";
 	}
 	var $PageHeader;
 	var $PageFooter;
@@ -262,10 +262,10 @@ class csana_state_list extends csana_state {
 		// Parent constuctor
 		parent::__construct();
 
-		// Table object (sana_state)
-		if (!isset($GLOBALS["sana_state"]) || get_class($GLOBALS["sana_state"]) == "csana_state") {
-			$GLOBALS["sana_state"] = &$this;
-			$GLOBALS["Table"] = &$GLOBALS["sana_state"];
+		// Table object (sana_sms)
+		if (!isset($GLOBALS["sana_sms"]) || get_class($GLOBALS["sana_sms"]) == "csana_sms") {
+			$GLOBALS["sana_sms"] = &$this;
+			$GLOBALS["Table"] = &$GLOBALS["sana_sms"];
 		}
 
 		// Initialize URLs
@@ -276,12 +276,12 @@ class csana_state_list extends csana_state {
 		$this->ExportXmlUrl = $this->PageUrl() . "export=xml";
 		$this->ExportCsvUrl = $this->PageUrl() . "export=csv";
 		$this->ExportPdfUrl = $this->PageUrl() . "export=pdf";
-		$this->AddUrl = "sana_stateadd.php";
+		$this->AddUrl = "sana_smsadd.php";
 		$this->InlineAddUrl = $this->PageUrl() . "a=add";
 		$this->GridAddUrl = $this->PageUrl() . "a=gridadd";
 		$this->GridEditUrl = $this->PageUrl() . "a=gridedit";
-		$this->MultiDeleteUrl = "sana_statedelete.php";
-		$this->MultiUpdateUrl = "sana_stateupdate.php";
+		$this->MultiDeleteUrl = "sana_smsdelete.php";
+		$this->MultiUpdateUrl = "sana_smsupdate.php";
 
 		// Table object (sana_user)
 		if (!isset($GLOBALS['sana_user'])) $GLOBALS['sana_user'] = new csana_user();
@@ -292,7 +292,7 @@ class csana_state_list extends csana_state {
 
 		// Table name (for backward compatibility)
 		if (!defined("EW_TABLE_NAME"))
-			define("EW_TABLE_NAME", 'sana_state', TRUE);
+			define("EW_TABLE_NAME", 'sana_sms', TRUE);
 
 		// Start timer
 		if (!isset($GLOBALS["gTimer"])) $GLOBALS["gTimer"] = new cTimer();
@@ -329,7 +329,7 @@ class csana_state_list extends csana_state {
 		// Filter options
 		$this->FilterOptions = new cListOptions();
 		$this->FilterOptions->Tag = "div";
-		$this->FilterOptions->TagClassName = "ewFilterOption fsana_statelistsrch";
+		$this->FilterOptions->TagClassName = "ewFilterOption fsana_smslistsrch";
 
 		// List actions
 		$this->ListActions = new cListActions();
@@ -366,7 +366,8 @@ class csana_state_list extends csana_state {
 
 		// Set up list options
 		$this->SetupListOptions();
-		$this->stateID->Visible = !$this->IsAdd() && !$this->IsCopy() && !$this->IsGridAdd();
+		$this->smsID->Visible = !$this->IsAdd() && !$this->IsCopy() && !$this->IsGridAdd();
+		$this->_userID->Visible = !$this->IsAddOrEdit();
 
 		// Global Page Loading event (in userfn*.php)
 		Page_Loading();
@@ -427,13 +428,13 @@ class csana_state_list extends csana_state {
 		Page_Unloaded();
 
 		// Export
-		global $EW_EXPORT, $sana_state;
+		global $EW_EXPORT, $sana_sms;
 		if ($this->CustomExport <> "" && $this->CustomExport == $this->Export && array_key_exists($this->CustomExport, $EW_EXPORT)) {
 				$sContent = ob_get_contents();
 			if ($gsExportFile == "") $gsExportFile = $this->TableVar;
 			$class = $EW_EXPORT[$this->CustomExport];
 			if (class_exists($class)) {
-				$doc = new $class($sana_state);
+				$doc = new $class($sana_sms);
 				$doc->Text = $sContent;
 				if ($this->Export == "email")
 					echo $this->ExportEmail($doc->Text);
@@ -689,8 +690,8 @@ class csana_state_list extends csana_state {
 	function SetupKeyValues($key) {
 		$arrKeyFlds = explode($GLOBALS["EW_COMPOSITE_KEY_SEPARATOR"], $key);
 		if (count($arrKeyFlds) >= 1) {
-			$this->stateID->setFormValue($arrKeyFlds[0]);
-			if (!is_numeric($this->stateID->FormValue))
+			$this->smsID->setFormValue($arrKeyFlds[0]);
+			if (!is_numeric($this->smsID->FormValue))
 				return FALSE;
 		}
 		return TRUE;
@@ -701,10 +702,11 @@ class csana_state_list extends csana_state {
 
 		// Initialize
 		$sFilterList = "";
-		$sFilterList = ew_Concat($sFilterList, $this->stateID->AdvancedSearch->ToJSON(), ","); // Field stateID
-		$sFilterList = ew_Concat($sFilterList, $this->stateClass->AdvancedSearch->ToJSON(), ","); // Field stateClass
-		$sFilterList = ew_Concat($sFilterList, $this->stateName->AdvancedSearch->ToJSON(), ","); // Field stateName
-		$sFilterList = ew_Concat($sFilterList, $this->stateLanguage->AdvancedSearch->ToJSON(), ","); // Field stateLanguage
+		$sFilterList = ew_Concat($sFilterList, $this->smsID->AdvancedSearch->ToJSON(), ","); // Field smsID
+		$sFilterList = ew_Concat($sFilterList, $this->_userID->AdvancedSearch->ToJSON(), ","); // Field userID
+		$sFilterList = ew_Concat($sFilterList, $this->mobilePhone->AdvancedSearch->ToJSON(), ","); // Field mobilePhone
+		$sFilterList = ew_Concat($sFilterList, $this->message->AdvancedSearch->ToJSON(), ","); // Field message
+		$sFilterList = ew_Concat($sFilterList, $this->result->AdvancedSearch->ToJSON(), ","); // Field result
 		$sFilterList = ew_Concat($sFilterList, $this->description->AdvancedSearch->ToJSON(), ","); // Field description
 		if ($this->BasicSearch->Keyword <> "") {
 			$sWrk = "\"" . EW_TABLE_BASIC_SEARCH . "\":\"" . ew_JsEncode2($this->BasicSearch->Keyword) . "\",\"" . EW_TABLE_BASIC_SEARCH_TYPE . "\":\"" . ew_JsEncode2($this->BasicSearch->Type) . "\"";
@@ -724,37 +726,45 @@ class csana_state_list extends csana_state {
 		$filter = json_decode(ew_StripSlashes(@$_POST["filter"]), TRUE);
 		$this->Command = "search";
 
-		// Field stateID
-		$this->stateID->AdvancedSearch->SearchValue = @$filter["x_stateID"];
-		$this->stateID->AdvancedSearch->SearchOperator = @$filter["z_stateID"];
-		$this->stateID->AdvancedSearch->SearchCondition = @$filter["v_stateID"];
-		$this->stateID->AdvancedSearch->SearchValue2 = @$filter["y_stateID"];
-		$this->stateID->AdvancedSearch->SearchOperator2 = @$filter["w_stateID"];
-		$this->stateID->AdvancedSearch->Save();
+		// Field smsID
+		$this->smsID->AdvancedSearch->SearchValue = @$filter["x_smsID"];
+		$this->smsID->AdvancedSearch->SearchOperator = @$filter["z_smsID"];
+		$this->smsID->AdvancedSearch->SearchCondition = @$filter["v_smsID"];
+		$this->smsID->AdvancedSearch->SearchValue2 = @$filter["y_smsID"];
+		$this->smsID->AdvancedSearch->SearchOperator2 = @$filter["w_smsID"];
+		$this->smsID->AdvancedSearch->Save();
 
-		// Field stateClass
-		$this->stateClass->AdvancedSearch->SearchValue = @$filter["x_stateClass"];
-		$this->stateClass->AdvancedSearch->SearchOperator = @$filter["z_stateClass"];
-		$this->stateClass->AdvancedSearch->SearchCondition = @$filter["v_stateClass"];
-		$this->stateClass->AdvancedSearch->SearchValue2 = @$filter["y_stateClass"];
-		$this->stateClass->AdvancedSearch->SearchOperator2 = @$filter["w_stateClass"];
-		$this->stateClass->AdvancedSearch->Save();
+		// Field userID
+		$this->_userID->AdvancedSearch->SearchValue = @$filter["x__userID"];
+		$this->_userID->AdvancedSearch->SearchOperator = @$filter["z__userID"];
+		$this->_userID->AdvancedSearch->SearchCondition = @$filter["v__userID"];
+		$this->_userID->AdvancedSearch->SearchValue2 = @$filter["y__userID"];
+		$this->_userID->AdvancedSearch->SearchOperator2 = @$filter["w__userID"];
+		$this->_userID->AdvancedSearch->Save();
 
-		// Field stateName
-		$this->stateName->AdvancedSearch->SearchValue = @$filter["x_stateName"];
-		$this->stateName->AdvancedSearch->SearchOperator = @$filter["z_stateName"];
-		$this->stateName->AdvancedSearch->SearchCondition = @$filter["v_stateName"];
-		$this->stateName->AdvancedSearch->SearchValue2 = @$filter["y_stateName"];
-		$this->stateName->AdvancedSearch->SearchOperator2 = @$filter["w_stateName"];
-		$this->stateName->AdvancedSearch->Save();
+		// Field mobilePhone
+		$this->mobilePhone->AdvancedSearch->SearchValue = @$filter["x_mobilePhone"];
+		$this->mobilePhone->AdvancedSearch->SearchOperator = @$filter["z_mobilePhone"];
+		$this->mobilePhone->AdvancedSearch->SearchCondition = @$filter["v_mobilePhone"];
+		$this->mobilePhone->AdvancedSearch->SearchValue2 = @$filter["y_mobilePhone"];
+		$this->mobilePhone->AdvancedSearch->SearchOperator2 = @$filter["w_mobilePhone"];
+		$this->mobilePhone->AdvancedSearch->Save();
 
-		// Field stateLanguage
-		$this->stateLanguage->AdvancedSearch->SearchValue = @$filter["x_stateLanguage"];
-		$this->stateLanguage->AdvancedSearch->SearchOperator = @$filter["z_stateLanguage"];
-		$this->stateLanguage->AdvancedSearch->SearchCondition = @$filter["v_stateLanguage"];
-		$this->stateLanguage->AdvancedSearch->SearchValue2 = @$filter["y_stateLanguage"];
-		$this->stateLanguage->AdvancedSearch->SearchOperator2 = @$filter["w_stateLanguage"];
-		$this->stateLanguage->AdvancedSearch->Save();
+		// Field message
+		$this->message->AdvancedSearch->SearchValue = @$filter["x_message"];
+		$this->message->AdvancedSearch->SearchOperator = @$filter["z_message"];
+		$this->message->AdvancedSearch->SearchCondition = @$filter["v_message"];
+		$this->message->AdvancedSearch->SearchValue2 = @$filter["y_message"];
+		$this->message->AdvancedSearch->SearchOperator2 = @$filter["w_message"];
+		$this->message->AdvancedSearch->Save();
+
+		// Field result
+		$this->result->AdvancedSearch->SearchValue = @$filter["x_result"];
+		$this->result->AdvancedSearch->SearchOperator = @$filter["z_result"];
+		$this->result->AdvancedSearch->SearchCondition = @$filter["v_result"];
+		$this->result->AdvancedSearch->SearchValue2 = @$filter["y_result"];
+		$this->result->AdvancedSearch->SearchOperator2 = @$filter["w_result"];
+		$this->result->AdvancedSearch->Save();
 
 		// Field description
 		$this->description->AdvancedSearch->SearchValue = @$filter["x_description"];
@@ -770,9 +780,10 @@ class csana_state_list extends csana_state {
 	// Return basic search SQL
 	function BasicSearchSQL($arKeywords, $type) {
 		$sWhere = "";
-		$this->BuildBasicSearchSQL($sWhere, $this->stateClass, $arKeywords, $type);
-		$this->BuildBasicSearchSQL($sWhere, $this->stateName, $arKeywords, $type);
-		$this->BuildBasicSearchSQL($sWhere, $this->stateLanguage, $arKeywords, $type);
+		$this->BuildBasicSearchSQL($sWhere, $this->_userID, $arKeywords, $type);
+		$this->BuildBasicSearchSQL($sWhere, $this->mobilePhone, $arKeywords, $type);
+		$this->BuildBasicSearchSQL($sWhere, $this->message, $arKeywords, $type);
+		$this->BuildBasicSearchSQL($sWhere, $this->result, $arKeywords, $type);
 		$this->BuildBasicSearchSQL($sWhere, $this->description, $arKeywords, $type);
 		return $sWhere;
 	}
@@ -938,10 +949,12 @@ class csana_state_list extends csana_state {
 		if (@$_GET["order"] <> "") {
 			$this->CurrentOrder = ew_StripSlashes(@$_GET["order"]);
 			$this->CurrentOrderType = @$_GET["ordertype"];
-			$this->UpdateSort($this->stateID); // stateID
-			$this->UpdateSort($this->stateClass); // stateClass
-			$this->UpdateSort($this->stateName); // stateName
-			$this->UpdateSort($this->stateLanguage); // stateLanguage
+			$this->UpdateSort($this->smsID); // smsID
+			$this->UpdateSort($this->_userID); // userID
+			$this->UpdateSort($this->mobilePhone); // mobilePhone
+			$this->UpdateSort($this->message); // message
+			$this->UpdateSort($this->result); // result
+			$this->UpdateSort($this->description); // description
 			$this->setStartRecordNumber(1); // Reset start position
 		}
 	}
@@ -974,10 +987,12 @@ class csana_state_list extends csana_state {
 			if ($this->Command == "resetsort") {
 				$sOrderBy = "";
 				$this->setSessionOrderBy($sOrderBy);
-				$this->stateID->setSort("");
-				$this->stateClass->setSort("");
-				$this->stateName->setSort("");
-				$this->stateLanguage->setSort("");
+				$this->smsID->setSort("");
+				$this->_userID->setSort("");
+				$this->mobilePhone->setSort("");
+				$this->message->setSort("");
+				$this->result->setSort("");
+				$this->description->setSort("");
 			}
 
 			// Reset start position
@@ -1006,6 +1021,12 @@ class csana_state_list extends csana_state {
 		$item = &$this->ListOptions->Add("edit");
 		$item->CssStyle = "white-space: nowrap;";
 		$item->Visible = $Security->CanEdit();
+		$item->OnLeft = FALSE;
+
+		// "copy"
+		$item = &$this->ListOptions->Add("copy");
+		$item->CssStyle = "white-space: nowrap;";
+		$item->Visible = $Security->CanAdd();
 		$item->OnLeft = FALSE;
 
 		// "delete"
@@ -1066,6 +1087,14 @@ class csana_state_list extends csana_state {
 			$oListOpt->Body = "";
 		}
 
+		// "copy"
+		$oListOpt = &$this->ListOptions->Items["copy"];
+		if ($Security->CanAdd()) {
+			$oListOpt->Body = "<a class=\"ewRowLink ewCopy\" title=\"" . ew_HtmlTitle($Language->Phrase("CopyLink")) . "\" data-caption=\"" . ew_HtmlTitle($Language->Phrase("CopyLink")) . "\" href=\"" . ew_HtmlEncode($this->CopyUrl) . "\">" . $Language->Phrase("CopyLink") . "</a>";
+		} else {
+			$oListOpt->Body = "";
+		}
+
 		// "delete"
 		$oListOpt = &$this->ListOptions->Items["delete"];
 		if ($Security->CanDelete())
@@ -1104,7 +1133,7 @@ class csana_state_list extends csana_state {
 
 		// "checkbox"
 		$oListOpt = &$this->ListOptions->Items["checkbox"];
-		$oListOpt->Body = "<input type=\"checkbox\" name=\"key_m[]\" value=\"" . ew_HtmlEncode($this->stateID->CurrentValue) . "\" onclick='ew_ClickMultiCheckbox(event);'>";
+		$oListOpt->Body = "<input type=\"checkbox\" name=\"key_m[]\" value=\"" . ew_HtmlEncode($this->smsID->CurrentValue) . "\" onclick='ew_ClickMultiCheckbox(event);'>";
 		$this->RenderListOptionsExt();
 
 		// Call ListOptions_Rendered event
@@ -1139,10 +1168,10 @@ class csana_state_list extends csana_state {
 
 		// Filter button
 		$item = &$this->FilterOptions->Add("savecurrentfilter");
-		$item->Body = "<a class=\"ewSaveFilter\" data-form=\"fsana_statelistsrch\" href=\"#\">" . $Language->Phrase("SaveCurrentFilter") . "</a>";
+		$item->Body = "<a class=\"ewSaveFilter\" data-form=\"fsana_smslistsrch\" href=\"#\">" . $Language->Phrase("SaveCurrentFilter") . "</a>";
 		$item->Visible = TRUE;
 		$item = &$this->FilterOptions->Add("deletefilter");
-		$item->Body = "<a class=\"ewDeleteFilter\" data-form=\"fsana_statelistsrch\" href=\"#\">" . $Language->Phrase("DeleteFilter") . "</a>";
+		$item->Body = "<a class=\"ewDeleteFilter\" data-form=\"fsana_smslistsrch\" href=\"#\">" . $Language->Phrase("DeleteFilter") . "</a>";
 		$item->Visible = TRUE;
 		$this->FilterOptions->UseDropDownButton = TRUE;
 		$this->FilterOptions->UseButtonGroup = !$this->FilterOptions->UseDropDownButton;
@@ -1166,7 +1195,7 @@ class csana_state_list extends csana_state {
 					$item = &$option->Add("custom_" . $listaction->Action);
 					$caption = $listaction->Caption;
 					$icon = ($listaction->Icon <> "") ? "<span class=\"" . ew_HtmlEncode($listaction->Icon) . "\" data-caption=\"" . ew_HtmlEncode($caption) . "\"></span> " : $caption;
-					$item->Body = "<a class=\"ewAction ewListAction\" title=\"" . ew_HtmlEncode($caption) . "\" data-caption=\"" . ew_HtmlEncode($caption) . "\" href=\"\" onclick=\"ew_SubmitAction(event,jQuery.extend({f:document.fsana_statelist}," . $listaction->ToJson(TRUE) . "));return false;\">" . $icon . "</a>";
+					$item->Body = "<a class=\"ewAction ewListAction\" title=\"" . ew_HtmlEncode($caption) . "\" data-caption=\"" . ew_HtmlEncode($caption) . "\" href=\"\" onclick=\"ew_SubmitAction(event,jQuery.extend({f:document.fsana_smslist}," . $listaction->ToJson(TRUE) . "));return false;\">" . $icon . "</a>";
 					$item->Visible = $listaction->Allow;
 				}
 			}
@@ -1270,7 +1299,7 @@ class csana_state_list extends csana_state {
 		// Search button
 		$item = &$this->SearchOptions->Add("searchtoggle");
 		$SearchToggleClass = ($this->SearchWhere <> "") ? " active" : " active";
-		$item->Body = "<button type=\"button\" class=\"btn btn-default ewSearchToggle" . $SearchToggleClass . "\" title=\"" . $Language->Phrase("SearchPanel") . "\" data-caption=\"" . $Language->Phrase("SearchPanel") . "\" data-toggle=\"button\" data-form=\"fsana_statelistsrch\">" . $Language->Phrase("SearchBtn") . "</button>";
+		$item->Body = "<button type=\"button\" class=\"btn btn-default ewSearchToggle" . $SearchToggleClass . "\" title=\"" . $Language->Phrase("SearchPanel") . "\" data-caption=\"" . $Language->Phrase("SearchPanel") . "\" data-toggle=\"button\" data-form=\"fsana_smslistsrch\">" . $Language->Phrase("SearchBtn") . "</button>";
 		$item->Visible = TRUE;
 
 		// Show all button
@@ -1405,10 +1434,11 @@ class csana_state_list extends csana_state {
 		// Call Row Selected event
 		$row = &$rs->fields;
 		$this->Row_Selected($row);
-		$this->stateID->setDbValue($rs->fields('stateID'));
-		$this->stateClass->setDbValue($rs->fields('stateClass'));
-		$this->stateName->setDbValue($rs->fields('stateName'));
-		$this->stateLanguage->setDbValue($rs->fields('stateLanguage'));
+		$this->smsID->setDbValue($rs->fields('smsID'));
+		$this->_userID->setDbValue($rs->fields('userID'));
+		$this->mobilePhone->setDbValue($rs->fields('mobilePhone'));
+		$this->message->setDbValue($rs->fields('message'));
+		$this->result->setDbValue($rs->fields('result'));
 		$this->description->setDbValue($rs->fields('description'));
 	}
 
@@ -1416,10 +1446,11 @@ class csana_state_list extends csana_state {
 	function LoadDbValues(&$rs) {
 		if (!$rs || !is_array($rs) && $rs->EOF) return;
 		$row = is_array($rs) ? $rs : $rs->fields;
-		$this->stateID->DbValue = $row['stateID'];
-		$this->stateClass->DbValue = $row['stateClass'];
-		$this->stateName->DbValue = $row['stateName'];
-		$this->stateLanguage->DbValue = $row['stateLanguage'];
+		$this->smsID->DbValue = $row['smsID'];
+		$this->_userID->DbValue = $row['userID'];
+		$this->mobilePhone->DbValue = $row['mobilePhone'];
+		$this->message->DbValue = $row['message'];
+		$this->result->DbValue = $row['result'];
 		$this->description->DbValue = $row['description'];
 	}
 
@@ -1428,8 +1459,8 @@ class csana_state_list extends csana_state {
 
 		// Load key values from Session
 		$bValidKey = TRUE;
-		if (strval($this->getKey("stateID")) <> "")
-			$this->stateID->CurrentValue = $this->getKey("stateID"); // stateID
+		if (strval($this->getKey("smsID")) <> "")
+			$this->smsID->CurrentValue = $this->getKey("smsID"); // smsID
 		else
 			$bValidKey = FALSE;
 
@@ -1462,53 +1493,68 @@ class csana_state_list extends csana_state {
 		$this->Row_Rendering();
 
 		// Common render codes for all row types
-		// stateID
-		// stateClass
-		// stateName
-		// stateLanguage
+		// smsID
+		// userID
+		// mobilePhone
+		// message
+		// result
 		// description
 
 		if ($this->RowType == EW_ROWTYPE_VIEW) { // View row
 
-		// stateID
-		$this->stateID->ViewValue = $this->stateID->CurrentValue;
-		$this->stateID->ViewCustomAttributes = "";
+		// smsID
+		$this->smsID->ViewValue = $this->smsID->CurrentValue;
+		$this->smsID->ViewCustomAttributes = "";
 
-		// stateClass
-		$this->stateClass->ViewValue = $this->stateClass->CurrentValue;
-		$this->stateClass->ViewCustomAttributes = "";
+		// userID
+		$this->_userID->ViewValue = $this->_userID->CurrentValue;
+		$this->_userID->ViewCustomAttributes = "";
 
-		// stateName
-		$this->stateName->ViewValue = $this->stateName->CurrentValue;
-		$this->stateName->ViewCustomAttributes = "";
+		// mobilePhone
+		$this->mobilePhone->ViewValue = $this->mobilePhone->CurrentValue;
+		$this->mobilePhone->ViewCustomAttributes = "";
 
-		// stateLanguage
-		if (strval($this->stateLanguage->CurrentValue) <> "") {
-			$this->stateLanguage->ViewValue = $this->stateLanguage->OptionCaption($this->stateLanguage->CurrentValue);
-		} else {
-			$this->stateLanguage->ViewValue = NULL;
-		}
-		$this->stateLanguage->ViewCustomAttributes = "";
+		// message
+		$this->message->ViewValue = $this->message->CurrentValue;
+		$this->message->ViewCustomAttributes = "";
 
-			// stateID
-			$this->stateID->LinkCustomAttributes = "";
-			$this->stateID->HrefValue = "";
-			$this->stateID->TooltipValue = "";
+		// result
+		$this->result->ViewValue = $this->result->CurrentValue;
+		$this->result->ViewCustomAttributes = "";
 
-			// stateClass
-			$this->stateClass->LinkCustomAttributes = "";
-			$this->stateClass->HrefValue = "";
-			$this->stateClass->TooltipValue = "";
+		// description
+		$this->description->ViewValue = $this->description->CurrentValue;
+		$this->description->ViewCustomAttributes = "";
 
-			// stateName
-			$this->stateName->LinkCustomAttributes = "";
-			$this->stateName->HrefValue = "";
-			$this->stateName->TooltipValue = "";
+			// smsID
+			$this->smsID->LinkCustomAttributes = "";
+			$this->smsID->HrefValue = "";
+			$this->smsID->TooltipValue = "";
 
-			// stateLanguage
-			$this->stateLanguage->LinkCustomAttributes = "";
-			$this->stateLanguage->HrefValue = "";
-			$this->stateLanguage->TooltipValue = "";
+			// userID
+			$this->_userID->LinkCustomAttributes = "";
+			$this->_userID->HrefValue = "";
+			$this->_userID->TooltipValue = "";
+
+			// mobilePhone
+			$this->mobilePhone->LinkCustomAttributes = "";
+			$this->mobilePhone->HrefValue = "";
+			$this->mobilePhone->TooltipValue = "";
+
+			// message
+			$this->message->LinkCustomAttributes = "";
+			$this->message->HrefValue = "";
+			$this->message->TooltipValue = "";
+
+			// result
+			$this->result->LinkCustomAttributes = "";
+			$this->result->HrefValue = "";
+			$this->result->TooltipValue = "";
+
+			// description
+			$this->description->LinkCustomAttributes = "";
+			$this->description->HrefValue = "";
+			$this->description->TooltipValue = "";
 		}
 
 		// Call Row Rendered event
@@ -1649,30 +1695,30 @@ class csana_state_list extends csana_state {
 <?php
 
 // Create page object
-if (!isset($sana_state_list)) $sana_state_list = new csana_state_list();
+if (!isset($sana_sms_list)) $sana_sms_list = new csana_sms_list();
 
 // Page init
-$sana_state_list->Page_Init();
+$sana_sms_list->Page_Init();
 
 // Page main
-$sana_state_list->Page_Main();
+$sana_sms_list->Page_Main();
 
 // Global Page Rendering event (in userfn*.php)
 Page_Rendering();
 
 // Page Rendering event
-$sana_state_list->Page_Render();
+$sana_sms_list->Page_Render();
 ?>
 <?php include_once "header.php" ?>
 <script type="text/javascript">
 
 // Form object
 var CurrentPageID = EW_PAGE_ID = "list";
-var CurrentForm = fsana_statelist = new ew_Form("fsana_statelist", "list");
-fsana_statelist.FormKeyCountName = '<?php echo $sana_state_list->FormKeyCountName ?>';
+var CurrentForm = fsana_smslist = new ew_Form("fsana_smslist", "list");
+fsana_smslist.FormKeyCountName = '<?php echo $sana_sms_list->FormKeyCountName ?>';
 
 // Form_CustomValidate event
-fsana_statelist.Form_CustomValidate = 
+fsana_smslist.Form_CustomValidate = 
  function(fobj) { // DO NOT CHANGE THIS LINE!
 
  	// Your custom validation code here, return false if invalid. 
@@ -1681,17 +1727,15 @@ fsana_statelist.Form_CustomValidate =
 
 // Use JavaScript validation or not
 <?php if (EW_CLIENT_VALIDATE) { ?>
-fsana_statelist.ValidateRequired = true;
+fsana_smslist.ValidateRequired = true;
 <?php } else { ?>
-fsana_statelist.ValidateRequired = false; 
+fsana_smslist.ValidateRequired = false; 
 <?php } ?>
 
 // Dynamic selection lists
-fsana_statelist.Lists["x_stateLanguage"] = {"LinkField":"","Ajax":null,"AutoFill":false,"DisplayFields":["","","",""],"ParentFields":[],"ChildFields":[],"FilterFields":[],"Options":[],"Template":""};
-fsana_statelist.Lists["x_stateLanguage"].Options = <?php echo json_encode($sana_state->stateLanguage->Options()) ?>;
-
 // Form object for search
-var CurrentSearchForm = fsana_statelistsrch = new ew_Form("fsana_statelistsrch");
+
+var CurrentSearchForm = fsana_smslistsrch = new ew_Form("fsana_smslistsrch");
 </script>
 <script type="text/javascript">
 
@@ -1699,65 +1743,65 @@ var CurrentSearchForm = fsana_statelistsrch = new ew_Form("fsana_statelistsrch")
 </script>
 <div class="ewToolbar">
 <?php $Breadcrumb->Render(); ?>
-<?php if ($sana_state_list->TotalRecs > 0 && $sana_state_list->ExportOptions->Visible()) { ?>
-<?php $sana_state_list->ExportOptions->Render("body") ?>
+<?php if ($sana_sms_list->TotalRecs > 0 && $sana_sms_list->ExportOptions->Visible()) { ?>
+<?php $sana_sms_list->ExportOptions->Render("body") ?>
 <?php } ?>
-<?php if ($sana_state_list->SearchOptions->Visible()) { ?>
-<?php $sana_state_list->SearchOptions->Render("body") ?>
+<?php if ($sana_sms_list->SearchOptions->Visible()) { ?>
+<?php $sana_sms_list->SearchOptions->Render("body") ?>
 <?php } ?>
-<?php if ($sana_state_list->FilterOptions->Visible()) { ?>
-<?php $sana_state_list->FilterOptions->Render("body") ?>
+<?php if ($sana_sms_list->FilterOptions->Visible()) { ?>
+<?php $sana_sms_list->FilterOptions->Render("body") ?>
 <?php } ?>
 <?php echo $Language->SelectionForm(); ?>
 <div class="clearfix"></div>
 </div>
 <?php
-	$bSelectLimit = $sana_state_list->UseSelectLimit;
+	$bSelectLimit = $sana_sms_list->UseSelectLimit;
 	if ($bSelectLimit) {
-		if ($sana_state_list->TotalRecs <= 0)
-			$sana_state_list->TotalRecs = $sana_state->SelectRecordCount();
+		if ($sana_sms_list->TotalRecs <= 0)
+			$sana_sms_list->TotalRecs = $sana_sms->SelectRecordCount();
 	} else {
-		if (!$sana_state_list->Recordset && ($sana_state_list->Recordset = $sana_state_list->LoadRecordset()))
-			$sana_state_list->TotalRecs = $sana_state_list->Recordset->RecordCount();
+		if (!$sana_sms_list->Recordset && ($sana_sms_list->Recordset = $sana_sms_list->LoadRecordset()))
+			$sana_sms_list->TotalRecs = $sana_sms_list->Recordset->RecordCount();
 	}
-	$sana_state_list->StartRec = 1;
-	if ($sana_state_list->DisplayRecs <= 0 || ($sana_state->Export <> "" && $sana_state->ExportAll)) // Display all records
-		$sana_state_list->DisplayRecs = $sana_state_list->TotalRecs;
-	if (!($sana_state->Export <> "" && $sana_state->ExportAll))
-		$sana_state_list->SetUpStartRec(); // Set up start record position
+	$sana_sms_list->StartRec = 1;
+	if ($sana_sms_list->DisplayRecs <= 0 || ($sana_sms->Export <> "" && $sana_sms->ExportAll)) // Display all records
+		$sana_sms_list->DisplayRecs = $sana_sms_list->TotalRecs;
+	if (!($sana_sms->Export <> "" && $sana_sms->ExportAll))
+		$sana_sms_list->SetUpStartRec(); // Set up start record position
 	if ($bSelectLimit)
-		$sana_state_list->Recordset = $sana_state_list->LoadRecordset($sana_state_list->StartRec-1, $sana_state_list->DisplayRecs);
+		$sana_sms_list->Recordset = $sana_sms_list->LoadRecordset($sana_sms_list->StartRec-1, $sana_sms_list->DisplayRecs);
 
 	// Set no record found message
-	if ($sana_state->CurrentAction == "" && $sana_state_list->TotalRecs == 0) {
+	if ($sana_sms->CurrentAction == "" && $sana_sms_list->TotalRecs == 0) {
 		if (!$Security->CanList())
-			$sana_state_list->setWarningMessage($Language->Phrase("NoPermission"));
-		if ($sana_state_list->SearchWhere == "0=101")
-			$sana_state_list->setWarningMessage($Language->Phrase("EnterSearchCriteria"));
+			$sana_sms_list->setWarningMessage($Language->Phrase("NoPermission"));
+		if ($sana_sms_list->SearchWhere == "0=101")
+			$sana_sms_list->setWarningMessage($Language->Phrase("EnterSearchCriteria"));
 		else
-			$sana_state_list->setWarningMessage($Language->Phrase("NoRecord"));
+			$sana_sms_list->setWarningMessage($Language->Phrase("NoRecord"));
 	}
-$sana_state_list->RenderOtherOptions();
+$sana_sms_list->RenderOtherOptions();
 ?>
 <?php if ($Security->CanSearch()) { ?>
-<?php if ($sana_state->Export == "" && $sana_state->CurrentAction == "") { ?>
-<form name="fsana_statelistsrch" id="fsana_statelistsrch" class="form-inline ewForm" action="<?php echo ew_CurrentPage() ?>">
-<?php $SearchPanelClass = ($sana_state_list->SearchWhere <> "") ? " in" : " in"; ?>
-<div id="fsana_statelistsrch_SearchPanel" class="ewSearchPanel collapse<?php echo $SearchPanelClass ?>">
+<?php if ($sana_sms->Export == "" && $sana_sms->CurrentAction == "") { ?>
+<form name="fsana_smslistsrch" id="fsana_smslistsrch" class="form-inline ewForm" action="<?php echo ew_CurrentPage() ?>">
+<?php $SearchPanelClass = ($sana_sms_list->SearchWhere <> "") ? " in" : " in"; ?>
+<div id="fsana_smslistsrch_SearchPanel" class="ewSearchPanel collapse<?php echo $SearchPanelClass ?>">
 <input type="hidden" name="cmd" value="search">
-<input type="hidden" name="t" value="sana_state">
+<input type="hidden" name="t" value="sana_sms">
 	<div class="ewBasicSearch">
 <div id="xsr_1" class="ewRow">
 	<div class="ewQuickSearch input-group">
-	<input type="text" name="<?php echo EW_TABLE_BASIC_SEARCH ?>" id="<?php echo EW_TABLE_BASIC_SEARCH ?>" class="form-control" value="<?php echo ew_HtmlEncode($sana_state_list->BasicSearch->getKeyword()) ?>" placeholder="<?php echo ew_HtmlEncode($Language->Phrase("Search")) ?>">
-	<input type="hidden" name="<?php echo EW_TABLE_BASIC_SEARCH_TYPE ?>" id="<?php echo EW_TABLE_BASIC_SEARCH_TYPE ?>" value="<?php echo ew_HtmlEncode($sana_state_list->BasicSearch->getType()) ?>">
+	<input type="text" name="<?php echo EW_TABLE_BASIC_SEARCH ?>" id="<?php echo EW_TABLE_BASIC_SEARCH ?>" class="form-control" value="<?php echo ew_HtmlEncode($sana_sms_list->BasicSearch->getKeyword()) ?>" placeholder="<?php echo ew_HtmlEncode($Language->Phrase("Search")) ?>">
+	<input type="hidden" name="<?php echo EW_TABLE_BASIC_SEARCH_TYPE ?>" id="<?php echo EW_TABLE_BASIC_SEARCH_TYPE ?>" value="<?php echo ew_HtmlEncode($sana_sms_list->BasicSearch->getType()) ?>">
 	<div class="input-group-btn">
-		<button type="button" data-toggle="dropdown" class="btn btn-default"><span id="searchtype"><?php echo $sana_state_list->BasicSearch->getTypeNameShort() ?></span><span class="caret"></span></button>
+		<button type="button" data-toggle="dropdown" class="btn btn-default"><span id="searchtype"><?php echo $sana_sms_list->BasicSearch->getTypeNameShort() ?></span><span class="caret"></span></button>
 		<ul class="dropdown-menu pull-right" role="menu">
-			<li<?php if ($sana_state_list->BasicSearch->getType() == "") echo " class=\"active\""; ?>><a href="javascript:void(0);" onclick="ew_SetSearchType(this)"><?php echo $Language->Phrase("QuickSearchAuto") ?></a></li>
-			<li<?php if ($sana_state_list->BasicSearch->getType() == "=") echo " class=\"active\""; ?>><a href="javascript:void(0);" onclick="ew_SetSearchType(this,'=')"><?php echo $Language->Phrase("QuickSearchExact") ?></a></li>
-			<li<?php if ($sana_state_list->BasicSearch->getType() == "AND") echo " class=\"active\""; ?>><a href="javascript:void(0);" onclick="ew_SetSearchType(this,'AND')"><?php echo $Language->Phrase("QuickSearchAll") ?></a></li>
-			<li<?php if ($sana_state_list->BasicSearch->getType() == "OR") echo " class=\"active\""; ?>><a href="javascript:void(0);" onclick="ew_SetSearchType(this,'OR')"><?php echo $Language->Phrase("QuickSearchAny") ?></a></li>
+			<li<?php if ($sana_sms_list->BasicSearch->getType() == "") echo " class=\"active\""; ?>><a href="javascript:void(0);" onclick="ew_SetSearchType(this)"><?php echo $Language->Phrase("QuickSearchAuto") ?></a></li>
+			<li<?php if ($sana_sms_list->BasicSearch->getType() == "=") echo " class=\"active\""; ?>><a href="javascript:void(0);" onclick="ew_SetSearchType(this,'=')"><?php echo $Language->Phrase("QuickSearchExact") ?></a></li>
+			<li<?php if ($sana_sms_list->BasicSearch->getType() == "AND") echo " class=\"active\""; ?>><a href="javascript:void(0);" onclick="ew_SetSearchType(this,'AND')"><?php echo $Language->Phrase("QuickSearchAll") ?></a></li>
+			<li<?php if ($sana_sms_list->BasicSearch->getType() == "OR") echo " class=\"active\""; ?>><a href="javascript:void(0);" onclick="ew_SetSearchType(this,'OR')"><?php echo $Language->Phrase("QuickSearchAny") ?></a></li>
 		</ul>
 	<button class="btn btn-primary ewButton" name="btnsubmit" id="btnsubmit" type="submit"><?php echo $Language->Phrase("QuickSearchBtn") ?></button>
 	</div>
@@ -1768,229 +1812,48 @@ $sana_state_list->RenderOtherOptions();
 </form>
 <?php } ?>
 <?php } ?>
-<?php $sana_state_list->ShowPageHeader(); ?>
+<?php $sana_sms_list->ShowPageHeader(); ?>
 <?php
-$sana_state_list->ShowMessage();
+$sana_sms_list->ShowMessage();
 ?>
-<?php if ($sana_state_list->TotalRecs > 0 || $sana_state->CurrentAction <> "") { ?>
+<?php if ($sana_sms_list->TotalRecs > 0 || $sana_sms->CurrentAction <> "") { ?>
 <div class="panel panel-default ewGrid">
-<form name="fsana_statelist" id="fsana_statelist" class="form-inline ewForm ewListForm" action="<?php echo ew_CurrentPage() ?>" method="post">
-<?php if ($sana_state_list->CheckToken) { ?>
-<input type="hidden" name="<?php echo EW_TOKEN_NAME ?>" value="<?php echo $sana_state_list->Token ?>">
-<?php } ?>
-<input type="hidden" name="t" value="sana_state">
-<div id="gmp_sana_state" class="<?php if (ew_IsResponsiveLayout()) { echo "table-responsive "; } ?>ewGridMiddlePanel">
-<?php if ($sana_state_list->TotalRecs > 0) { ?>
-<table id="tbl_sana_statelist" class="table ewTable">
-<?php echo $sana_state->TableCustomInnerHtml ?>
-<thead><!-- Table header -->
-	<tr class="ewTableHeader">
-<?php
-
-// Header row
-$sana_state_list->RowType = EW_ROWTYPE_HEADER;
-
-// Render list options
-$sana_state_list->RenderListOptions();
-
-// Render list options (header, left)
-$sana_state_list->ListOptions->Render("header", "left");
-?>
-<?php if ($sana_state->stateID->Visible) { // stateID ?>
-	<?php if ($sana_state->SortUrl($sana_state->stateID) == "") { ?>
-		<th data-name="stateID"><div id="elh_sana_state_stateID" class="sana_state_stateID"><div class="ewTableHeaderCaption"><?php echo $sana_state->stateID->FldCaption() ?></div></div></th>
-	<?php } else { ?>
-		<th data-name="stateID"><div class="ewPointer" onclick="ew_Sort(event,'<?php echo $sana_state->SortUrl($sana_state->stateID) ?>',1);"><div id="elh_sana_state_stateID" class="sana_state_stateID">
-			<div class="ewTableHeaderBtn"><span class="ewTableHeaderCaption"><?php echo $sana_state->stateID->FldCaption() ?></span><span class="ewTableHeaderSort"><?php if ($sana_state->stateID->getSort() == "ASC") { ?><span class="caret ewSortUp"></span><?php } elseif ($sana_state->stateID->getSort() == "DESC") { ?><span class="caret"></span><?php } ?></span></div>
-        </div></div></th>
-	<?php } ?>
-<?php } ?>		
-<?php if ($sana_state->stateClass->Visible) { // stateClass ?>
-	<?php if ($sana_state->SortUrl($sana_state->stateClass) == "") { ?>
-		<th data-name="stateClass"><div id="elh_sana_state_stateClass" class="sana_state_stateClass"><div class="ewTableHeaderCaption"><?php echo $sana_state->stateClass->FldCaption() ?></div></div></th>
-	<?php } else { ?>
-		<th data-name="stateClass"><div class="ewPointer" onclick="ew_Sort(event,'<?php echo $sana_state->SortUrl($sana_state->stateClass) ?>',1);"><div id="elh_sana_state_stateClass" class="sana_state_stateClass">
-			<div class="ewTableHeaderBtn"><span class="ewTableHeaderCaption"><?php echo $sana_state->stateClass->FldCaption() ?><?php echo $Language->Phrase("SrchLegend") ?></span><span class="ewTableHeaderSort"><?php if ($sana_state->stateClass->getSort() == "ASC") { ?><span class="caret ewSortUp"></span><?php } elseif ($sana_state->stateClass->getSort() == "DESC") { ?><span class="caret"></span><?php } ?></span></div>
-        </div></div></th>
-	<?php } ?>
-<?php } ?>		
-<?php if ($sana_state->stateName->Visible) { // stateName ?>
-	<?php if ($sana_state->SortUrl($sana_state->stateName) == "") { ?>
-		<th data-name="stateName"><div id="elh_sana_state_stateName" class="sana_state_stateName"><div class="ewTableHeaderCaption"><?php echo $sana_state->stateName->FldCaption() ?></div></div></th>
-	<?php } else { ?>
-		<th data-name="stateName"><div class="ewPointer" onclick="ew_Sort(event,'<?php echo $sana_state->SortUrl($sana_state->stateName) ?>',1);"><div id="elh_sana_state_stateName" class="sana_state_stateName">
-			<div class="ewTableHeaderBtn"><span class="ewTableHeaderCaption"><?php echo $sana_state->stateName->FldCaption() ?><?php echo $Language->Phrase("SrchLegend") ?></span><span class="ewTableHeaderSort"><?php if ($sana_state->stateName->getSort() == "ASC") { ?><span class="caret ewSortUp"></span><?php } elseif ($sana_state->stateName->getSort() == "DESC") { ?><span class="caret"></span><?php } ?></span></div>
-        </div></div></th>
-	<?php } ?>
-<?php } ?>		
-<?php if ($sana_state->stateLanguage->Visible) { // stateLanguage ?>
-	<?php if ($sana_state->SortUrl($sana_state->stateLanguage) == "") { ?>
-		<th data-name="stateLanguage"><div id="elh_sana_state_stateLanguage" class="sana_state_stateLanguage"><div class="ewTableHeaderCaption"><?php echo $sana_state->stateLanguage->FldCaption() ?></div></div></th>
-	<?php } else { ?>
-		<th data-name="stateLanguage"><div class="ewPointer" onclick="ew_Sort(event,'<?php echo $sana_state->SortUrl($sana_state->stateLanguage) ?>',1);"><div id="elh_sana_state_stateLanguage" class="sana_state_stateLanguage">
-			<div class="ewTableHeaderBtn"><span class="ewTableHeaderCaption"><?php echo $sana_state->stateLanguage->FldCaption() ?></span><span class="ewTableHeaderSort"><?php if ($sana_state->stateLanguage->getSort() == "ASC") { ?><span class="caret ewSortUp"></span><?php } elseif ($sana_state->stateLanguage->getSort() == "DESC") { ?><span class="caret"></span><?php } ?></span></div>
-        </div></div></th>
-	<?php } ?>
-<?php } ?>		
-<?php
-
-// Render list options (header, right)
-$sana_state_list->ListOptions->Render("header", "right");
-?>
-	</tr>
-</thead>
-<tbody>
-<?php
-if ($sana_state->ExportAll && $sana_state->Export <> "") {
-	$sana_state_list->StopRec = $sana_state_list->TotalRecs;
-} else {
-
-	// Set the last record to display
-	if ($sana_state_list->TotalRecs > $sana_state_list->StartRec + $sana_state_list->DisplayRecs - 1)
-		$sana_state_list->StopRec = $sana_state_list->StartRec + $sana_state_list->DisplayRecs - 1;
-	else
-		$sana_state_list->StopRec = $sana_state_list->TotalRecs;
-}
-$sana_state_list->RecCnt = $sana_state_list->StartRec - 1;
-if ($sana_state_list->Recordset && !$sana_state_list->Recordset->EOF) {
-	$sana_state_list->Recordset->MoveFirst();
-	$bSelectLimit = $sana_state_list->UseSelectLimit;
-	if (!$bSelectLimit && $sana_state_list->StartRec > 1)
-		$sana_state_list->Recordset->Move($sana_state_list->StartRec - 1);
-} elseif (!$sana_state->AllowAddDeleteRow && $sana_state_list->StopRec == 0) {
-	$sana_state_list->StopRec = $sana_state->GridAddRowCount;
-}
-
-// Initialize aggregate
-$sana_state->RowType = EW_ROWTYPE_AGGREGATEINIT;
-$sana_state->ResetAttrs();
-$sana_state_list->RenderRow();
-while ($sana_state_list->RecCnt < $sana_state_list->StopRec) {
-	$sana_state_list->RecCnt++;
-	if (intval($sana_state_list->RecCnt) >= intval($sana_state_list->StartRec)) {
-		$sana_state_list->RowCnt++;
-
-		// Set up key count
-		$sana_state_list->KeyCount = $sana_state_list->RowIndex;
-
-		// Init row class and style
-		$sana_state->ResetAttrs();
-		$sana_state->CssClass = "";
-		if ($sana_state->CurrentAction == "gridadd") {
-		} else {
-			$sana_state_list->LoadRowValues($sana_state_list->Recordset); // Load row values
-		}
-		$sana_state->RowType = EW_ROWTYPE_VIEW; // Render view
-
-		// Set up row id / data-rowindex
-		$sana_state->RowAttrs = array_merge($sana_state->RowAttrs, array('data-rowindex'=>$sana_state_list->RowCnt, 'id'=>'r' . $sana_state_list->RowCnt . '_sana_state', 'data-rowtype'=>$sana_state->RowType));
-
-		// Render row
-		$sana_state_list->RenderRow();
-
-		// Render list options
-		$sana_state_list->RenderListOptions();
-?>
-	<tr<?php echo $sana_state->RowAttributes() ?>>
-<?php
-
-// Render list options (body, left)
-$sana_state_list->ListOptions->Render("body", "left", $sana_state_list->RowCnt);
-?>
-	<?php if ($sana_state->stateID->Visible) { // stateID ?>
-		<td data-name="stateID"<?php echo $sana_state->stateID->CellAttributes() ?>>
-<span id="el<?php echo $sana_state_list->RowCnt ?>_sana_state_stateID" class="sana_state_stateID">
-<span<?php echo $sana_state->stateID->ViewAttributes() ?>>
-<?php echo $sana_state->stateID->ListViewValue() ?></span>
-</span>
-<a id="<?php echo $sana_state_list->PageObjName . "_row_" . $sana_state_list->RowCnt ?>"></a></td>
-	<?php } ?>
-	<?php if ($sana_state->stateClass->Visible) { // stateClass ?>
-		<td data-name="stateClass"<?php echo $sana_state->stateClass->CellAttributes() ?>>
-<span id="el<?php echo $sana_state_list->RowCnt ?>_sana_state_stateClass" class="sana_state_stateClass">
-<span<?php echo $sana_state->stateClass->ViewAttributes() ?>>
-<?php echo $sana_state->stateClass->ListViewValue() ?></span>
-</span>
-</td>
-	<?php } ?>
-	<?php if ($sana_state->stateName->Visible) { // stateName ?>
-		<td data-name="stateName"<?php echo $sana_state->stateName->CellAttributes() ?>>
-<span id="el<?php echo $sana_state_list->RowCnt ?>_sana_state_stateName" class="sana_state_stateName">
-<span<?php echo $sana_state->stateName->ViewAttributes() ?>>
-<?php echo $sana_state->stateName->ListViewValue() ?></span>
-</span>
-</td>
-	<?php } ?>
-	<?php if ($sana_state->stateLanguage->Visible) { // stateLanguage ?>
-		<td data-name="stateLanguage"<?php echo $sana_state->stateLanguage->CellAttributes() ?>>
-<span id="el<?php echo $sana_state_list->RowCnt ?>_sana_state_stateLanguage" class="sana_state_stateLanguage">
-<span<?php echo $sana_state->stateLanguage->ViewAttributes() ?>>
-<?php echo $sana_state->stateLanguage->ListViewValue() ?></span>
-</span>
-</td>
-	<?php } ?>
-<?php
-
-// Render list options (body, right)
-$sana_state_list->ListOptions->Render("body", "right", $sana_state_list->RowCnt);
-?>
-	</tr>
-<?php
-	}
-	if ($sana_state->CurrentAction <> "gridadd")
-		$sana_state_list->Recordset->MoveNext();
-}
-?>
-</tbody>
-</table>
-<?php } ?>
-<?php if ($sana_state->CurrentAction == "") { ?>
-<input type="hidden" name="a_list" id="a_list" value="">
-<?php } ?>
-</div>
-</form>
-<?php
-
-// Close recordset
-if ($sana_state_list->Recordset)
-	$sana_state_list->Recordset->Close();
-?>
-<div class="panel-footer ewGridLowerPanel">
-<?php if ($sana_state->CurrentAction <> "gridadd" && $sana_state->CurrentAction <> "gridedit") { ?>
-<form name="ewPagerForm" class="ewForm form-inline ewPagerForm" action="<?php echo ew_CurrentPage() ?>">
-<?php if (!isset($sana_state_list->Pager)) $sana_state_list->Pager = new cNumericPager($sana_state_list->StartRec, $sana_state_list->DisplayRecs, $sana_state_list->TotalRecs, $sana_state_list->RecRange) ?>
-<?php if ($sana_state_list->Pager->RecordCount > 0) { ?>
+<div class="panel-heading ewGridUpperPanel">
+<?php if ($sana_sms->CurrentAction <> "gridadd" && $sana_sms->CurrentAction <> "gridedit") { ?>
+<form name="ewPagerForm" class="form-inline ewForm ewPagerForm" action="<?php echo ew_CurrentPage() ?>">
+<?php if (!isset($sana_sms_list->Pager)) $sana_sms_list->Pager = new cNumericPager($sana_sms_list->StartRec, $sana_sms_list->DisplayRecs, $sana_sms_list->TotalRecs, $sana_sms_list->RecRange) ?>
+<?php if ($sana_sms_list->Pager->RecordCount > 0) { ?>
 <div class="ewPager">
 <div class="ewNumericPage"><ul class="pagination">
-	<?php if ($sana_state_list->Pager->FirstButton->Enabled) { ?>
-	<li><a href="<?php echo $sana_state_list->PageUrl() ?>start=<?php echo $sana_state_list->Pager->FirstButton->Start ?>"><?php echo $Language->Phrase("PagerFirst") ?></a></li>
+	<?php if ($sana_sms_list->Pager->FirstButton->Enabled) { ?>
+	<li><a href="<?php echo $sana_sms_list->PageUrl() ?>start=<?php echo $sana_sms_list->Pager->FirstButton->Start ?>"><?php echo $Language->Phrase("PagerFirst") ?></a></li>
 	<?php } ?>
-	<?php if ($sana_state_list->Pager->PrevButton->Enabled) { ?>
-	<li><a href="<?php echo $sana_state_list->PageUrl() ?>start=<?php echo $sana_state_list->Pager->PrevButton->Start ?>"><?php echo $Language->Phrase("PagerPrevious") ?></a></li>
+	<?php if ($sana_sms_list->Pager->PrevButton->Enabled) { ?>
+	<li><a href="<?php echo $sana_sms_list->PageUrl() ?>start=<?php echo $sana_sms_list->Pager->PrevButton->Start ?>"><?php echo $Language->Phrase("PagerPrevious") ?></a></li>
 	<?php } ?>
-	<?php foreach ($sana_state_list->Pager->Items as $PagerItem) { ?>
-		<li<?php if (!$PagerItem->Enabled) { echo " class=\" active\""; } ?>><a href="<?php if ($PagerItem->Enabled) { echo $sana_state_list->PageUrl() . "start=" . $PagerItem->Start; } else { echo "#"; } ?>"><?php echo $PagerItem->Text ?></a></li>
+	<?php foreach ($sana_sms_list->Pager->Items as $PagerItem) { ?>
+		<li<?php if (!$PagerItem->Enabled) { echo " class=\" active\""; } ?>><a href="<?php if ($PagerItem->Enabled) { echo $sana_sms_list->PageUrl() . "start=" . $PagerItem->Start; } else { echo "#"; } ?>"><?php echo $PagerItem->Text ?></a></li>
 	<?php } ?>
-	<?php if ($sana_state_list->Pager->NextButton->Enabled) { ?>
-	<li><a href="<?php echo $sana_state_list->PageUrl() ?>start=<?php echo $sana_state_list->Pager->NextButton->Start ?>"><?php echo $Language->Phrase("PagerNext") ?></a></li>
+	<?php if ($sana_sms_list->Pager->NextButton->Enabled) { ?>
+	<li><a href="<?php echo $sana_sms_list->PageUrl() ?>start=<?php echo $sana_sms_list->Pager->NextButton->Start ?>"><?php echo $Language->Phrase("PagerNext") ?></a></li>
 	<?php } ?>
-	<?php if ($sana_state_list->Pager->LastButton->Enabled) { ?>
-	<li><a href="<?php echo $sana_state_list->PageUrl() ?>start=<?php echo $sana_state_list->Pager->LastButton->Start ?>"><?php echo $Language->Phrase("PagerLast") ?></a></li>
+	<?php if ($sana_sms_list->Pager->LastButton->Enabled) { ?>
+	<li><a href="<?php echo $sana_sms_list->PageUrl() ?>start=<?php echo $sana_sms_list->Pager->LastButton->Start ?>"><?php echo $Language->Phrase("PagerLast") ?></a></li>
 	<?php } ?>
 </ul></div>
 </div>
 <div class="ewPager ewRec">
-	<span><?php echo $Language->Phrase("Record") ?>&nbsp;<?php echo $sana_state_list->Pager->FromIndex ?>&nbsp;<?php echo $Language->Phrase("To") ?>&nbsp;<?php echo $sana_state_list->Pager->ToIndex ?>&nbsp;<?php echo $Language->Phrase("Of") ?>&nbsp;<?php echo $sana_state_list->Pager->RecordCount ?></span>
+	<span><?php echo $Language->Phrase("Record") ?>&nbsp;<?php echo $sana_sms_list->Pager->FromIndex ?>&nbsp;<?php echo $Language->Phrase("To") ?>&nbsp;<?php echo $sana_sms_list->Pager->ToIndex ?>&nbsp;<?php echo $Language->Phrase("Of") ?>&nbsp;<?php echo $sana_sms_list->Pager->RecordCount ?></span>
 </div>
 <?php } ?>
-<?php if ($sana_state_list->TotalRecs > 0) { ?>
+<?php if ($sana_sms_list->TotalRecs > 0) { ?>
 <div class="ewPager">
-<input type="hidden" name="t" value="sana_state">
+<input type="hidden" name="t" value="sana_sms">
 <select name="<?php echo EW_TABLE_REC_PER_PAGE ?>" class="form-control input-sm" onchange="this.form.submit();">
-<option value="20"<?php if ($sana_state_list->DisplayRecs == 20) { ?> selected="selected"<?php } ?>>20</option>
-<option value="50"<?php if ($sana_state_list->DisplayRecs == 50) { ?> selected="selected"<?php } ?>>50</option>
-<option value="100"<?php if ($sana_state_list->DisplayRecs == 100) { ?> selected="selected"<?php } ?>>100</option>
-<option value="500"<?php if ($sana_state_list->DisplayRecs == 500) { ?> selected="selected"<?php } ?>>500</option>
+<option value="20"<?php if ($sana_sms_list->DisplayRecs == 20) { ?> selected="selected"<?php } ?>>20</option>
+<option value="50"<?php if ($sana_sms_list->DisplayRecs == 50) { ?> selected="selected"<?php } ?>>50</option>
+<option value="100"<?php if ($sana_sms_list->DisplayRecs == 100) { ?> selected="selected"<?php } ?>>100</option>
+<option value="500"<?php if ($sana_sms_list->DisplayRecs == 500) { ?> selected="selected"<?php } ?>>500</option>
 </select>
 </div>
 <?php } ?>
@@ -1998,7 +1861,271 @@ if ($sana_state_list->Recordset)
 <?php } ?>
 <div class="ewListOtherOptions">
 <?php
-	foreach ($sana_state_list->OtherOptions as &$option)
+	foreach ($sana_sms_list->OtherOptions as &$option)
+		$option->Render("body");
+?>
+</div>
+<div class="clearfix"></div>
+</div>
+<form name="fsana_smslist" id="fsana_smslist" class="form-inline ewForm ewListForm" action="<?php echo ew_CurrentPage() ?>" method="post">
+<?php if ($sana_sms_list->CheckToken) { ?>
+<input type="hidden" name="<?php echo EW_TOKEN_NAME ?>" value="<?php echo $sana_sms_list->Token ?>">
+<?php } ?>
+<input type="hidden" name="t" value="sana_sms">
+<div id="gmp_sana_sms" class="<?php if (ew_IsResponsiveLayout()) { echo "table-responsive "; } ?>ewGridMiddlePanel">
+<?php if ($sana_sms_list->TotalRecs > 0) { ?>
+<table id="tbl_sana_smslist" class="table ewTable">
+<?php echo $sana_sms->TableCustomInnerHtml ?>
+<thead><!-- Table header -->
+	<tr class="ewTableHeader">
+<?php
+
+// Header row
+$sana_sms_list->RowType = EW_ROWTYPE_HEADER;
+
+// Render list options
+$sana_sms_list->RenderListOptions();
+
+// Render list options (header, left)
+$sana_sms_list->ListOptions->Render("header", "left");
+?>
+<?php if ($sana_sms->smsID->Visible) { // smsID ?>
+	<?php if ($sana_sms->SortUrl($sana_sms->smsID) == "") { ?>
+		<th data-name="smsID"><div id="elh_sana_sms_smsID" class="sana_sms_smsID"><div class="ewTableHeaderCaption"><?php echo $sana_sms->smsID->FldCaption() ?></div></div></th>
+	<?php } else { ?>
+		<th data-name="smsID"><div class="ewPointer" onclick="ew_Sort(event,'<?php echo $sana_sms->SortUrl($sana_sms->smsID) ?>',1);"><div id="elh_sana_sms_smsID" class="sana_sms_smsID">
+			<div class="ewTableHeaderBtn"><span class="ewTableHeaderCaption"><?php echo $sana_sms->smsID->FldCaption() ?></span><span class="ewTableHeaderSort"><?php if ($sana_sms->smsID->getSort() == "ASC") { ?><span class="caret ewSortUp"></span><?php } elseif ($sana_sms->smsID->getSort() == "DESC") { ?><span class="caret"></span><?php } ?></span></div>
+        </div></div></th>
+	<?php } ?>
+<?php } ?>		
+<?php if ($sana_sms->_userID->Visible) { // userID ?>
+	<?php if ($sana_sms->SortUrl($sana_sms->_userID) == "") { ?>
+		<th data-name="_userID"><div id="elh_sana_sms__userID" class="sana_sms__userID"><div class="ewTableHeaderCaption"><?php echo $sana_sms->_userID->FldCaption() ?></div></div></th>
+	<?php } else { ?>
+		<th data-name="_userID"><div class="ewPointer" onclick="ew_Sort(event,'<?php echo $sana_sms->SortUrl($sana_sms->_userID) ?>',1);"><div id="elh_sana_sms__userID" class="sana_sms__userID">
+			<div class="ewTableHeaderBtn"><span class="ewTableHeaderCaption"><?php echo $sana_sms->_userID->FldCaption() ?><?php echo $Language->Phrase("SrchLegend") ?></span><span class="ewTableHeaderSort"><?php if ($sana_sms->_userID->getSort() == "ASC") { ?><span class="caret ewSortUp"></span><?php } elseif ($sana_sms->_userID->getSort() == "DESC") { ?><span class="caret"></span><?php } ?></span></div>
+        </div></div></th>
+	<?php } ?>
+<?php } ?>		
+<?php if ($sana_sms->mobilePhone->Visible) { // mobilePhone ?>
+	<?php if ($sana_sms->SortUrl($sana_sms->mobilePhone) == "") { ?>
+		<th data-name="mobilePhone"><div id="elh_sana_sms_mobilePhone" class="sana_sms_mobilePhone"><div class="ewTableHeaderCaption"><?php echo $sana_sms->mobilePhone->FldCaption() ?></div></div></th>
+	<?php } else { ?>
+		<th data-name="mobilePhone"><div class="ewPointer" onclick="ew_Sort(event,'<?php echo $sana_sms->SortUrl($sana_sms->mobilePhone) ?>',1);"><div id="elh_sana_sms_mobilePhone" class="sana_sms_mobilePhone">
+			<div class="ewTableHeaderBtn"><span class="ewTableHeaderCaption"><?php echo $sana_sms->mobilePhone->FldCaption() ?><?php echo $Language->Phrase("SrchLegend") ?></span><span class="ewTableHeaderSort"><?php if ($sana_sms->mobilePhone->getSort() == "ASC") { ?><span class="caret ewSortUp"></span><?php } elseif ($sana_sms->mobilePhone->getSort() == "DESC") { ?><span class="caret"></span><?php } ?></span></div>
+        </div></div></th>
+	<?php } ?>
+<?php } ?>		
+<?php if ($sana_sms->message->Visible) { // message ?>
+	<?php if ($sana_sms->SortUrl($sana_sms->message) == "") { ?>
+		<th data-name="message"><div id="elh_sana_sms_message" class="sana_sms_message"><div class="ewTableHeaderCaption"><?php echo $sana_sms->message->FldCaption() ?></div></div></th>
+	<?php } else { ?>
+		<th data-name="message"><div class="ewPointer" onclick="ew_Sort(event,'<?php echo $sana_sms->SortUrl($sana_sms->message) ?>',1);"><div id="elh_sana_sms_message" class="sana_sms_message">
+			<div class="ewTableHeaderBtn"><span class="ewTableHeaderCaption"><?php echo $sana_sms->message->FldCaption() ?><?php echo $Language->Phrase("SrchLegend") ?></span><span class="ewTableHeaderSort"><?php if ($sana_sms->message->getSort() == "ASC") { ?><span class="caret ewSortUp"></span><?php } elseif ($sana_sms->message->getSort() == "DESC") { ?><span class="caret"></span><?php } ?></span></div>
+        </div></div></th>
+	<?php } ?>
+<?php } ?>		
+<?php if ($sana_sms->result->Visible) { // result ?>
+	<?php if ($sana_sms->SortUrl($sana_sms->result) == "") { ?>
+		<th data-name="result"><div id="elh_sana_sms_result" class="sana_sms_result"><div class="ewTableHeaderCaption"><?php echo $sana_sms->result->FldCaption() ?></div></div></th>
+	<?php } else { ?>
+		<th data-name="result"><div class="ewPointer" onclick="ew_Sort(event,'<?php echo $sana_sms->SortUrl($sana_sms->result) ?>',1);"><div id="elh_sana_sms_result" class="sana_sms_result">
+			<div class="ewTableHeaderBtn"><span class="ewTableHeaderCaption"><?php echo $sana_sms->result->FldCaption() ?><?php echo $Language->Phrase("SrchLegend") ?></span><span class="ewTableHeaderSort"><?php if ($sana_sms->result->getSort() == "ASC") { ?><span class="caret ewSortUp"></span><?php } elseif ($sana_sms->result->getSort() == "DESC") { ?><span class="caret"></span><?php } ?></span></div>
+        </div></div></th>
+	<?php } ?>
+<?php } ?>		
+<?php if ($sana_sms->description->Visible) { // description ?>
+	<?php if ($sana_sms->SortUrl($sana_sms->description) == "") { ?>
+		<th data-name="description"><div id="elh_sana_sms_description" class="sana_sms_description"><div class="ewTableHeaderCaption"><?php echo $sana_sms->description->FldCaption() ?></div></div></th>
+	<?php } else { ?>
+		<th data-name="description"><div class="ewPointer" onclick="ew_Sort(event,'<?php echo $sana_sms->SortUrl($sana_sms->description) ?>',1);"><div id="elh_sana_sms_description" class="sana_sms_description">
+			<div class="ewTableHeaderBtn"><span class="ewTableHeaderCaption"><?php echo $sana_sms->description->FldCaption() ?><?php echo $Language->Phrase("SrchLegend") ?></span><span class="ewTableHeaderSort"><?php if ($sana_sms->description->getSort() == "ASC") { ?><span class="caret ewSortUp"></span><?php } elseif ($sana_sms->description->getSort() == "DESC") { ?><span class="caret"></span><?php } ?></span></div>
+        </div></div></th>
+	<?php } ?>
+<?php } ?>		
+<?php
+
+// Render list options (header, right)
+$sana_sms_list->ListOptions->Render("header", "right");
+?>
+	</tr>
+</thead>
+<tbody>
+<?php
+if ($sana_sms->ExportAll && $sana_sms->Export <> "") {
+	$sana_sms_list->StopRec = $sana_sms_list->TotalRecs;
+} else {
+
+	// Set the last record to display
+	if ($sana_sms_list->TotalRecs > $sana_sms_list->StartRec + $sana_sms_list->DisplayRecs - 1)
+		$sana_sms_list->StopRec = $sana_sms_list->StartRec + $sana_sms_list->DisplayRecs - 1;
+	else
+		$sana_sms_list->StopRec = $sana_sms_list->TotalRecs;
+}
+$sana_sms_list->RecCnt = $sana_sms_list->StartRec - 1;
+if ($sana_sms_list->Recordset && !$sana_sms_list->Recordset->EOF) {
+	$sana_sms_list->Recordset->MoveFirst();
+	$bSelectLimit = $sana_sms_list->UseSelectLimit;
+	if (!$bSelectLimit && $sana_sms_list->StartRec > 1)
+		$sana_sms_list->Recordset->Move($sana_sms_list->StartRec - 1);
+} elseif (!$sana_sms->AllowAddDeleteRow && $sana_sms_list->StopRec == 0) {
+	$sana_sms_list->StopRec = $sana_sms->GridAddRowCount;
+}
+
+// Initialize aggregate
+$sana_sms->RowType = EW_ROWTYPE_AGGREGATEINIT;
+$sana_sms->ResetAttrs();
+$sana_sms_list->RenderRow();
+while ($sana_sms_list->RecCnt < $sana_sms_list->StopRec) {
+	$sana_sms_list->RecCnt++;
+	if (intval($sana_sms_list->RecCnt) >= intval($sana_sms_list->StartRec)) {
+		$sana_sms_list->RowCnt++;
+
+		// Set up key count
+		$sana_sms_list->KeyCount = $sana_sms_list->RowIndex;
+
+		// Init row class and style
+		$sana_sms->ResetAttrs();
+		$sana_sms->CssClass = "";
+		if ($sana_sms->CurrentAction == "gridadd") {
+		} else {
+			$sana_sms_list->LoadRowValues($sana_sms_list->Recordset); // Load row values
+		}
+		$sana_sms->RowType = EW_ROWTYPE_VIEW; // Render view
+
+		// Set up row id / data-rowindex
+		$sana_sms->RowAttrs = array_merge($sana_sms->RowAttrs, array('data-rowindex'=>$sana_sms_list->RowCnt, 'id'=>'r' . $sana_sms_list->RowCnt . '_sana_sms', 'data-rowtype'=>$sana_sms->RowType));
+
+		// Render row
+		$sana_sms_list->RenderRow();
+
+		// Render list options
+		$sana_sms_list->RenderListOptions();
+?>
+	<tr<?php echo $sana_sms->RowAttributes() ?>>
+<?php
+
+// Render list options (body, left)
+$sana_sms_list->ListOptions->Render("body", "left", $sana_sms_list->RowCnt);
+?>
+	<?php if ($sana_sms->smsID->Visible) { // smsID ?>
+		<td data-name="smsID"<?php echo $sana_sms->smsID->CellAttributes() ?>>
+<span id="el<?php echo $sana_sms_list->RowCnt ?>_sana_sms_smsID" class="sana_sms_smsID">
+<span<?php echo $sana_sms->smsID->ViewAttributes() ?>>
+<?php echo $sana_sms->smsID->ListViewValue() ?></span>
+</span>
+<a id="<?php echo $sana_sms_list->PageObjName . "_row_" . $sana_sms_list->RowCnt ?>"></a></td>
+	<?php } ?>
+	<?php if ($sana_sms->_userID->Visible) { // userID ?>
+		<td data-name="_userID"<?php echo $sana_sms->_userID->CellAttributes() ?>>
+<span id="el<?php echo $sana_sms_list->RowCnt ?>_sana_sms__userID" class="sana_sms__userID">
+<span<?php echo $sana_sms->_userID->ViewAttributes() ?>>
+<?php echo $sana_sms->_userID->ListViewValue() ?></span>
+</span>
+</td>
+	<?php } ?>
+	<?php if ($sana_sms->mobilePhone->Visible) { // mobilePhone ?>
+		<td data-name="mobilePhone"<?php echo $sana_sms->mobilePhone->CellAttributes() ?>>
+<span id="el<?php echo $sana_sms_list->RowCnt ?>_sana_sms_mobilePhone" class="sana_sms_mobilePhone">
+<span<?php echo $sana_sms->mobilePhone->ViewAttributes() ?>>
+<?php echo $sana_sms->mobilePhone->ListViewValue() ?></span>
+</span>
+</td>
+	<?php } ?>
+	<?php if ($sana_sms->message->Visible) { // message ?>
+		<td data-name="message"<?php echo $sana_sms->message->CellAttributes() ?>>
+<span id="el<?php echo $sana_sms_list->RowCnt ?>_sana_sms_message" class="sana_sms_message">
+<span<?php echo $sana_sms->message->ViewAttributes() ?>>
+<?php echo $sana_sms->message->ListViewValue() ?></span>
+</span>
+</td>
+	<?php } ?>
+	<?php if ($sana_sms->result->Visible) { // result ?>
+		<td data-name="result"<?php echo $sana_sms->result->CellAttributes() ?>>
+<span id="el<?php echo $sana_sms_list->RowCnt ?>_sana_sms_result" class="sana_sms_result">
+<span<?php echo $sana_sms->result->ViewAttributes() ?>>
+<?php echo $sana_sms->result->ListViewValue() ?></span>
+</span>
+</td>
+	<?php } ?>
+	<?php if ($sana_sms->description->Visible) { // description ?>
+		<td data-name="description"<?php echo $sana_sms->description->CellAttributes() ?>>
+<span id="el<?php echo $sana_sms_list->RowCnt ?>_sana_sms_description" class="sana_sms_description">
+<span<?php echo $sana_sms->description->ViewAttributes() ?>>
+<?php echo $sana_sms->description->ListViewValue() ?></span>
+</span>
+</td>
+	<?php } ?>
+<?php
+
+// Render list options (body, right)
+$sana_sms_list->ListOptions->Render("body", "right", $sana_sms_list->RowCnt);
+?>
+	</tr>
+<?php
+	}
+	if ($sana_sms->CurrentAction <> "gridadd")
+		$sana_sms_list->Recordset->MoveNext();
+}
+?>
+</tbody>
+</table>
+<?php } ?>
+<?php if ($sana_sms->CurrentAction == "") { ?>
+<input type="hidden" name="a_list" id="a_list" value="">
+<?php } ?>
+</div>
+</form>
+<?php
+
+// Close recordset
+if ($sana_sms_list->Recordset)
+	$sana_sms_list->Recordset->Close();
+?>
+<div class="panel-footer ewGridLowerPanel">
+<?php if ($sana_sms->CurrentAction <> "gridadd" && $sana_sms->CurrentAction <> "gridedit") { ?>
+<form name="ewPagerForm" class="ewForm form-inline ewPagerForm" action="<?php echo ew_CurrentPage() ?>">
+<?php if (!isset($sana_sms_list->Pager)) $sana_sms_list->Pager = new cNumericPager($sana_sms_list->StartRec, $sana_sms_list->DisplayRecs, $sana_sms_list->TotalRecs, $sana_sms_list->RecRange) ?>
+<?php if ($sana_sms_list->Pager->RecordCount > 0) { ?>
+<div class="ewPager">
+<div class="ewNumericPage"><ul class="pagination">
+	<?php if ($sana_sms_list->Pager->FirstButton->Enabled) { ?>
+	<li><a href="<?php echo $sana_sms_list->PageUrl() ?>start=<?php echo $sana_sms_list->Pager->FirstButton->Start ?>"><?php echo $Language->Phrase("PagerFirst") ?></a></li>
+	<?php } ?>
+	<?php if ($sana_sms_list->Pager->PrevButton->Enabled) { ?>
+	<li><a href="<?php echo $sana_sms_list->PageUrl() ?>start=<?php echo $sana_sms_list->Pager->PrevButton->Start ?>"><?php echo $Language->Phrase("PagerPrevious") ?></a></li>
+	<?php } ?>
+	<?php foreach ($sana_sms_list->Pager->Items as $PagerItem) { ?>
+		<li<?php if (!$PagerItem->Enabled) { echo " class=\" active\""; } ?>><a href="<?php if ($PagerItem->Enabled) { echo $sana_sms_list->PageUrl() . "start=" . $PagerItem->Start; } else { echo "#"; } ?>"><?php echo $PagerItem->Text ?></a></li>
+	<?php } ?>
+	<?php if ($sana_sms_list->Pager->NextButton->Enabled) { ?>
+	<li><a href="<?php echo $sana_sms_list->PageUrl() ?>start=<?php echo $sana_sms_list->Pager->NextButton->Start ?>"><?php echo $Language->Phrase("PagerNext") ?></a></li>
+	<?php } ?>
+	<?php if ($sana_sms_list->Pager->LastButton->Enabled) { ?>
+	<li><a href="<?php echo $sana_sms_list->PageUrl() ?>start=<?php echo $sana_sms_list->Pager->LastButton->Start ?>"><?php echo $Language->Phrase("PagerLast") ?></a></li>
+	<?php } ?>
+</ul></div>
+</div>
+<div class="ewPager ewRec">
+	<span><?php echo $Language->Phrase("Record") ?>&nbsp;<?php echo $sana_sms_list->Pager->FromIndex ?>&nbsp;<?php echo $Language->Phrase("To") ?>&nbsp;<?php echo $sana_sms_list->Pager->ToIndex ?>&nbsp;<?php echo $Language->Phrase("Of") ?>&nbsp;<?php echo $sana_sms_list->Pager->RecordCount ?></span>
+</div>
+<?php } ?>
+<?php if ($sana_sms_list->TotalRecs > 0) { ?>
+<div class="ewPager">
+<input type="hidden" name="t" value="sana_sms">
+<select name="<?php echo EW_TABLE_REC_PER_PAGE ?>" class="form-control input-sm" onchange="this.form.submit();">
+<option value="20"<?php if ($sana_sms_list->DisplayRecs == 20) { ?> selected="selected"<?php } ?>>20</option>
+<option value="50"<?php if ($sana_sms_list->DisplayRecs == 50) { ?> selected="selected"<?php } ?>>50</option>
+<option value="100"<?php if ($sana_sms_list->DisplayRecs == 100) { ?> selected="selected"<?php } ?>>100</option>
+<option value="500"<?php if ($sana_sms_list->DisplayRecs == 500) { ?> selected="selected"<?php } ?>>500</option>
+</select>
+</div>
+<?php } ?>
+</form>
+<?php } ?>
+<div class="ewListOtherOptions">
+<?php
+	foreach ($sana_sms_list->OtherOptions as &$option)
 		$option->Render("body", "bottom");
 ?>
 </div>
@@ -2006,10 +2133,10 @@ if ($sana_state_list->Recordset)
 </div>
 </div>
 <?php } ?>
-<?php if ($sana_state_list->TotalRecs == 0 && $sana_state->CurrentAction == "") { // Show other options ?>
+<?php if ($sana_sms_list->TotalRecs == 0 && $sana_sms->CurrentAction == "") { // Show other options ?>
 <div class="ewListOtherOptions">
 <?php
-	foreach ($sana_state_list->OtherOptions as &$option) {
+	foreach ($sana_sms_list->OtherOptions as &$option) {
 		$option->ButtonClass = "";
 		$option->Render("body", "");
 	}
@@ -2018,12 +2145,12 @@ if ($sana_state_list->Recordset)
 <div class="clearfix"></div>
 <?php } ?>
 <script type="text/javascript">
-fsana_statelistsrch.Init();
-fsana_statelistsrch.FilterList = <?php echo $sana_state_list->GetFilterList() ?>;
-fsana_statelist.Init();
+fsana_smslistsrch.Init();
+fsana_smslistsrch.FilterList = <?php echo $sana_sms_list->GetFilterList() ?>;
+fsana_smslist.Init();
 </script>
 <?php
-$sana_state_list->ShowPageFooter();
+$sana_sms_list->ShowPageFooter();
 if (EW_DEBUG_ENABLED)
 	echo ew_DebugMsg();
 ?>
@@ -2035,5 +2162,5 @@ if (EW_DEBUG_ENABLED)
 </script>
 <?php include_once "footer.php" ?>
 <?php
-$sana_state_list->Page_Terminate();
+$sana_sms_list->Page_Terminate();
 ?>

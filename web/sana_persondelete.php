@@ -6,6 +6,7 @@ ob_start(); // Turn on output buffering
 <?php include_once ((EW_USE_ADODB) ? "adodb5/adodb.inc.php" : "ewmysql12.php") ?>
 <?php include_once "phpfn12.php" ?>
 <?php include_once "sana_personinfo.php" ?>
+<?php include_once "sana_userinfo.php" ?>
 <?php include_once "userfn12.php" ?>
 <?php
 
@@ -211,6 +212,7 @@ class csana_person_delete extends csana_person {
 	//
 	function __construct() {
 		global $conn, $Language;
+		global $UserTable, $UserTableConn;
 		$GLOBALS["Page"] = &$this;
 		$this->TokenTimeout = ew_SessionTimeoutTime();
 
@@ -226,6 +228,9 @@ class csana_person_delete extends csana_person {
 			$GLOBALS["Table"] = &$GLOBALS["sana_person"];
 		}
 
+		// Table object (sana_user)
+		if (!isset($GLOBALS['sana_user'])) $GLOBALS['sana_user'] = new csana_user();
+
 		// Page ID
 		if (!defined("EW_PAGE_ID"))
 			define("EW_PAGE_ID", 'delete', TRUE);
@@ -239,6 +244,12 @@ class csana_person_delete extends csana_person {
 
 		// Open connection
 		if (!isset($conn)) $conn = ew_Connect($this->DBID);
+
+		// User table object (sana_user)
+		if (!isset($UserTable)) {
+			$UserTable = new csana_user();
+			$UserTableConn = Conn($UserTable->DBID);
+		}
 	}
 
 	// 
@@ -246,6 +257,26 @@ class csana_person_delete extends csana_person {
 	//
 	function Page_Init() {
 		global $gsExport, $gsCustomExport, $gsExportFile, $UserProfile, $Language, $Security, $objForm;
+
+		// Security
+		$Security = new cAdvancedSecurity();
+		if (!$Security->IsLoggedIn()) $Security->AutoLogin();
+		if ($Security->IsLoggedIn()) $Security->TablePermission_Loading();
+		$Security->LoadCurrentUserLevel($this->ProjectID . $this->TableName);
+		if ($Security->IsLoggedIn()) $Security->TablePermission_Loaded();
+		if (!$Security->CanDelete()) {
+			$Security->SaveLastUrl();
+			$this->setFailureMessage($Language->Phrase("NoPermission")); // Set no permission
+			if ($Security->CanList())
+				$this->Page_Terminate(ew_GetUrl("sana_personlist.php"));
+			else
+				$this->Page_Terminate(ew_GetUrl("login.php"));
+		}
+		if ($Security->IsLoggedIn()) {
+			$Security->UserID_Loading();
+			$Security->LoadUserID();
+			$Security->UserID_Loaded();
+		}
 		$this->CurrentAction = (@$_GET["a"] <> "") ? $_GET["a"] : @$_POST["a_list"]; // Set up current action
 		$this->personID->Visible = !$this->IsAdd() && !$this->IsCopy() && !$this->IsGridAdd();
 
@@ -414,6 +445,7 @@ class csana_person_delete extends csana_person {
 		$this->personName->setDbValue($rs->fields('personName'));
 		$this->lastName->setDbValue($rs->fields('lastName'));
 		$this->nationalID->setDbValue($rs->fields('nationalID'));
+		$this->mobilePhone->setDbValue($rs->fields('mobilePhone'));
 		$this->nationalNumber->setDbValue($rs->fields('nationalNumber'));
 		$this->passportNumber->setDbValue($rs->fields('passportNumber'));
 		$this->fatherName->setDbValue($rs->fields('fatherName'));
@@ -436,7 +468,6 @@ class csana_person_delete extends csana_person {
 		$this->dress2->setDbValue($rs->fields('dress2'));
 		$this->signTags->setDbValue($rs->fields('signTags'));
 		$this->phone->setDbValue($rs->fields('phone'));
-		$this->mobilePhone->setDbValue($rs->fields('mobilePhone'));
 		$this->_email->setDbValue($rs->fields('email'));
 		$this->temporaryResidence->setDbValue($rs->fields('temporaryResidence'));
 		$this->visitsCount->setDbValue($rs->fields('visitsCount'));
@@ -457,6 +488,7 @@ class csana_person_delete extends csana_person {
 		$this->personName->DbValue = $row['personName'];
 		$this->lastName->DbValue = $row['lastName'];
 		$this->nationalID->DbValue = $row['nationalID'];
+		$this->mobilePhone->DbValue = $row['mobilePhone'];
 		$this->nationalNumber->DbValue = $row['nationalNumber'];
 		$this->passportNumber->DbValue = $row['passportNumber'];
 		$this->fatherName->DbValue = $row['fatherName'];
@@ -479,7 +511,6 @@ class csana_person_delete extends csana_person {
 		$this->dress2->DbValue = $row['dress2'];
 		$this->signTags->DbValue = $row['signTags'];
 		$this->phone->DbValue = $row['phone'];
-		$this->mobilePhone->DbValue = $row['mobilePhone'];
 		$this->_email->DbValue = $row['email'];
 		$this->temporaryResidence->DbValue = $row['temporaryResidence'];
 		$this->visitsCount->DbValue = $row['visitsCount'];
@@ -502,9 +533,13 @@ class csana_person_delete extends csana_person {
 
 		// Common render codes for all row types
 		// personID
+
+		$this->personID->CellCssStyle = "white-space: nowrap;";
+
 		// personName
 		// lastName
 		// nationalID
+		// mobilePhone
 		// nationalNumber
 		// passportNumber
 		// fatherName
@@ -527,7 +562,6 @@ class csana_person_delete extends csana_person {
 		// dress2
 		// signTags
 		// phone
-		// mobilePhone
 		// email
 		// temporaryResidence
 		// visitsCount
@@ -555,6 +589,10 @@ class csana_person_delete extends csana_person {
 		// nationalID
 		$this->nationalID->ViewValue = $this->nationalID->CurrentValue;
 		$this->nationalID->ViewCustomAttributes = "";
+
+		// mobilePhone
+		$this->mobilePhone->ViewValue = $this->mobilePhone->CurrentValue;
+		$this->mobilePhone->ViewCustomAttributes = "";
 
 		// nationalNumber
 		$this->nationalNumber->ViewValue = $this->nationalNumber->CurrentValue;
@@ -830,10 +868,6 @@ class csana_person_delete extends csana_person {
 		$this->phone->ViewValue = $this->phone->CurrentValue;
 		$this->phone->ViewCustomAttributes = "";
 
-		// mobilePhone
-		$this->mobilePhone->ViewValue = $this->mobilePhone->CurrentValue;
-		$this->mobilePhone->ViewCustomAttributes = "";
-
 		// email
 		$this->_email->ViewValue = $this->_email->CurrentValue;
 		$this->_email->ViewCustomAttributes = "";
@@ -867,7 +901,38 @@ class csana_person_delete extends csana_person {
 		$this->registrationDateTime->ViewCustomAttributes = "";
 
 		// registrationStation
-		$this->registrationStation->ViewValue = $this->registrationStation->CurrentValue;
+		if (strval($this->registrationStation->CurrentValue) <> "") {
+			$sFilterWrk = "`stationID`" . ew_SearchString("=", $this->registrationStation->CurrentValue, EW_DATATYPE_NUMBER, "");
+		switch (@$gsLanguage) {
+			case "en":
+				$sSqlWrk = "SELECT `stationID`, `stationID` AS `DispFld`, `stationName` AS `Disp2Fld`, '' AS `Disp3Fld`, '' AS `Disp4Fld` FROM `sana_station`";
+				$sWhereWrk = "";
+				break;
+			case "fa":
+				$sSqlWrk = "SELECT `stationID`, `stationID` AS `DispFld`, `stationName` AS `Disp2Fld`, '' AS `Disp3Fld`, '' AS `Disp4Fld` FROM `sana_station`";
+				$sWhereWrk = "";
+				break;
+			default:
+				$sSqlWrk = "SELECT `stationID`, `stationID` AS `DispFld`, `stationName` AS `Disp2Fld`, '' AS `Disp3Fld`, '' AS `Disp4Fld` FROM `sana_station`";
+				$sWhereWrk = "";
+				break;
+		}
+		ew_AddFilter($sWhereWrk, $sFilterWrk);
+		$this->Lookup_Selecting($this->registrationStation, $sWhereWrk); // Call Lookup selecting
+		if ($sWhereWrk <> "") $sSqlWrk .= " WHERE " . $sWhereWrk;
+			$rswrk = Conn()->Execute($sSqlWrk);
+			if ($rswrk && !$rswrk->EOF) { // Lookup values found
+				$arwrk = array();
+				$arwrk[1] = $rswrk->fields('DispFld');
+				$arwrk[2] = $rswrk->fields('Disp2Fld');
+				$this->registrationStation->ViewValue = $this->registrationStation->DisplayValue($arwrk);
+				$rswrk->Close();
+			} else {
+				$this->registrationStation->ViewValue = $this->registrationStation->CurrentValue;
+			}
+		} else {
+			$this->registrationStation->ViewValue = NULL;
+		}
 		$this->registrationStation->ViewCustomAttributes = "";
 
 		// isolatedDateTime
@@ -895,15 +960,15 @@ class csana_person_delete extends csana_person {
 			$this->nationalID->HrefValue = "";
 			$this->nationalID->TooltipValue = "";
 
+			// mobilePhone
+			$this->mobilePhone->LinkCustomAttributes = "";
+			$this->mobilePhone->HrefValue = "";
+			$this->mobilePhone->TooltipValue = "";
+
 			// nationalNumber
 			$this->nationalNumber->LinkCustomAttributes = "";
 			$this->nationalNumber->HrefValue = "";
 			$this->nationalNumber->TooltipValue = "";
-
-			// passportNumber
-			$this->passportNumber->LinkCustomAttributes = "";
-			$this->passportNumber->HrefValue = "";
-			$this->passportNumber->TooltipValue = "";
 
 			// fatherName
 			$this->fatherName->LinkCustomAttributes = "";
@@ -919,16 +984,6 @@ class csana_person_delete extends csana_person {
 			$this->locationLevel1->LinkCustomAttributes = "";
 			$this->locationLevel1->HrefValue = "";
 			$this->locationLevel1->TooltipValue = "";
-
-			// locationLevel2
-			$this->locationLevel2->LinkCustomAttributes = "";
-			$this->locationLevel2->HrefValue = "";
-			$this->locationLevel2->TooltipValue = "";
-
-			// mobilePhone
-			$this->mobilePhone->LinkCustomAttributes = "";
-			$this->mobilePhone->HrefValue = "";
-			$this->mobilePhone->TooltipValue = "";
 
 			// picture
 			$this->picture->LinkCustomAttributes = "";
@@ -951,6 +1006,11 @@ class csana_person_delete extends csana_person {
 
 				$this->picture->LinkAttrs["class"] = "ewLightbox img-thumbnail";
 			}
+
+			// registrationStation
+			$this->registrationStation->LinkCustomAttributes = "";
+			$this->registrationStation->HrefValue = "";
+			$this->registrationStation->TooltipValue = "";
 		}
 
 		// Call Row Rendered event
@@ -963,6 +1023,10 @@ class csana_person_delete extends csana_person {
 	//
 	function DeleteRows() {
 		global $Language, $Security;
+		if (!$Security->CanDelete()) {
+			$this->setFailureMessage($Language->Phrase("NoDeletePermission")); // No delete permission
+			return FALSE;
+		}
 		$DeleteRows = TRUE;
 		$sSql = $this->SQL();
 		$conn = &$this->Connection();
@@ -1153,7 +1217,7 @@ fsana_persondelete.ValidateRequired = false;
 // Dynamic selection lists
 fsana_persondelete.Lists["x_gender"] = {"LinkField":"x_stateName","Ajax":true,"AutoFill":false,"DisplayFields":["x_stateName","","",""],"ParentFields":[],"ChildFields":[],"FilterFields":[],"Options":[],"Template":""};
 fsana_persondelete.Lists["x_locationLevel1"] = {"LinkField":"x_locationName","Ajax":true,"AutoFill":false,"DisplayFields":["x_locationName","","",""],"ParentFields":[],"ChildFields":["x_locationLevel2"],"FilterFields":[],"Options":[],"Template":""};
-fsana_persondelete.Lists["x_locationLevel2"] = {"LinkField":"x_locationName","Ajax":true,"AutoFill":false,"DisplayFields":["x_locationName","","",""],"ParentFields":[],"ChildFields":["x_locationLevel3"],"FilterFields":[],"Options":[],"Template":""};
+fsana_persondelete.Lists["x_registrationStation"] = {"LinkField":"x_stationID","Ajax":true,"AutoFill":false,"DisplayFields":["x_stationID","x_stationName","",""],"ParentFields":[],"ChildFields":[],"FilterFields":[],"Options":[],"Template":""};
 
 // Form object for search
 </script>
@@ -1209,11 +1273,11 @@ $sana_person_delete->ShowMessage();
 <?php if ($sana_person->nationalID->Visible) { // nationalID ?>
 		<th><span id="elh_sana_person_nationalID" class="sana_person_nationalID"><?php echo $sana_person->nationalID->FldCaption() ?></span></th>
 <?php } ?>
+<?php if ($sana_person->mobilePhone->Visible) { // mobilePhone ?>
+		<th><span id="elh_sana_person_mobilePhone" class="sana_person_mobilePhone"><?php echo $sana_person->mobilePhone->FldCaption() ?></span></th>
+<?php } ?>
 <?php if ($sana_person->nationalNumber->Visible) { // nationalNumber ?>
 		<th><span id="elh_sana_person_nationalNumber" class="sana_person_nationalNumber"><?php echo $sana_person->nationalNumber->FldCaption() ?></span></th>
-<?php } ?>
-<?php if ($sana_person->passportNumber->Visible) { // passportNumber ?>
-		<th><span id="elh_sana_person_passportNumber" class="sana_person_passportNumber"><?php echo $sana_person->passportNumber->FldCaption() ?></span></th>
 <?php } ?>
 <?php if ($sana_person->fatherName->Visible) { // fatherName ?>
 		<th><span id="elh_sana_person_fatherName" class="sana_person_fatherName"><?php echo $sana_person->fatherName->FldCaption() ?></span></th>
@@ -1224,14 +1288,11 @@ $sana_person_delete->ShowMessage();
 <?php if ($sana_person->locationLevel1->Visible) { // locationLevel1 ?>
 		<th><span id="elh_sana_person_locationLevel1" class="sana_person_locationLevel1"><?php echo $sana_person->locationLevel1->FldCaption() ?></span></th>
 <?php } ?>
-<?php if ($sana_person->locationLevel2->Visible) { // locationLevel2 ?>
-		<th><span id="elh_sana_person_locationLevel2" class="sana_person_locationLevel2"><?php echo $sana_person->locationLevel2->FldCaption() ?></span></th>
-<?php } ?>
-<?php if ($sana_person->mobilePhone->Visible) { // mobilePhone ?>
-		<th><span id="elh_sana_person_mobilePhone" class="sana_person_mobilePhone"><?php echo $sana_person->mobilePhone->FldCaption() ?></span></th>
-<?php } ?>
 <?php if ($sana_person->picture->Visible) { // picture ?>
 		<th><span id="elh_sana_person_picture" class="sana_person_picture"><?php echo $sana_person->picture->FldCaption() ?></span></th>
+<?php } ?>
+<?php if ($sana_person->registrationStation->Visible) { // registrationStation ?>
+		<th><span id="elh_sana_person_registrationStation" class="sana_person_registrationStation"><?php echo $sana_person->registrationStation->FldCaption() ?></span></th>
 <?php } ?>
 	</tr>
 	</thead>
@@ -1286,19 +1347,19 @@ while (!$sana_person_delete->Recordset->EOF) {
 </span>
 </td>
 <?php } ?>
+<?php if ($sana_person->mobilePhone->Visible) { // mobilePhone ?>
+		<td<?php echo $sana_person->mobilePhone->CellAttributes() ?>>
+<span id="el<?php echo $sana_person_delete->RowCnt ?>_sana_person_mobilePhone" class="sana_person_mobilePhone">
+<span<?php echo $sana_person->mobilePhone->ViewAttributes() ?>>
+<?php echo $sana_person->mobilePhone->ListViewValue() ?></span>
+</span>
+</td>
+<?php } ?>
 <?php if ($sana_person->nationalNumber->Visible) { // nationalNumber ?>
 		<td<?php echo $sana_person->nationalNumber->CellAttributes() ?>>
 <span id="el<?php echo $sana_person_delete->RowCnt ?>_sana_person_nationalNumber" class="sana_person_nationalNumber">
 <span<?php echo $sana_person->nationalNumber->ViewAttributes() ?>>
 <?php echo $sana_person->nationalNumber->ListViewValue() ?></span>
-</span>
-</td>
-<?php } ?>
-<?php if ($sana_person->passportNumber->Visible) { // passportNumber ?>
-		<td<?php echo $sana_person->passportNumber->CellAttributes() ?>>
-<span id="el<?php echo $sana_person_delete->RowCnt ?>_sana_person_passportNumber" class="sana_person_passportNumber">
-<span<?php echo $sana_person->passportNumber->ViewAttributes() ?>>
-<?php echo $sana_person->passportNumber->ListViewValue() ?></span>
 </span>
 </td>
 <?php } ?>
@@ -1326,28 +1387,20 @@ while (!$sana_person_delete->Recordset->EOF) {
 </span>
 </td>
 <?php } ?>
-<?php if ($sana_person->locationLevel2->Visible) { // locationLevel2 ?>
-		<td<?php echo $sana_person->locationLevel2->CellAttributes() ?>>
-<span id="el<?php echo $sana_person_delete->RowCnt ?>_sana_person_locationLevel2" class="sana_person_locationLevel2">
-<span<?php echo $sana_person->locationLevel2->ViewAttributes() ?>>
-<?php echo $sana_person->locationLevel2->ListViewValue() ?></span>
-</span>
-</td>
-<?php } ?>
-<?php if ($sana_person->mobilePhone->Visible) { // mobilePhone ?>
-		<td<?php echo $sana_person->mobilePhone->CellAttributes() ?>>
-<span id="el<?php echo $sana_person_delete->RowCnt ?>_sana_person_mobilePhone" class="sana_person_mobilePhone">
-<span<?php echo $sana_person->mobilePhone->ViewAttributes() ?>>
-<?php echo $sana_person->mobilePhone->ListViewValue() ?></span>
-</span>
-</td>
-<?php } ?>
 <?php if ($sana_person->picture->Visible) { // picture ?>
 		<td<?php echo $sana_person->picture->CellAttributes() ?>>
 <span id="el<?php echo $sana_person_delete->RowCnt ?>_sana_person_picture" class="sana_person_picture">
 <span>
 <?php echo ew_GetFileViewTag($sana_person->picture, $sana_person->picture->ListViewValue()) ?>
 </span>
+</span>
+</td>
+<?php } ?>
+<?php if ($sana_person->registrationStation->Visible) { // registrationStation ?>
+		<td<?php echo $sana_person->registrationStation->CellAttributes() ?>>
+<span id="el<?php echo $sana_person_delete->RowCnt ?>_sana_person_registrationStation" class="sana_person_registrationStation">
+<span<?php echo $sana_person->registrationStation->ViewAttributes() ?>>
+<?php echo $sana_person->registrationStation->ListViewValue() ?></span>
 </span>
 </td>
 <?php } ?>

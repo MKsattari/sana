@@ -1,0 +1,50 @@
+.sj_weather_item{
+	float:left;
+	color:#B1B1B1;
+	padding:0 10px;
+}
+
+.sj_weather_item p{ 
+	padding:0px;
+	margin:0px;
+}
+
+.sj_weather_moduleclass_sfx{
+	overflow:hidden;
+	float:left;
+	padding:10px 0;
+}
+
+.sj_weather_info p{
+	float:left;
+	
+}
+.posttext{
+	margin-top:-7px;
+}
+.sj_weather_icon{
+
+}
+
+.sj_weather{
+	overflow:hidden;
+}
+
+.sj_weather_icon img{
+	width:auto;
+	height:auto;
+}
+
+.sj_weather_icon{
+	width: 30px;
+	margin-top: -7px;
+	display: inline-block;
+}
+
+.sj_weather_real_time{
+	border-right:1px solid #B1B1B1;
+}
+
+.sj_weather_real_day{
+	border-right:1px solid #B1B1B1;
+}

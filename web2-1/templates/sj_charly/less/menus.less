@@ -1,0 +1,261 @@
+/*******************************************
+***          YT Framework: less          ***
+*******************************************/
+
+// --* Menu Style Templates  *----------------------
+// -----------------------------------------------
+/*   1.LTR Language Menu Style
+ *      1.Moo menu 
+ *      2.Mega Menu
+ *      3.Responsive Menu
+ *      
+ *   2.RTL Language Menu Style
+ *      1.Moo menu & Css Menu
+ *      2.Mega Menu
+ *      3.Responsive Menu
+ *   
+ */
+// 1. LTR Menu Style
+// --------------------------------------------------
+
+   
+// 1.1 Moo menu 
+// -------------------------
+ 
+ // Fancy Menu
+.fancy {background: darken(@background1, 10%);position: absolute;padding: 0;margin: 0;}
+
+#moonavigator { margin: 0 ;padding: 0;list-style: none;position: relative;z-index: 999;list-style: none;
+    
+    li.level1 {float: left;position: relative;padding: 0;margin: 0 1px 0 0 ;list-style: none;
+		> .item-link  {margin: 0 ;padding: 18px 15px;color:@white;font-size:14px;display: block; cursor: pointer;font-weight: 700;text-transform: uppercase;}
+		
+		// Child Menu Item
+		   .fa-angle-down{font-size:14px;margin:0 5px;}
+		
+		//add icon images	   
+		
+		
+		// Add description and show icons
+		.showdesc{
+			.menu-title{line-height: 100%;padding-bottom: 3px;margin-top: -1px;display: block;}
+			.menu-desc{display: block;font-size: 11px;color: #ccc;line-height: 100%;}
+		}
+		
+		//Hover and Active (:hover of cssmenu, .hover of moomenu)
+		&.active,&.hover{background: darken(@background1, 10%);}
+		
+    }
+    
+    // Show All Submenu
+    ul.subnavi  {left: 0;position: absolute;padding: 10px 18px;list-style: none;width: 220px; left: -999em;background: darken(@background1, 10%);
+	li {padding: 0 0 1px 0;position: relative;
+	    .item-link {
+		display: block;
+		margin: 0;
+		padding: 5px 0 ;
+		color: #fff;
+		font-size: 13px;
+		cursor: pointer;
+		text-transform: capitalize;
+		line-height: 25px;
+		border-bottom: 1px solid rgba(255,255,255, 0.4);
+		transition: all 0.5s ease-in-out;
+		
+	    }
+	    .fa-angle-double-right{position: absolute;right: 0;z-index: 1;margin: 4px 0;transition: all 0.5s ease-in-out;}
+	    // Add description and show icons
+	    .showdesc{text-align: left;
+		span.menu-title{padding-bottom: 5px;}
+	    }
+	    
+	    // Hover and Active menu
+	    &:hover,&.active{
+		>.item-link{
+			background: darken(@background1, 20%);
+			padding-left: 10px;
+			transition: padding 0.2s ease-in;
+			
+		}
+		/*.fa-angle-double-right{
+			transition: right 0.2s ease-in;
+			right: 10px;
+		}*/
+	    }
+	    .fancy + .hover{background: transparent;}
+	    &.last >.item-link{border: none;}
+	}
+    }
+    
+    // Submenu level2 -> level5
+    li.level1:hover ul.level2,li.level1.hover ul.level2{
+	left: 100%;
+    }
+    li.level2:hover ul.level3,li.level2.hover ul.level3,
+    li.level3:hover ul.level4,li.level3.hover ul.level4,
+    li.level4:hover ul.level5,li.level4.hover ul.level5,
+    li.level5:hover ul.level6,li.level5.hover ul.level6{
+	left: 100%;top:0;
+    }
+    
+  
+    
+}
+
+
+// 1.3 Mega Menu
+// ----------------------------------
+#meganavigator{list-style: none;padding: 0;margin: 0;position: relative;z-index: 60;
+    li.level1{ 
+		&:extend(#moonavigator li.level1 all);
+	}
+	
+    .mega-content{position: absolute;z-index: 10;background: darken(@background1, 10%);box-shadow: 0 2px 2px rgba(0,0,0,0.3); display:none;
+	    //Mega Child
+	    &.megachild .mega-content-inner {padding: 30px 0;display: block;}
+	    
+	    //Mega Colums
+	    .mega-col {float: left;     
+		&.one{width: 220px;}
+		
+		
+		//Mega Group
+		.mega-group  {display: block;border-right: 1px solid rgba(255,255,255, 0.4);
+		    div.mega-group-title{
+			.item-link{font-size: 14px;padding:0 18px 10px;color: @white;display: block;text-transform: uppercase;font-weight: bold;}
+			.showdesc .menu-title{padding: 0 0 5px;}
+			.fa-angle-double-right{
+				display: none;
+			}
+		    }
+		}
+		.mega-module{color: #ddd;
+			.mega-module-title{padding: 20px 15px 5px;
+			    h3{
+				    padding: 0 0 10px;border-bottom: 1px solid #fff;color: #fff;display: inline-block;
+			    }
+			}
+			.mega-module-content{
+				.k2-mega-menu{
+					padding-top: 10px;
+					.items{
+						padding: 0;
+						display: block;
+						margin: 0;
+						.item{
+						    list-style: none;
+						    width: 33.3333333%;
+						    float: left;
+						    padding: 0 18px;
+							.moduleItemIntrotext{
+								padding: 0;
+								position: relative;
+								display: block;
+								overflow: hidden;
+								.moduleItemImage{
+									display: block;
+									overflow: hidden;
+									margin: 0 0 10px;
+								    img{margin: 0;border: none;}
+								    
+								}
+							}
+							.main{
+								
+								h3.moduleItemTitle{
+								    font-size: 14px;
+								    margin: 0;
+								    a{color: #fff;display: inline-block;&:hover{text-shadow: 1px 1px 1px #444;}}
+								}
+								.article-aside{
+								    .lib-article-aside();
+								    margin: 0 -15px;
+								    dd, dd a, dd .catItemCommentsLink a,dd i{color: #fff;border: none;}
+								}
+								.introtext{color: #fff;}
+								a.moduleItemReadMore{
+								    width: 100px;
+								    height: 25px;
+								    line-height: 25px;
+								    border-radius: 100px;
+								    color: #fff;
+								    font-size: 12px;
+								    margin: auto;
+								    border: 1px solid #fff;
+								    display: inline-block;
+								    &:hover{
+									color: @linkColor;
+									border-color: @linkColor;
+								    }
+								}
+							}
+							&:hover{
+								img{
+									filter: saturate(200%);
+									-webkit-filter: saturate(200%);
+									-moz-filter: saturate(200%);
+									-o-filter: saturate(200%);
+									-ms-filter: saturate(200%);
+								}
+								.main h3.moduleItemTitle{
+								    a{text-shadow: 1px 1px 1px #444;}
+								}
+							}
+						}
+					}
+				}
+				
+				ul.yt-list li{color: #fff;}
+			}
+		}
+	    }
+	    ul.subnavi{padding: 10px 18px;}
+	    ul.subnavi, .menu {list-style: none;
+		li{
+			
+			&:extend(#moonavigator ul.subnavi li all);
+			&.last{border: none;}
+		}
+	    }
+	    
+	
+	    
+      }
+	
+	
+   
+ }
+
+// 1.4 Responsive Menu
+// ----------------------------------
+
+ul.resmenu{margin: 0 ;background-color: #333;
+    li {
+	a{font-weight: bold;border-bottom: 1px solid #444; color: #999;border: none;padding: 5px 8px;
+	    &:focus,&:hover, {color: @white;background: @background1;}
+	    &.active{background: none;color: @linkColor;}
+	}
+    }
+    //Menu level2
+    ul.nav{ padding: 0 8px;
+	a{font-weight: normal;}
+    }
+    
+}
+.btn-hamburger{padding: 15px 20px;}
+.slideout-menu {position: fixed;left: 0;top: 0;bottom: 0;z-index: 1;width: 256px;overflow-y: auto;-webkit-overflow-scrolling: touch;display: none;}
+.slideout-panel { position:relative;background: #fff; }
+.slideout-open,
+.slideout-open body,
+.slideout-open .slideout-panel {overflow: hidden;}
+.slideout-open .slideout-menu {display: block;}
+
+
+// 2. RTL Menu Style
+// --------------------------------------------------
+
+.rtl {
+   
+}
+
+

@@ -1,0 +1,153 @@
+// Medium devices Desktops 
+// ------------------
+
+@media (min-width: 980px) and (max-width: 1199px) {
+
+	  //Layout-Templates
+	  div.container{width: 980px;}
+	 
+	  //Joomla Core
+	  .blog {
+		   .items-leading .item{
+				.item-image{float: none !important;margin: 0px 0px 20px 0px;display: inline-block;}
+				&.span4,
+				&.span6,
+				&.span3 {
+					 .item-image{display: block ;height: 100%;min-width: inherit !important;min-height: inherit !important;
+						  .img_caption{width: auto !important;}
+					 }
+				}
+				
+		   }
+		   .items-row .item{
+				.item-image{float: none !important;margin: 0px 0px 20px 0px;display: inline-block;min-height: inherit !important;min-width: inherit !important;}
+				&.col-sm-3,
+				&.col-sm-4,
+				&.col-sm-6 {
+					 .item-image{display: block;height: 100%;min-width: inherit !important;min-height: inherit !important;
+						  img{max-width: 100% ; display: block ;}
+						  .img_caption{width: auto !important;}
+					 }
+				}
+		   }
+		   
+		   //Feature
+		   &.blog-featured .items-row .item .item-image {min-height: inherit !important;min-width: inherit !important;display: block;}
+		   
+	  }
+	  .registration .form-horizontal .control-label{white-space: nowrap; width: 28%;}
+          //
+          #moonavigator li.level1 > .item-link, #meganavigator li.level1 > .item-link{padding: 18px 8px;}
+	  #login{padding: 0;}
+	  #meganavigator .mega-content.megachild .mega-content-inner{width: 980px !important;}
+	  // Article
+	  .item-page {
+		   .btn.btn-flat {font-size: 14px;}
+		   .dt-list {width: 47%;}
+	  }
+          
+          //page sevices
+	  #g-pageservices div.yt-tabs ul.nav-tabs li a{padding: 8px 10px;}
+	  //Tags Category
+	  .tag-category ul.items-row .item .item-image {float: none !important;margin: 0px 0px 20px 0px;display: inline-block;}
+	  
+	  // com k2
+          #k2Container.itemView .itemComments .itemCommentsForm form.form-validate input.me-inline{width: 100%;}
+          #k2Container.itemView.item-event .itemBody .timevent-address li{width: 73%;}
+	  //Module
+                  //k2-style-one
+		  .module.k2-style-one .modcontent .items .item .moduleItemIntrotext{
+                           .main{
+                                    bottom: -200px;
+                                }  
+                           &:hover{
+                                .main{
+                                    padding: 5px 20px;
+                                }  
+                           }
+                           
+                  }
+                  //most-popular
+                  .most-popular ul li.even .main, .most-popular ul li.odd .main{width: 53%;}
+                  //social-share
+                  .module.social-share .sj-social-media-counts .sc-wrap{
+                           margin: 0 -15px;
+                           .sc-item{
+                                    width: 50%;
+                                    padding: 0 15px;
+                                    .sc-item-inner{
+                                             padding: 15px;
+                                             border: 1px solid #ebebeb;
+                                             border-radius: 5px;
+                                    }
+                           }
+                  }
+                  //k2-content-entertaiment
+                  .module.k2-content-entertaiment .modcontent .items .item:nth-child(3){clear: both;}
+                  //slideshow layout1
+                  .module.slideshow .sj-k2-container-slider{
+                         .preset02-3 .vpo-wrap .vp .item{
+                                 width: 33.33333%;
+                         }
+                  }
+                  //
+                  .module.most-popular ul li.even,
+                  .module.most-popular ul li.odd{
+                          padding: 15px;
+                          background: #ebebeb;
+                          border-radius: 5px;
+                  }
+                  //
+                  .popular-video ul li.even,
+                  .popular-video ul li.odd{
+                           width: 50%;
+                           float: left;
+                  }
+		   //Search
+		   #mod-finder-searchform {margin: 3px 0 0;
+			   input.inputbox {width: 185px;}
+		   }
+		   
+		   //Login
+		   .yt-loginform .dropdown-menu {min-width: 190px;}
+		   .mod-languages {
+			   
+				.dropdown-menu  {min-width: 150px;
+					 li a {font-size: 12px;
+						  img {margin-top: 3px;}
+					 }
+				}
+		   }
+		   .form-vertical {padding: 13px 5px;
+				.login-greeting {font-size: 12px;margin: 4px 4px 0 0;}
+				.logout-button .btn {padding: 3px 1px 3px 8px;}
+		   }
+		
+		   //Accordion
+		   div.sj-accordion .acd-items .acd-item .acd-content-wrap .acd-content-wrap-inner .acd-content {padding: 10px;
+				.acd-description {font-size: 12px;}
+		   }
+		 
+         iframe {width: 100%;}
+         //kunena
+         #yt_component #Kunena div.kblock .kcontainer .kbody .krow1 .input span{margin: 0;
+                  .inputbox{width: 100%;margin: 10px 0 20px}
+         }
+	  //RTL Language
+	  &.rtl {
+		   
+		   //Social
+		   #social .poscenter {margin-left: 5px !important;margin-right: 40px !important;}
+		   
+		   //Search
+		   #mod-finder-searchform {
+				input.inputbox {margin-right: 28px;}
+				.button {left: 10px;}
+		   }
+		   
+		   #meganavigator li.mega1 > .mega-content {left: auto !important; right: -240px !important;}
+		   
+	  }
+
+}
+

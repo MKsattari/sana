@@ -1,0 +1,332 @@
+
+//lib
+.lib-ktoggler{
+    position: absolute;
+    top: 50%;
+    right: 10px;
+    height: 30px;
+    width: 30px;
+    margin: -15px 0 0;
+    a.open{
+        background: none;
+        position: absolute;
+        height: 100%;
+        width: 100%;
+        top: 0;
+        left: 0;
+        text-align: center;
+        line-height: 30px;
+        font-size: 14px;
+        border: 1px solid #fff;
+        color: #fff;
+        cursor: pointer;
+        &:before{
+            content: "\f067";
+            font-family: fontawesome;
+        }
+    }
+    a.close{
+        background: none;
+        position: absolute;
+        height: 100%;
+        width: 100%;
+        top: 0;
+        left: 0;
+        text-align: center;
+        line-height: 30px;
+        font-size: 14px;
+        border: 1px solid #fff;
+        color: #fff;
+        cursor: pointer;
+        opacity: 1;
+        &:before{
+            content: "\f068";
+            font-family: fontawesome;
+        }
+    }
+}
+
+#content.com_kunena  #yt_component{padding:0;border:none;background:none;}
+#yt_component #Kunena {
+    .kprofilebox tr, .kprofilebox tr td{border: none !important;}
+    .kforum-pathway{background: #fafafa;border: none;}
+    label.searchlabel {margin: 0 0 5px;}
+    select, textarea,  input {margin: 3px;}
+    tr.krow1 td.kprofileboxcnt{
+        padding: 40px;
+    }
+    .kbutton{
+        width: 100px;
+        height: 45px;
+        border-radius: 4px;
+        background: @background1;
+        border: none;
+        font-size: 14px;
+        color: #fff;
+        font-weight: bold;
+        text-transform: uppercase;
+        &:hover{background: @background2;}
+    }
+    .krowmoderation, .klist-actions{
+        
+        .kbutton{
+            height: 28px;
+            padding: 0 15px;
+            background: @background2;
+            color: #fff;
+            font-weight: bold;
+            text-transform: uppercase;
+            border-radius: 4px;
+            border: none;
+            width: auto;
+            &:hover{
+                background: @background1;
+            }
+        }
+    }
+    a{text-decoration: none;}
+    select{
+        height: 28px;
+        padding: 0 30px 0 10px;
+        -moz-appearance: none;
+        -webkit-appearance: none;
+        -ms-appearance: none;
+        text-indent: 0.01px;
+        text-overflow: '';
+        background-image: url(../images/icon/row-select.png);
+        background-repeat: no-repeat;
+        background-position: 97% center;
+        background-color: #ebebeb !important;
+        border-radius: 4px;
+        color: #707070;
+        border: none;
+        
+    }
+    h1,h2{
+        font-size: 14px;
+        text-transform: uppercase;
+        font-weight: bold;
+        a{
+            font-weight: bold;
+            font-size: 14px;
+        }
+    }
+    //top
+    #ktop {
+        border: none;
+        position: relative;
+        #ktopmenu {
+            #ktab {
+                background: #363636;
+                margin: 0;
+                ul.menu {
+                    li {
+                        margin: 0 1px !important;
+                        a {
+                            background: none;
+                            color:#fff;
+                            border-radius: 0;
+                            padding: 10px;
+                            span{
+                                font-size: 14px;
+                                font-weight: bold;
+                                text-transform: uppercase;
+                            }
+                        }
+                        &:hover,&.active {
+                            background: darken(@background1, 10%);
+                        }
+                    }
+                }
+            }
+        }
+        span.ktoggler {
+            .lib-ktoggler();
+        }
+    }
+    div.kblock {margin: 20px 0 20px 0 !important;border-radius: 4px;overflow: hidden;border: 1px solid #e1e1e1;
+        &.kpathway{
+            margin: 5px 0 0 0;
+            &.breadcrumbs-1,&.breadcrumbs-2{
+                border-width: 1px 0 1px 0;
+                border-style: solid;
+                border-color: #e1e1e1;
+                border-radius: 0;
+                padding: 10px 0;
+                background: none;
+                .kforum-pathway{background: none;}
+                 a{
+                    color: #707070;
+                    font-size: 14px;
+                    &:hover{
+                        color: @background1;
+                    }
+                }
+                .path-element{
+                    padding: 0;
+                    background: none;
+                    &:before{
+                        content: "\f105";
+                        font-family: fontawesome;
+                        margin: 0 10px;
+                        color: #707070;
+                        font-size: 14px;
+                    }
+                }
+            }
+        }
+        .kheader {
+            background: #363636;
+            color: #fff;
+            position: relative;
+            padding: 10px;
+            border: none;
+            h2 { 
+                .ktitle, span {color: #fff;}
+                a { color: #fff !important;}
+            }
+            h3 span {color: #fff;}
+            .ktitle-desc {color: #fff;}
+            span.ktoggler {
+                .lib-ktoggler();
+            }
+        }
+        .kcontainer {
+            .kbody {border: none;
+                .krow1{
+                    td{background: #fafafa}
+                    .k_guest{
+                        margin: 0 0 20px;
+                        color: #707070;
+                        font-size: 14px;
+                    }
+                    .input{
+                        span{
+                            font-size: 14px;
+                            color: #707070;
+                            margin-right: 20px;
+                            .inputbox{
+                                width: 300px;
+                                height: 45px;
+                                background: #ebebeb;
+                                border-radius: 4px;
+                                border: none;
+                            }
+                            .kbutton{
+                                width: 100px;
+                                height: 45px;
+                                border-radius: 4px;
+                                background: @background1;
+                                border: none;
+                                font-size: 14px;
+                                color: #fff;
+                                font-weight: bold;
+                                text-transform: uppercase;
+                                &:hover{background: @background2;}
+                            }
+                        }
+                    }
+                    .klink-block{
+                        padding-top: 20px;
+                        span{
+                            margin: 0 20px 0 80px;
+                            a{
+                                font-size: 13px;
+                                color: #707070;
+                                &:hover{
+                                    color: @linkColor;
+                                }
+                            }
+                        }
+                    }
+                }
+                .kblocktable {
+                    .krow2 {
+                        td {
+                            background: #fff;
+                            &.km {
+                                > div {border: none; border-bottom: #ccc 1px dotted;}
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        &.kcategories-1{
+            td{
+                padding: 30px;
+                background: #fafafa !important;
+                .kthead-title a{
+                    font-size: 14px;
+                    color: #363636;
+                    &:hover{
+                        color: @linkColor;
+                    }
+                }
+                .kthead-desc{
+                    color: #898989;
+                    font-size: 13px;
+                    line-height: 21px;
+                }
+                .kcat-replies-number,.kcat-topics-number{
+                    font-weight: bold;
+                    font-size: 21px;
+                    color: #707070;
+                }
+                .kcat-replies, .kcat-topics{
+                    color: #707070;
+                }
+            }
+        }
+        &.kwhoisonline{
+            .kbody .kblocktable .krow2 td.km > div{
+                padding: 10px 0;
+                border-bottom: 1px dashed #e5e5e5;
+                margin: 0;
+                
+                &.kwholegend{
+                    border: none;
+                }
+            }
+            td{
+                padding: 30px;
+                background: #fafafa !important;
+                .kwho-total{
+                    font-size: 14px;
+                    color: #363636;
+                    font-weight: bold;
+                }
+            }
+        }
+        &.kfrontstats{
+            td{
+                padding: 30px;
+                ul#kstatslistleft li,
+                ul#kstatslistright li{
+                    color: #707070;
+                    font-size: 14px;
+                    padding: 6px 0;
+                    a{font-weight: bold;color: #252525;&:hover{color: @linkColor;}}
+                }
+            }
+        }
+        .kcontainer .kbody .kblocktable td{padding: 30px;background: #fafafa}
+    }
+    .klist-markallcatsread{
+        border-radius: 4px;
+        .kbutton{
+            height: 28px;
+            padding: 0 15px;
+            background: @background2;
+            color: #fff;
+            font-weight: bold;
+            text-transform: uppercase;
+            border-radius: 4px;
+            border: none;
+            &:hover{
+                background: @background1;
+            }
+        }
+    }
+}
+#Kunena td.kprofileboxcnt ul.kprofilebox-welcome li input.kbutton:hover {background-color: rgba(0,0,0,0.15);}

@@ -1,0 +1,136 @@
+/*******************************************
+***          YT Framework: less          ***
+*******************************************/
+
+// --* Layouts Templates *-----------------
+// ----------------------------------------
+/*   1.Block Header
+ */
+
+
+body{ color: #555; font-size: 13px;line-height: 22px;
+     h3, h3 a{color: #222;&:hover{color: @linkColor}}
+}
+
+//.Block Header
+#yt_header{padding: 25px 0;
+    background: #fff;
+}
+//.Block Mainmenu
+#yt_menuwrap{
+     background: @background1 ;margin: 0; position: relative;
+     //#yt_mainmenu{z-index: 9999;}
+}
+#yt_menuwrap.menu-fixed{width: 100%;margin: 0;position: fixed;top: 0;left: 0;z-index: 10;
+     //#translucent .background(#23262d,0.95); //Extend Mixins translucent mixins.less
+}
+
+//3.Block Slideshow
+
+
+
+//4.Block Breadcrumb
+#yt_breadcrumb{margin:0 0 30px;position: relative;overflow: hidden;border-bottom: 1px solid #e1e1e1;
+     .container{width: 100%;padding: 0;}
+     #breadcrumb{
+          .module.breadcrum-style-me{margin: 0;}
+          .breadcrumb{background: none;text-align: right;position: relative;padding: 0;overflow: hidden;
+               .divider{margin: 0 5px;vertical-align: 2px;}
+               > li{font-size: 14px;padding: 10px 0;
+                    a{color: #898989;&:hover{color: @linkColor;}}
+                    span{color: #898989;}
+                    &.last-active{
+                         &:after{display: none;}
+                    }
+               }
+               > li + li:before{
+                    display: none;
+               }
+               > li + li:after{
+                    content: "\f101";
+                    padding: 0 8px;
+                    font-family: fontawesome;
+                    color: #898989;
+                    
+               }
+               
+               >li.title-breadcrumbs{
+                    width: 100%;
+                    display: block;
+                    font-size: 20px;
+                    text-transform: uppercase;
+                    color: #fff;
+                    font-weight: bold;
+                    padding: 60px 0;
+                    position: relative;
+                    margin: 0;
+                    background: url("../images/bg/breadcrumb.png") no-repeat 0 0;
+                    background-size: cover;
+                    span{position: relative;z-index: 2;color: #fff;}
+                    &:after{display: none;}
+                    &:before{
+                         content: "";
+                         height: 100%;
+                         width: 100%;
+                         position: absolute;
+                         top: 0;
+                         left: 0;
+                         background: #000;
+                         opacity: 0.2;
+                         z-index: 1;
+                    }
+               }
+               &.breadcrum-style-me{
+                    margin: 0;
+                    text-align: center;
+               }
+          }
+     }
+     
+}
+
+
+//5.Block Main Content
+#content{
+     #yt_component{background: @white;margin-bottom: 45px;}
+     #right .bg1 {padding-bottom: 0px;}
+}
+
+//6.Block Spotlight
+#yt_spotlight1{
+     position: relative;
+     z-index: 1;
+     padding: 20px 0 15px;
+}
+.home-layout2 #yt_spotlight2{
+     .container{
+          width: 100%;
+          padding: 0;
+          overflow: hidden;
+     }
+}
+#yt_spotlight3{
+     display: block;
+     padding: 105px 0 77px;
+     background: url(../images/bg/bg2.jpg) no-repeat center fixed;
+     background-size: cover;
+}
+#yt_spotlight4{
+     display: block;
+     background: #ebebeb;
+     padding: 40px 0;
+}
+//7.Block Footer
+#yt_footer{background: #fff;padding: 35px 0px;
+     #yt_copyright {color: #898989;font-size: 14px;text-align: center;
+          a {color: #898989;
+               &:hover{
+                    color: @linkColor;
+               }
+          }
+          .copyright,.designby{display: block;}
+     }
+}
+
+//8.Non-responsive Bootstrap
+@media  (max-width: 1024px) {.no-res{width: 1190px; }}
